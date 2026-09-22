@@ -9,21 +9,25 @@ export function useSiteContent(defaults:Record<string,string>){
   const [texts,setTexts]=useState<Record<string,string>>(defaults)
   const [styles,setStyles]=useState<Record<string,Style>>({})
 
-  useEffect(()=>{
-    (async()=>{
-      try{
-        const {data} = await supabase.from('site_content').select('*')
-        if(!data) return
-        const t:any={...defaults}
-        const s:any={}
+  const load = async () => {
+    try{
+      // Load drafts first for admin preview
+      const draftStr = localStorage.getItem('bb_draft')
+      let draftContent:any = {}
+      if(draftStr){
+        try{ draftContent = JSON.parse(draftStr).siteContent || {} }catch{}
+      }
+      const {data} = await supabase.from('site_content').select('*')
+      const t:any={...defaults}
+      const s:any={}
+      if(data){
         data.forEach((r:any)=>{
           if(r.key in defaults){
             t[r.key]=r.value
           }
-          // Style keys: key_color, key_size, key_weight, key_font
           if(r.key.includes('_color') || r.key.includes('_size') || r.key.includes('_weight') || r.key.includes('_font')){
             const parts = r.key.split('_')
-            const prop = parts.pop() // color,size,weight,font
+            const prop = parts.pop()
             const baseKey = parts.join('_')
             if(!s[baseKey]) s[baseKey]={}
             if(prop==='color') s[baseKey].color=r.value
@@ -31,16 +35,34 @@ export function useSiteContent(defaults:Record<string,string>){
             if(prop==='weight') s[baseKey].fontWeight=r.value
             if(prop==='font') s[baseKey].fontFamily=r.value
           }
-          // Also support direct color keys like color_bg
-          if(r.key.startsWith('color_')){
-            if(!s[r.key]) s[r.key]={}
-            s[r.key].color=r.value
-          }
         })
-        setTexts(t)
-        setStyles(s)
-      }catch{}
-    })()
+      }
+      // Override with draft if exists
+      Object.entries(draftContent).forEach(([k,v]:any)=>{
+        if(k in t) t[k]=v
+        if(k.includes('_color') || k.includes('_size') || k.includes('_weight') || k.includes('_font')){
+          const parts = k.split('_')
+          const prop = parts.pop()
+          const baseKey = parts.join('_')
+          if(!s[baseKey]) s[baseKey]={}
+          if(prop==='color') s[baseKey].color=v
+          if(prop==='size') s[baseKey].fontSize=v
+          if(prop==='weight') s[baseKey].fontWeight=v
+          if(prop==='font') s[baseKey].fontFamily=v
+        }
+      })
+      setTexts(t)
+      setStyles(s)
+    }catch{
+      setTexts(defaults)
+    }
+  }
+
+  useEffect(()=>{load()
+    const handleStorage = () => load()
+    window.addEventListener('storage', handleStorage)
+    const interval = setInterval(load, 2000) // poll for draft changes
+    return ()=>{window.removeEventListener('storage', handleStorage); clearInterval(interval)}
   },[])
 
   const getStyle = (key:string):React.CSSProperties => {
@@ -55,5 +77,5 @@ export function useSiteContent(defaults:Record<string,string>){
 
   const getText = (key:string) => texts[key] || defaults[key] || ''
 
-  return { texts, styles, getText, getStyle, allTexts: texts }
+  return { texts, styles, getText, getStyle, reload:load }
 }

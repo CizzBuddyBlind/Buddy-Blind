@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useSiteContent } from '@/lib/useSiteContent'
+import { EditableText } from '@/components/EditableText'
 import Link from 'next/link'
 
 type Featured = { id:string, title:string, area:string, time:string, spots_left:number, host_label:string, price_label:string, vibe_label:string, invite_text:string, description_long:string, image_url:string }
@@ -33,7 +34,6 @@ const DEFAULT_FEATURED:Featured = {
 export default function HomePage(){
   const { getText, getStyle } = useSiteContent(DEFAULT_CONTENT)
   const [featured,setFeatured]=useState<Featured>(DEFAULT_FEATURED)
-  const [shareMsg,setShareMsg]=useState('')
 
   useEffect(()=>{
     (async()=>{
@@ -44,48 +44,36 @@ export default function HomePage(){
     })()
   },[])
 
-  const handleShare = async () => {
-    const url = `${window.location.origin}/venues?featured=${featured.id}`
-    try{
-      if(navigator.share){ await navigator.share({title: featured.title, text: featured.invite_text, url}) }
-      else { await navigator.clipboard.writeText(url); setShareMsg('LINK COPIED'); setTimeout(()=>setShareMsg(''),2000) }
-    }catch{ await navigator.clipboard.writeText(url); setShareMsg('LINK COPIED'); setTimeout(()=>setShareMsg(''),2000) }
-  }
-  const handleJoinBox = async () => {
-    if(featured.spots_left <= 0){ alert('Sold out'); return }
-    try{
-      const {data:existing} = await supabase.from('featured_events').select('id,spots_left').eq('id',featured.id).single()
-      if(existing){ await supabase.from('featured_events').update({spots_left: existing.spots_left - 1}).eq('id',featured.id) }
-    }catch{}
-    window.location.href = `/join?venue=${featured.id}&source=home`
-  }
-
   return(
     <main className="bg-[#080808] min-h-screen">
       <div className="max-w-[1400px] mx-auto px-6 pt-10 pb-20 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10">
         <div className="pt-8">
-          <div className="mono text-[10px] tracking-[0.15em] text-zinc-500" style={getStyle('top_stats')}>{getText('top_stats')}</div>
+          <EditableText textKey="top_stats" defaultValue={getText('top_stats')} as="div" className="mono text-[10px] tracking-[0.15em] text-zinc-500" style={getStyle('top_stats')} />
           <h1 className="mt-16 text-[64px] md:text-[84px] leading-[0.85] tracking-[-0.03em]">
-            <span className="font-normal block text-white" style={getStyle('headline_1')}>{getText('headline_1')}</span>
-            <span className="serif italic font-light block text-[#f5f2eb] ml-1" style={getStyle('headline_2')}>{getText('headline_2')}</span>
-            <span className="serif italic font-light block text-[#c96a4a]" style={getStyle('headline_3')}>{getText('headline_3')}</span>
+            <EditableText textKey="headline_1" defaultValue={getText('headline_1')} as="span" className="font-normal block text-white" style={getStyle('headline_1')} />
+            <EditableText textKey="headline_2" defaultValue={getText('headline_2')} as="span" className="serif italic font-light block text-[#f5f2eb] ml-1" style={getStyle('headline_2')} />
+            <EditableText textKey="headline_3" defaultValue={getText('headline_3')} as="span" className="serif italic font-light block text-[#c96a4a]" style={getStyle('headline_3')} />
           </h1>
           <div className="mt-12 text-[14px] leading-relaxed text-zinc-400 max-w-[420px]">
-            <p style={getStyle('subtext_1')}>{getText('subtext_1')}</p>
-            <p className="mt-1 text-zinc-300" style={getStyle('subtext_2')}>{getText('subtext_2')}</p>
+            <EditableText textKey="subtext_1" defaultValue={getText('subtext_1')} as="p" style={getStyle('subtext_1')} />
+            <EditableText textKey="subtext_2" defaultValue={getText('subtext_2')} as="p" className="mt-1 text-zinc-300" style={getStyle('subtext_2')} />
           </div>
           <div className="mt-10 flex gap-3">
-            <Link href="/venues" className="mono h-[48px] px-7 rounded-full bg-[#f5f2eb] text-black text-[11px] tracking-[0.15em] flex items-center hover:bg-white transition" style={getStyle('cta_join')}>{getText('cta_join')}</Link>
-            <Link href="/private-events" className="mono h-[48px] px-7 rounded-full border border-zinc-800 text-[11px] tracking-[0.15em] flex items-center text-zinc-400 hover:border-zinc-600 hover:text-zinc-200 transition" style={getStyle('cta_private')}>{getText('cta_private')}</Link>
+            <EditableText textKey="cta_join" defaultValue={getText('cta_join')} as="div" className="mono h-[48px] px-7 rounded-full bg-[#f5f2eb] text-black text-[11px] tracking-[0.15em] flex items-center hover:bg-white transition" style={getStyle('cta_join')}>
+              <Link href="/venues" className="w-full h-full flex items-center justify-center">{getText('cta_join')}</Link>
+            </EditableText>
+            <EditableText textKey="cta_private" defaultValue={getText('cta_private')} as="div" className="mono h-[48px] px-7 rounded-full border border-zinc-800 text-[11px] tracking-[0.15em] flex items-center text-zinc-400 hover:border-zinc-600 hover:text-zinc-200 transition" style={getStyle('cta_private')}>
+              <Link href="/private-events" className="w-full h-full flex items-center justify-center">{getText('cta_private')}</Link>
+            </EditableText>
           </div>
           <div className="mt-24 border-t border-zinc-900 pt-8 grid grid-cols-3 gap-8 max-w-[420px]">
-            <div><div className="serif text-[36px] text-white" style={getStyle('stat1_num')}>{getText('stat1_num')}</div><div className="mono mt-2 text-[10px] tracking-[0.1em] text-zinc-500 leading-relaxed" style={getStyle('stat1_label')}>{getText('stat1_label')}</div></div>
-            <div><div className="serif text-[36px] text-white" style={getStyle('stat2_num')}>{getText('stat2_num')}</div><div className="mono mt-2 text-[10px] tracking-[0.1em] text-zinc-500" style={getStyle('stat2_label')}>{getText('stat2_label')}</div></div>
-            <div><div className="serif text-[36px] text-white" style={getStyle('stat3_num')}>{getText('stat3_num')}</div><div className="mono mt-2 text-[10px] tracking-[0.1em] text-zinc-500" style={getStyle('stat3_label')}>{getText('stat3_label')}</div></div>
+            <div><EditableText textKey="stat1_num" defaultValue={getText('stat1_num')} as="div" className="serif text-[36px] text-white" style={getStyle('stat1_num')} /><EditableText textKey="stat1_label" defaultValue={getText('stat1_label')} as="div" className="mono mt-2 text-[10px] tracking-[0.1em] text-zinc-500 leading-relaxed" style={getStyle('stat1_label')} /></div>
+            <div><EditableText textKey="stat2_num" defaultValue={getText('stat2_num')} as="div" className="serif text-[36px] text-white" style={getStyle('stat2_num')} /><EditableText textKey="stat2_label" defaultValue={getText('stat2_label')} as="div" className="mono mt-2 text-[10px] tracking-[0.1em] text-zinc-500" style={getStyle('stat2_label')} /></div>
+            <div><EditableText textKey="stat3_num" defaultValue={getText('stat3_num')} as="div" className="serif text-[36px] text-white" style={getStyle('stat3_num')} /><EditableText textKey="stat3_label" defaultValue={getText('stat3_label')} as="div" className="mono mt-2 text-[10px] tracking-[0.1em] text-zinc-500" style={getStyle('stat3_label')} /></div>
           </div>
         </div>
         <div className="lg:pt-4">
-          <div className="flex items-center gap-2 mono text-[10px] tracking-[0.15em] text-zinc-500" style={getStyle('featured_label')}><span className="w-1.5 h-1.5 rounded-full bg-[#c96a4a]"></span>{getText('featured_label')}</div>
+          <EditableText textKey="featured_label" defaultValue={getText('featured_label')} as="div" className="flex items-center gap-2 mono text-[10px] tracking-[0.15em] text-zinc-500" style={getStyle('featured_label')} />
           <div className="mt-8 bg-[#121212] border border-zinc-900 rounded-[24px] relative">
             <div className="absolute -top-3 right-5 z-20 flex items-center gap-2 bg-[#f5f2eb] text-black mono text-[10px] tracking-[0.1em] px-4 py-2 rounded-full border border-black/10 shadow-xl">
               <div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center text-[9px]">C</div>
@@ -93,28 +81,14 @@ export default function HomePage(){
             </div>
             <div className="relative h-[520px] bg-zinc-900 rounded-t-[24px] overflow-hidden">
               <img src={featured.image_url} alt={featured.title} className="w-full h-full object-cover" />
-              <div className="absolute top-4 left-4 flex gap-2">
-                <div className="mono text-[10px] tracking-[0.1em] bg-black/70 backdrop-blur border border-white/10 px-3 py-1.5 rounded-full text-white">{featured.area} · {featured.time}</div>
-                <div className="mono text-[10px] tracking-[0.1em] bg-[#c96a4a] px-3 py-1.5 rounded-full text-white">{featured.spots_left} SPOTS LEFT</div>
-              </div>
-              <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-                <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-zinc-700 border border-black"></div>
-                  <div className="w-8 h-8 rounded-full bg-zinc-600 border border-black"></div>
-                  <div className="w-8 h-8 rounded-full bg-zinc-500 border border-black"></div>
-                  <div className="w-8 h-8 rounded-full bg-white text-black border border-black flex items-center justify-center text-[11px] mono">?</div>
-                </div>
-                <div className="mono text-[10px] tracking-[0.1em] bg-black/70 backdrop-blur border border-white/10 px-3 py-1.5 rounded-full text-zinc-300">{featured.price_label}</div>
-              </div>
             </div>
             <div className="p-7">
               <h2 className="serif text-[28px] text-white">{featured.title}</h2>
               <div className="mt-2 mono text-[10px] tracking-[0.1em] text-zinc-500 leading-relaxed">{featured.vibe_label}</div>
               <div className="mt-4 mono text-[11px] tracking-[0.05em] text-zinc-400 leading-relaxed">{featured.invite_text}</div>
-              <button onClick={handleShare} className="mt-4 mono text-[10px] tracking-[0.15em] border border-zinc-800 px-4 py-2 rounded-full text-white hover:border-zinc-600 transition">{shareMsg || 'SHARE'}</button>
               <p className="mt-6 text-[13px] leading-relaxed text-zinc-400">{featured.description_long}</p>
               <div className="mt-8 flex gap-3">
-                <button onClick={handleJoinBox} className="flex-1 mono h-[48px] rounded-full bg-[#f5f2eb] text-black text-[11px] tracking-[0.15em] flex items-center justify-center hover:bg-white transition">JOIN BLIND BOX</button>
+                <Link href={`/join?venue=${featured.id}`} className="flex-1 mono h-[48px] rounded-full bg-[#f5f2eb] text-black text-[11px] tracking-[0.15em] flex items-center justify-center hover:bg-white transition">JOIN BLIND BOX</Link>
                 <Link href="/invite" className="mono h-[48px] px-6 rounded-full border border-zinc-800 text-[11px] tracking-[0.15em] flex items-center justify-center text-zinc-300 hover:border-zinc-600 transition">INVITE</Link>
               </div>
             </div>
@@ -123,7 +97,7 @@ export default function HomePage(){
       </div>
       <footer className="border-t border-zinc-900 mt-10 py-6">
         <div className="max-w-[1400px] mx-auto px-6 flex justify-between items-center">
-          <div className="mono text-[10px] tracking-[0.1em] text-zinc-600" style={getStyle('footer_left')}>{getText('footer_left')}</div>
+          <EditableText textKey="footer_left" defaultValue={getText('footer_left')} as="div" className="mono text-[10px] tracking-[0.1em] text-zinc-600" style={getStyle('footer_left')} />
           <div className="flex gap-6 mono text-[10px] tracking-[0.1em] text-zinc-600"><Link href="/how-it-works" className="hover:text-zinc-300">How it works</Link><Link href="/premium" className="hover:text-zinc-300">Premium</Link></div>
         </div>
       </footer>

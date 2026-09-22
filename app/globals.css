@@ -2,7 +2,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Serif+Display&family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;700&family=Clash+Display:wght@400;600&family=General+Sans:wght@400;600&display=swap');
 :root{
   --color-bg:#080808;
   --color-card:#0f0f0f;
@@ -16,3 +16,6 @@
 body{background:var(--color-bg);color:var(--color-text);font-family:'Inter',sans-serif;}
 .serif{font-family:'Instrument Serif',serif;}
 .mono{font-family:'Space Mono',monospace;}
+.font-inter{font-family:'Inter',sans-serif;}
+.font-serif2{font-family:'Playfair Display',serif;}
+.font-mono2{font-family:'JetBrains Mono',monospace;}
