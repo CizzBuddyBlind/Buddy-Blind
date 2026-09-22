@@ -25,6 +25,10 @@ const DEFAULT_CONTENT:Record<string,string> = {
   stat3_label: 'AVG AFTER-TALK RATING',
   featured_label: 'FEATURED TONIGHT · ONE BLIND BOX OPEN',
   footer_left: 'BUDDY BLIND · HONG KONG · 1,247 BLIND BOXES · NO BOTTOM FLYWHEEL PER V9 FEEDBACK',
+  featured_title: 'Kissa Tanaka',
+  featured_vibe: 'SOHO · KISSATEN · HOST CREATES ATTRACTION AND DOWNLOAD REASONS',
+  featured_invite: 'CJ INVITES YOU TO JOIN A DINNER AND MEET NEW FRIENDS - NO PITCHES, JUST PRESENCE.',
+  featured_desc: 'A 6-seat counter, vinyl crackle, no menus. You order by mood. Tonight is for people who collect stories, not contacts. No pitches, just presence.',
 }
 
 const DEFAULT_FEATURED:Featured = {
@@ -83,10 +87,10 @@ export default function HomePage(){
               <img src={featured.image_url} alt={featured.title} className="w-full h-full object-cover" />
             </div>
             <div className="p-7">
-              <h2 className="serif text-[28px] text-white">{featured.title}</h2>
-              <div className="mt-2 mono text-[10px] tracking-[0.1em] text-zinc-500 leading-relaxed">{featured.vibe_label}</div>
-              <div className="mt-4 mono text-[11px] tracking-[0.05em] text-zinc-400 leading-relaxed">{featured.invite_text}</div>
-              <p className="mt-6 text-[13px] leading-relaxed text-zinc-400">{featured.description_long}</p>
+              <EditableText textKey="featured_title" defaultValue={featured.title} as="h2" className="serif text-[28px] text-white" />
+              <EditableText textKey="featured_vibe" defaultValue={featured.vibe_label} as="div" className="mt-2 mono text-[10px] tracking-[0.1em] text-zinc-500 leading-relaxed" />
+              <EditableText textKey="featured_invite" defaultValue={featured.invite_text} as="div" className="mt-4 mono text-[11px] tracking-[0.05em] text-zinc-400 leading-relaxed" />
+              <EditableText textKey="featured_desc" defaultValue={featured.description_long} as="p" className="mt-6 text-[13px] leading-relaxed text-zinc-400" />
               <div className="mt-8 flex gap-3">
                 <Link href={`/join?venue=${featured.id}`} className="flex-1 mono h-[48px] rounded-full bg-[#f5f2eb] text-black text-[11px] tracking-[0.15em] flex items-center justify-center hover:bg-white transition">JOIN BLIND BOX</Link>
                 <Link href="/invite" className="mono h-[48px] px-6 rounded-full border border-zinc-800 text-[11px] tracking-[0.15em] flex items-center justify-center text-zinc-300 hover:border-zinc-600 transition">INVITE</Link>
