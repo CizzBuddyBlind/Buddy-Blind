@@ -6,3 +6,4 @@
    NEXT_PUBLIC_SUPABASE_ANON_KEY
 3. Deploy -> 你會得到 buddy-blind.vercel.app
 4. 加餐廳: 去 buddy-blind.vercel.app/admin
+ABC no need testing only
