@@ -1,1 +1,0 @@
-export default function C(){ return <div className='min-h-screen bg-[#050505] text-white p-20'>Canceled</div>; }

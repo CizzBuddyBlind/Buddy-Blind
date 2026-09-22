@@ -1,1 +1,0 @@
-'use client'; export default function Page(){ return <div className='min-h-screen bg-[#050505] text-white p-20'><h1 className='text-5xl font-black'>INVITE - V9 Embedded same as home</h1></div>; }
