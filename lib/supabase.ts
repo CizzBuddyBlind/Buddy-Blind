@@ -1,4 +1,2 @@
 import { createClient } from '@supabase/supabase-js'
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://cfihskrrbqgvgnnxergj.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmaWhza3JyYnFndmdubnhlcmdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMzk0OTQsImV4cCI6MjEwNTYxNTQ5NH0.Xe04EG_adYY8Ev_QUi4R9DAFj2w0Evbl1pks2TUILko'
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://cfihskrrbqgvgnnxergj.supabase.co', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmaWhza3JyYnFndmdubnhlcmdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMzk0OTQsImV4cCI6MjEwNTYxNTQ5NH0.Xe04EG_adYY8Ev_QUi4R9DAFj2w0Evbl1pks2TUILko')

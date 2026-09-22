@@ -1,1 +1,1 @@
-module.exports = { content: ['./app/**/*.{js,ts,jsx,tsx,mdx}'], theme: { extend: {} }, plugins: [] }
+module.exports = { content: ['./app/**/*.{js,ts,jsx,tsx}','./components/**/*.{js,ts,jsx,tsx}'], theme: { extend: { colors:{ heart:'#0a0a0a', card:'#111111', amber:'#facc15'} } }, plugins: [] }
