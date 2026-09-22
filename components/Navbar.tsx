@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useAuth } from './AuthContext'
 
 export default function Navbar(){
-  const { isLoggedIn, isAdmin, userName, loginUser, loginAdmin, logout } = useAuth()
+  const { isLoggedIn, isAdmin, userName, draftStatus, loginUser, loginAdmin, logout, saveDraft, publishDraft } = useAuth()
   const [showMenu,setShowMenu]=useState(false)
   const [showAdminLogin,setShowAdminLogin]=useState(false)
   const [adminPass,setAdminPass]=useState('')
@@ -16,7 +16,7 @@ export default function Navbar(){
       setShowAdminLogin(false)
       setShowMenu(false)
       setAdminPass('')
-      alert('Admin logged in - EDIT MODE ON. You can now move around whole website and edit. Go to Venues, Private Events, etc.')
+      alert('Admin logged in - EDIT MODE ON. You can now: upload photos from computer, move boxes left/right/up/down, edit text/colour/size/font, add/delete boxes. Use SAVE DRAFT to save without publishing, PUBLISH to go live.')
     } else {
       alert('Wrong admin password. Try: buddyadmin2025')
     }
@@ -42,14 +42,19 @@ export default function Navbar(){
               {isLoggedIn ? userName.slice(0,2).toUpperCase() : '??'}
             </button>
             {showMenu && (
-              <div className="absolute right-0 top-10 w-[260px] bg-[#0f0f0f] border border-zinc-800 rounded-[16px] p-4 shadow-xl z-50">
+              <div className="absolute right-0 top-10 w-[280px] bg-[#0f0f0f] border border-zinc-800 rounded-[16px] p-4 shadow-xl z-50">
                 {isLoggedIn ? (
                   <>
                     <div className="mono text-[11px] text-white">Logged in as {userName}</div>
-                    {isAdmin && <div className="mono text-[10px] text-[#C45A3C] mt-1">ADMIN EDIT MODE ON - You can move/edit everything</div>}
+                    {isAdmin && <div className="mono text-[10px] text-[#C45A3C] mt-1">ADMIN EDIT MODE ON</div>}
+                    {draftStatus && <div className="mono text-[10px] text-green-400 mt-1">{draftStatus}</div>}
                     <div className="mt-4 space-y-2">
                       {isAdmin ? (
-                        <button onClick={()=>{logout(); setShowMenu(false)}} className="w-full h-9 rounded-full bg-zinc-800 mono text-[11px] text-zinc-300">EXIT EDIT MODE & LOGOUT</button>
+                        <>
+                          <button onClick={()=>{saveDraft({});}} className="w-full h-9 rounded-full bg-zinc-800 mono text-[11px] text-zinc-300">SAVE DRAFT (no publish)</button>
+                          <button onClick={()=>publishDraft()} className="w-full h-9 rounded-full bg-[#C45A3C] mono text-[11px] text-white">PUBLISH - Go Live</button>
+                          <button onClick={()=>{logout(); setShowMenu(false)}} className="w-full h-9 rounded-full border border-zinc-800 mono text-[11px] text-zinc-400">EXIT EDIT MODE & LOGOUT</button>
+                        </>
                       ) : (
                         <>
                           <button onClick={()=>{setShowAdminLogin(true)}} className="w-full h-9 rounded-full bg-[#C45A3C] mono text-[11px] text-white">ADMIN LOGIN - EDIT MODE</button>
@@ -57,7 +62,7 @@ export default function Navbar(){
                         </>
                       )}
                       <Link href="/profile" onClick={()=>setShowMenu(false)} className="block w-full h-9 rounded-full border border-zinc-800 mono text-[11px] text-zinc-400 flex items-center justify-center">GO TO PROFILE</Link>
-                      <Link href="/admin" onClick={()=>setShowMenu(false)} className="block w-full h-9 rounded-full border border-zinc-800 mono text-[11px] text-zinc-400 flex items-center justify-center">OLD ADMIN (TEXT ONLY)</Link>
+                      <Link href="/admin" onClick={()=>setShowMenu(false)} className="block w-full h-9 rounded-full border border-zinc-800 mono text-[11px] text-zinc-400 flex items-center justify-center">FULL CMS ADMIN</Link>
                     </div>
                   </>
                 ) : (
@@ -86,9 +91,16 @@ export default function Navbar(){
       </nav>
 
       {isAdmin && (
-        <div className="sticky top-[64px] z-30 bg-[#C45A3C] text-white mono text-[11px] tracking-[0.1em] px-6 py-2 flex justify-between items-center">
-          <span>ADMIN EDIT MODE - You can now move around whole website. Go to Venues / Private Events to edit details, photos, add/delete boxes, change text, colour, size, font, drag left/right/up/down.</span>
-          <button onClick={()=>{logout();}} className="bg-black text-white px-3 py-1 rounded-full text-[10px]">EXIT EDIT MODE</button>
+        <div className="sticky top-[64px] z-30 bg-[#C45A3C] text-white mono text-[11px] tracking-[0.05em] px-6 py-2.5 flex flex-wrap justify-between items-center gap-2">
+          <div className="flex items-center gap-3">
+            <span>ADMIN EDIT MODE - Upload photos from computer, move boxes ←→↑↓, edit text/colour/size/font, add/delete boxes.</span>
+            {draftStatus && <span className="bg-black px-2 py-0.5 rounded-full text-[10px]">{draftStatus}</span>}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={()=>{const draft=JSON.parse(localStorage.getItem('bb_draft')||'{}'); saveDraft(draft)}} className="bg-black text-white px-3 py-1 rounded-full text-[10px] border border-white/20">SAVE DRAFT</button>
+            <button onClick={()=>publishDraft()} className="bg-white text-black px-4 py-1 rounded-full text-[10px] font-bold">PUBLISH</button>
+            <button onClick={()=>{logout();}} className="bg-black/50 text-white px-3 py-1 rounded-full text-[10px]">EXIT</button>
+          </div>
         </div>
       )}
     </>

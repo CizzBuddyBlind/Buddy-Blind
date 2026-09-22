@@ -1,6 +1,6 @@
 
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/AuthContext'
 import Link from 'next/link'
@@ -28,49 +28,52 @@ const DEFAULT_VENUES:Venue[] = [
 ]
 
 export default function VenuesPage(){
-  const { isAdmin } = useAuth()
+  const { isAdmin, saveDraft, publishDraft } = useAuth()
   const [venues,setVenues]=useState<Venue[]>(DEFAULT_VENUES)
   const [dragId,setDragId]=useState<string|null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [editingImageId,setEditingImageId]=useState<string|null>(null)
+
+  useEffect(()=>{
+    const draftStr = localStorage.getItem('bb_draft')
+    if(draftStr){
+      try{
+        const draft = JSON.parse(draftStr)
+        if(draft.venues) setVenues(draft.venues)
+      }catch{}
+    }
+  },[])
+
+  const persistDraft = (newList:Venue[]) => {
+    setVenues(newList)
+    if(isAdmin){
+      const existing = JSON.parse(localStorage.getItem('bb_draft') || '{}')
+      localStorage.setItem('bb_draft', JSON.stringify({...existing, venues:newList}))
+    }
+  }
 
   const move = (id:string, dir:'up'|'down'|'left'|'right') => {
     const idx = venues.findIndex(v=>v.id===id)
     if(idx===-1) return
     const newList = [...venues]
-    if(dir==='up' && idx>0){
+    if((dir==='up' || dir==='left') && idx>0){
       const tmp = newList[idx-1]; newList[idx-1]=newList[idx]; newList[idx]=tmp
-    } else if(dir==='down' && idx<newList.length-1){
-      const tmp = newList[idx+1]; newList[idx+1]=newList[idx]; newList[idx]=tmp
-    } else if(dir==='left' && idx>0){
-      // left = up in grid (previous)
-      const tmp = newList[idx-1]; newList[idx-1]=newList[idx]; newList[idx]=tmp
-    } else if(dir==='right' && idx<newList.length-1){
+    } else if((dir==='down' || dir==='right') && idx<newList.length-1){
       const tmp = newList[idx+1]; newList[idx+1]=newList[idx]; newList[idx]=tmp
     }
-    setVenues(newList)
+    persistDraft(newList)
   }
 
   const handleAdd = () => {
-    const newV:Venue = {
-      id:`venue-${Date.now()}`,
-      name:'New Venue',
-      area:'SOHO',
-      time:'TONIGHT 8PM',
-      spots_left:5,
-      host_initial:'N',
-      host_role:'HOST',
-      host_tier:'GOLD',
-      vibe_tag:'NEW VIBE',
-      cuisine:'NEW · CUISINE',
-      price:'$$',
-      invite_text:'NEW VENUE - EDIT ME',
-      image_url:'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800'
-    }
-    setVenues([...venues, newV])
+    const newV:Venue = {id:`venue-${Date.now()}`, name:'New Venue', area:'SOHO', time:'TONIGHT 8PM', spots_left:5, host_initial:'N', host_role:'HOST', host_tier:'GOLD', vibe_tag:'NEW VIBE', cuisine:'NEW · CUISINE', price:'$$', invite_text:'NEW VENUE - EDIT ME', image_url:'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800'}
+    const newList = [...venues, newV]
+    persistDraft(newList)
   }
 
   const handleDelete = (id:string) => {
     if(!confirm('Delete this venue box?')) return
-    setVenues(venues.filter(v=>v.id!==id))
+    const newList = venues.filter(v=>v.id!==id)
+    persistDraft(newList)
   }
 
   const handleEdit = (id:string) => {
@@ -78,9 +81,43 @@ export default function VenuesPage(){
     if(!v) return
     const name = prompt('Venue name', v.name) || v.name
     const area = prompt('Area (SOHO, CENTRAL...)', v.area) || v.area
-    const img = prompt('Image URL', v.image_url) || v.image_url
     const spots = prompt('Spots left', String(v.spots_left)) || String(v.spots_left)
-    setVenues(venues.map(x=> x.id===id ? {...x, name, area, image_url:img, spots_left: Number(spots)||x.spots_left} : x))
+    const newList = venues.map(x=> x.id===id ? {...x, name, area, spots_left: Number(spots)||x.spots_left} : x)
+    persistDraft(newList)
+  }
+
+  const handlePhotoUploadClick = (id:string) => {
+    setEditingImageId(id)
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e:any) => {
+    const file = e.target.files?.[0]
+    if(!file || !editingImageId) return
+    // Upload from computer - convert to base64 for instant preview + try Supabase storage
+    const reader = new FileReader()
+    reader.onload = async (ev) => {
+      const base64 = ev.target?.result as string
+      // Try upload to Supabase storage if exists
+      try{
+        const fileName = `${editingImageId}-${Date.now()}.${file.name.split('.').pop()}`
+        const {data, error} = await supabase.storage.from('uploads').upload(fileName, file)
+        if(!error && data){
+          const {data: urlData} = supabase.storage.from('uploads').getPublicUrl(fileName)
+          const newList = venues.map(v=> v.id===editingImageId ? {...v, image_url: urlData.publicUrl} : v)
+          persistDraft(newList)
+        } else {
+          // Fallback to base64
+          const newList = venues.map(v=> v.id===editingImageId ? {...v, image_url: base64} : v)
+          persistDraft(newList)
+        }
+      }catch{
+        const newList = venues.map(v=> v.id===editingImageId ? {...v, image_url: base64} : v)
+        persistDraft(newList)
+      }
+      setEditingImageId(null)
+    }
+    reader.readAsDataURL(file)
   }
 
   const handleDragStart = (id:string) => setDragId(id)
@@ -92,12 +129,13 @@ export default function VenuesPage(){
     const newList = [...venues]
     const [moved] = newList.splice(fromIdx,1)
     newList.splice(toIdx,0,moved)
-    setVenues(newList)
+    persistDraft(newList)
     setDragId(null)
   }
 
   return(
     <main className="bg-[#080808] min-h-screen">
+      <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleFileChange} />
       <div className="max-w-[1400px] mx-auto px-6 pt-14 pb-20">
         <div className="flex justify-between">
           <div>
@@ -111,9 +149,15 @@ export default function VenuesPage(){
         </div>
 
         {isAdmin && (
-          <div className="mt-6 bg-[#C45A3C] rounded-xl p-3 mono text-[11px] text-white flex justify-between items-center">
-            <span>ADMIN EDIT MODE: Drag boxes to move left/right/up/down. Click ✎ to edit text/colour/size/font. + Add / Delete boxes.</span>
-            <button onClick={handleAdd} className="bg-black text-white px-4 py-1.5 rounded-full">+ ADD VENUE BOX</button>
+          <div className="mt-6 bg-[#0f0f0f] border border-[#C45A3C] rounded-xl p-3 mono text-[11px] text-white">
+            <div className="flex flex-wrap justify-between items-center gap-2">
+              <span>ADMIN EDIT MODE: Drag boxes ←→↑↓, upload photo from computer, edit, add/delete boxes. SAVE = draft (no change), PUBLISH = live.</span>
+              <div className="flex gap-2">
+                <button onClick={handleAdd} className="bg-white text-black px-4 py-1.5 rounded-full">+ ADD BOX</button>
+                <button onClick={()=>{const d=JSON.parse(localStorage.getItem('bb_draft')||'{}'); saveDraft(d); alert('Draft saved! Website unchanged. Press Publish to go live.')}} className="bg-zinc-800 text-white px-4 py-1.5 rounded-full border border-zinc-700">SAVE DRAFT</button>
+                <button onClick={()=>publishDraft()} className="bg-[#C45A3C] text-white px-4 py-1.5 rounded-full">PUBLISH</button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -128,12 +172,13 @@ export default function VenuesPage(){
               className={`group relative bg-[#0f0f0f] border border-zinc-900 rounded-[18px] p-1.5 transition-all duration-300 hover:-translate-y-1 ${dragId===v.id?'opacity-50':''} ${isAdmin?'cursor-move':''}`}
             >
               {isAdmin && (
-                <div className="absolute -top-2 left-2 z-30 flex gap-1">
+                <div className="absolute -top-2 left-2 z-30 flex gap-1 flex-wrap max-w-[200px]">
                   <button onClick={()=>move(v.id,'left')} className="w-6 h-6 bg-black border border-zinc-700 rounded-full text-[10px]">←</button>
                   <button onClick={()=>move(v.id,'right')} className="w-6 h-6 bg-black border border-zinc-700 rounded-full text-[10px]">→</button>
                   <button onClick={()=>move(v.id,'up')} className="w-6 h-6 bg-black border border-zinc-700 rounded-full text-[10px]">↑</button>
                   <button onClick={()=>move(v.id,'down')} className="w-6 h-6 bg-black border border-zinc-700 rounded-full text-[10px]">↓</button>
                   <button onClick={()=>handleEdit(v.id)} className="w-6 h-6 bg-[#C45A3C] rounded-full text-[10px]">✎</button>
+                  <button onClick={()=>handlePhotoUploadClick(v.id)} className="w-6 h-6 bg-blue-600 rounded-full text-[10px]">📷</button>
                   <button onClick={()=>handleDelete(v.id)} className="w-6 h-6 bg-red-600 rounded-full text-[10px]">×</button>
                 </div>
               )}
@@ -141,11 +186,12 @@ export default function VenuesPage(){
                 <div className="w-3.5 h-3.5 rounded-full bg-black text-white flex items-center justify-center text-[7px]">{v.host_initial}</div>
                 {v.host_role} · {v.host_tier}
               </div>
-              <Link href={`/venues/${v.id}`} className="block relative h-[260px] rounded-[14px] overflow-hidden bg-zinc-900">
+              <div className="block relative h-[260px] rounded-[14px] overflow-hidden bg-zinc-900">
                 <img src={v.image_url} alt={v.name} className="w-full h-full object-cover" />
+                {isAdmin && <button onClick={()=>handlePhotoUploadClick(v.id)} className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 flex items-center justify-center mono text-[11px] text-white transition">CLICK TO UPLOAD PHOTO FROM COMPUTER</button>}
                 <div className="absolute top-2.5 left-2.5 mono text-[10px] bg-black/70 backdrop-blur px-2.5 py-1 rounded-full text-white">{v.area} · {v.time}</div>
                 <div className="absolute bottom-2.5 left-2.5 mono text-[10px] bg-[#c96a4a] px-2.5 py-1 rounded-full text-white">{v.spots_left} SPOTS LEFT</div>
-              </Link>
+              </div>
               <div className="px-2.5 pt-3 pb-2">
                 <div className="flex justify-between">
                   <Link href={`/venues/${v.id}`} className="serif text-[18px] text-white">{v.name}</Link>
