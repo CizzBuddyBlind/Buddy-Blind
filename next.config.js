@@ -1,1 +1,1 @@
-module.exports = { experimental: { esmExternals: false } }
+module.exports = { reactStrictMode: true }
