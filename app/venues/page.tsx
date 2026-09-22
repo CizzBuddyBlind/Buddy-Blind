@@ -1,1 +1,1 @@
-export default function Page(){return <div className='p-20 mono text-[11px] text-zinc-500'>This page will be built after HOME is locked - step by step</div>}
+export default function Venues(){return(<main className='max-w-6xl mx-auto px-6 py-20'><h1 className='mono text-[12px] tracking-[0.2em] text-zinc-500'>VENUES - Next page we build after you approve HOME</h1></main>)}
