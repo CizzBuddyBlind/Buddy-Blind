@@ -1,27 +1,21 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-
 export default function Page() {
   const [restaurants, setRestaurants] = useState<any[]>([])
   const [selected, setSelected] = useState<any>(null)
-
-  useEffect(()=>{
-    supabase.from('restaurants').select('*').then(({data})=>{ if(data) setRestaurants(data) })
-  },[])
-
+  useEffect(()=>{ supabase.from('restaurants').select('*').then(({data})=>{ if(data) setRestaurants(data) }) },[])
   return (
     <main className="min-h-screen bg-black text-white p-6">
-      <h1 className="text-4xl font-black text-center mb-2">BUDDY BLIND</h1>
-      <p className="text-center text-zinc-500 mb-10 tracking-widest text-sm">NO NAMES. NO PHOTOS. JUST GOOD TASTE.</p>
+      <h1 className="text-4xl font-black text-center mb-2 tracking-wider">BUDDY BLIND</h1>
+      <p className="text-center text-zinc-500 mb-10 tracking-[0.3em] text-xs">NO NAMES. NO PHOTOS. JUST GOOD TASTE.</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
         {restaurants.map(r=>(
-          <div key={r.id} onClick={()=>setSelected(r)} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 hover:bg-zinc-800 cursor-pointer transition">
-            <div className="text-xs text-zinc-500">{r.cuisine} • {r.price_range}</div>
+          <div key={r.id} onClick={()=>setSelected(r)} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 hover:bg-zinc-800 cursor-pointer">
+            <div className="text-[10px] text-zinc-500 tracking-widest">{r.cuisine} • {r.price_range}</div>
             <div className="text-xl font-bold mt-1">{r.name}</div>
             <div className="text-sm text-zinc-400 mt-2 line-clamp-2">{r.description}</div>
-            <div className="mt-4 text-xs text-amber-400">{r.location} • {r.opening_hours}</div>
+            <div className="mt-4 text-xs text-amber-400">{r.location}</div>
           </div>
         ))}
       </div>
@@ -36,7 +30,7 @@ export default function Page() {
           </div>
         </div>
       )}
-      <div className="text-center mt-20 text-zinc-600 text-xs">admin: /admin • {restaurants.length} restaurants from Supabase</div>
+      <div className="text-center mt-20 text-zinc-600 text-xs">/admin • {restaurants.length} restaurants live from Supabase</div>
     </main>
   )
 }
