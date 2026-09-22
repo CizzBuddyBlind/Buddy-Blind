@@ -56,6 +56,15 @@ const PAGES = {
     {key:'private_bottom_title', label:'Bottom - Wine tasting...'},
     {key:'private_bottom_sub', label:'Bottom sub - NOT JUST DARK...'},
   ],
+  PREMIUM: [
+    {key:'premium_label', label:'Label - PREMIUM · MORE HEART'},
+    {key:'premium_headline_1', label:'Headline 1 - Why Premium'},
+    {key:'premium_headline_2', label:'Headline 2 - unlocks Private'},
+    {key:'premium_sub', label:'Subtext'},
+    {key:'free_title', label:'Free title'},{key:'free_tag', label:'Free tag'},{key:'free_price', label:'Free price'},{key:'free_f1', label:'Free f1'},{key:'free_f2', label:'Free f2'},{key:'free_f3', label:'Free f3'},{key:'free_btn', label:'Free btn'},
+    {key:'lite_title', label:'Lite title'},{key:'lite_tag', label:'Lite tag'},{key:'lite_price', label:'Lite price'},{key:'lite_f1', label:'Lite f1'},{key:'lite_f2', label:'Lite f2'},{key:'lite_f3', label:'Lite f3'},{key:'lite_btn', label:'Lite btn'},
+    {key:'pro_title', label:'Premium title'},{key:'pro_tag', label:'Premium tag'},{key:'pro_price', label:'Premium price'},{key:'pro_f1', label:'Pro f1'},{key:'pro_f2', label:'Pro f2'},{key:'pro_f3', label:'Pro f3'},{key:'pro_f4', label:'Pro f4'},{key:'pro_f5', label:'Pro f5'},{key:'pro_btn', label:'Pro btn'},{key:'pro_foot', label:'Pro foot'},{key:'bottom_text', label:'Bottom - NO META WORDING'},
+  ],
   GLOBAL_COLORS: [
     {key:'color_bg', label:'Background #080808'},
     {key:'color_card', label:'Card bg #0f0f0f'},
