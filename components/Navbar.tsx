@@ -1,14 +1,96 @@
+
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-const links=[{href:'/venues',label:'VENUES'},{href:'/private-events',label:'PRIVATE EVENTS'},{href:'/how-it-works',label:'HOW IT WORKS'},{href:'/premium',label:'PREMIUM'},{href:'/profile',label:'PROFILE'}]
+import { useState } from 'react'
+import { useAuth } from './AuthContext'
+
 export default function Navbar(){
-  const p=usePathname()
-  return(<nav className="h-[64px] border-b border-zinc-900 bg-[#080808] sticky top-0 z-50">
-    <div className="max-w-[1400px] mx-auto px-6 h-full flex items-center justify-between">
-      <Link href="/" className="flex items-center gap-2.5"><div className="w-7 h-7 rounded-full bg-[#f5f2eb] text-black flex items-center justify-center text-[11px] font-bold mono">BB</div><span className="mono text-[11px] tracking-[0.15em]">BUDDY BLIND</span></Link>
-      <div className="hidden md:flex gap-7">{links.map(l=><Link key={l.href} href={l.href} className={`mono text-[11px] tracking-[0.1em] ${p===l.href?'text-white':'text-zinc-500 hover:text-zinc-300'}`}>{l.label}</Link>)}</div>
-      <div className="flex items-center gap-3"><div className="w-7 h-7 rounded-full bg-[#1a1a1a] border border-zinc-800 flex items-center justify-center text-[10px] mono">CJ</div></div>
-    </div>
-  </nav>)
+  const { isLoggedIn, isAdmin, userName, loginUser, loginAdmin, logout } = useAuth()
+  const [showMenu,setShowMenu]=useState(false)
+  const [showAdminLogin,setShowAdminLogin]=useState(false)
+  const [adminPass,setAdminPass]=useState('')
+  const [userNameInput,setUserNameInput]=useState('')
+
+  const handleAdminLogin = () => {
+    if(loginAdmin(adminPass)){
+      setShowAdminLogin(false)
+      setShowMenu(false)
+      setAdminPass('')
+      alert('Admin logged in - EDIT MODE ON. You can now move around whole website and edit. Go to Venues, Private Events, etc.')
+    } else {
+      alert('Wrong admin password. Try: buddyadmin2025')
+    }
+  }
+
+  return(
+    <>
+      <nav className="sticky top-0 z-40 bg-[#080808]/90 backdrop-blur border-b border-zinc-900">
+        <div className="max-w-[1400px] mx-auto px-6 h-[64px] flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-[#f5f2eb] text-black flex items-center justify-center mono text-[12px] font-bold">BB</div>
+            <span className="mono text-[12px] tracking-[0.15em] text-white">BUDDY BLIND</span>
+          </Link>
+          <div className="hidden md:flex items-center gap-6 mono text-[11px] tracking-[0.1em] text-zinc-500">
+            <Link href="/venues" className="hover:text-white transition">VENUES</Link>
+            <Link href="/private-events" className="hover:text-white transition">PRIVATE EVENTS</Link>
+            <Link href="/how-it-works" className="hover:text-white transition">HOW IT WORKS</Link>
+            <Link href="/premium" className="hover:text-white transition">PREMIUM</Link>
+            <Link href="/profile" className="hover:text-white transition">PROFILE</Link>
+          </div>
+          <div className="relative">
+            <button onClick={()=>setShowMenu(!showMenu)} className={`w-8 h-8 rounded-full flex items-center justify-center mono text-[11px] transition ${isAdmin?'bg-[#C45A3C] text-white':'bg-[#1a1a1a] text-zinc-300 border border-zinc-800'}`}>
+              {isLoggedIn ? userName.slice(0,2).toUpperCase() : '??'}
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 top-10 w-[260px] bg-[#0f0f0f] border border-zinc-800 rounded-[16px] p-4 shadow-xl z-50">
+                {isLoggedIn ? (
+                  <>
+                    <div className="mono text-[11px] text-white">Logged in as {userName}</div>
+                    {isAdmin && <div className="mono text-[10px] text-[#C45A3C] mt-1">ADMIN EDIT MODE ON - You can move/edit everything</div>}
+                    <div className="mt-4 space-y-2">
+                      {isAdmin ? (
+                        <button onClick={()=>{logout(); setShowMenu(false)}} className="w-full h-9 rounded-full bg-zinc-800 mono text-[11px] text-zinc-300">EXIT EDIT MODE & LOGOUT</button>
+                      ) : (
+                        <>
+                          <button onClick={()=>{setShowAdminLogin(true)}} className="w-full h-9 rounded-full bg-[#C45A3C] mono text-[11px] text-white">ADMIN LOGIN - EDIT MODE</button>
+                          <button onClick={()=>{logout(); setShowMenu(false)}} className="w-full h-9 rounded-full border border-zinc-800 mono text-[11px] text-zinc-400">LOGOUT</button>
+                        </>
+                      )}
+                      <Link href="/profile" onClick={()=>setShowMenu(false)} className="block w-full h-9 rounded-full border border-zinc-800 mono text-[11px] text-zinc-400 flex items-center justify-center">GO TO PROFILE</Link>
+                      <Link href="/admin" onClick={()=>setShowMenu(false)} className="block w-full h-9 rounded-full border border-zinc-800 mono text-[11px] text-zinc-400 flex items-center justify-center">OLD ADMIN (TEXT ONLY)</Link>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="mono text-[11px] text-white">Login</div>
+                    <input value={userNameInput} onChange={e=>setUserNameInput(e.target.value)} placeholder="Your name e.g. CJ" className="mt-3 w-full h-9 bg-black border border-zinc-800 rounded-xl px-3 text-xs text-white" />
+                    <button onClick={()=>{loginUser(userNameInput||'CJ'); setShowMenu(false)}} className="mt-2 w-full h-9 rounded-full bg-white text-black mono text-[11px]">LOGIN AS USER</button>
+                    <button onClick={()=>setShowAdminLogin(true)} className="mt-2 w-full h-9 rounded-full bg-[#C45A3C] mono text-[11px] text-white">ADMIN LOGIN</button>
+                  </>
+                )}
+
+                {showAdminLogin && (
+                  <div className="mt-4 border-t border-zinc-800 pt-4">
+                    <div className="mono text-[10px] text-zinc-500">Admin password: buddyadmin2025</div>
+                    <input type="password" value={adminPass} onChange={e=>setAdminPass(e.target.value)} placeholder="Enter admin password" className="mt-2 w-full h-9 bg-black border border-zinc-800 rounded-xl px-3 text-xs text-white" />
+                    <div className="mt-2 flex gap-2">
+                      <button onClick={handleAdminLogin} className="flex-1 h-8 rounded-full bg-white text-black mono text-[10px]">LOGIN ADMIN</button>
+                      <button onClick={()=>setShowAdminLogin(false)} className="flex-1 h-8 rounded-full border border-zinc-800 mono text-[10px] text-zinc-500">CANCEL</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {isAdmin && (
+        <div className="sticky top-[64px] z-30 bg-[#C45A3C] text-white mono text-[11px] tracking-[0.1em] px-6 py-2 flex justify-between items-center">
+          <span>ADMIN EDIT MODE - You can now move around whole website. Go to Venues / Private Events to edit details, photos, add/delete boxes, change text, colour, size, font, drag left/right/up/down.</span>
+          <button onClick={()=>{logout();}} className="bg-black text-white px-3 py-1 rounded-full text-[10px]">EXIT EDIT MODE</button>
+        </div>
+      )}
+    </>
+  )
 }
