@@ -1,5 +1,18 @@
-@tailwind base; @tailwind components; @tailwind utilities;
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500&display=swap');
-body{background:#080808;color:#fff;font-family:'Inter',sans-serif;}
+:root{
+  --color-bg:#080808;
+  --color-card:#0f0f0f;
+  --color-border:#27272a;
+  --color-text:#ffffff;
+  --color-text-secondary:#71717a;
+  --color-accent-orange:#C45A3C;
+  --color-accent-terracotta:#c96a4a;
+  --color-pill-white:#f5f2eb;
+}
+body{background:var(--color-bg);color:var(--color-text);font-family:'Inter',sans-serif;}
 .serif{font-family:'Instrument Serif',serif;}
 .mono{font-family:'Space Mono',monospace;}

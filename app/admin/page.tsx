@@ -3,102 +3,219 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const HOME_KEYS = [
-  ['top_stats','Top bar'],
-  ['headline_1','Headline 1'],
-  ['headline_2','Headline 2 italic'],
-  ['headline_3','Headline 3 orange'],
-  ['subtext_1','Subtext 1'],
-  ['subtext_2','Subtext 2'],
-  ['cta_join','Join button'],
-  ['cta_private','Private button'],
-  ['stat1_num','Stat1 num'],['stat1_label','Stat1 label'],
-  ['stat2_num','Stat2 num'],['stat2_label','Stat2 label'],
-  ['stat3_num','Stat3 num'],['stat3_label','Stat3 label'],
-  ['featured_label','Featured label'],
-  ['footer_left','Footer']
+const PAGES = {
+  HOME: [
+    {key:'top_stats', label:'Top bar - HONG KONG · TONIGHT'},
+    {key:'headline_1', label:'Headline 1 - You dont know'},
+    {key:'headline_2', label:'Headline 2 - who you meet (italic serif)'},
+    {key:'headline_3', label:'Headline 3 - Thats the point (orange serif)'},
+    {key:'subtext_1', label:'Subtext 1'},
+    {key:'subtext_2', label:'Subtext 2 - You bring curiosity'},
+    {key:'cta_join', label:'CTA Join button'},
+    {key:'cta_private', label:'CTA Private button'},
+    {key:'stat1_num', label:'Stat 1 number - 89'},
+    {key:'stat1_label', label:'Stat 1 label'},
+    {key:'stat2_num', label:'Stat 2 number'},
+    {key:'stat2_label', label:'Stat 2 label'},
+    {key:'stat3_num', label:'Stat 3 number'},
+    {key:'stat3_label', label:'Stat 3 label'},
+    {key:'featured_label', label:'Featured label'},
+    {key:'footer_left', label:'Footer left'},
+  ],
+  HOW_IT_WORKS: [
+    {key:'how_label', label:'Label - HOW IT WORKS · NO META WORDING'},
+    {key:'how_headline_1', label:'Headline 1 - See venue,'},
+    {key:'how_headline_2', label:'Headline 2 - see vibe, join.'},
+    {key:'how_step1_title', label:'Step 1 title'},
+    {key:'how_step1_desc', label:'Step 1 desc'},
+    {key:'how_step2_title', label:'Step 2 title'},
+    {key:'how_step2_desc', label:'Step 2 desc'},
+    {key:'how_step3_title', label:'Step 3 title'},
+    {key:'how_step3_desc', label:'Step 3 desc'},
+    {key:'how_step4_title', label:'Step 4 title'},
+    {key:'how_step4_desc', label:'Step 4 desc'},
+    {key:'how_step5_title', label:'Step 5 title'},
+    {key:'how_step5_desc', label:'Step 5 desc'},
+    {key:'how_step6_title', label:'Step 6 title'},
+    {key:'how_step6_desc', label:'Step 6 desc'},
+    {key:'how_step7_title', label:'Step 7 title'},
+    {key:'how_step7_desc', label:'Step 7 desc'},
+    {key:'how_cta_join', label:'CTA Join'},
+    {key:'how_cta_private', label:'CTA Private'},
+  ],
+  VENUES: [
+    {key:'venues_title', label:'Title - Venues — Where it happens'},
+    {key:'venues_subtitle', label:'Subtitle - Six scenes tonight...'},
+    {key:'venues_filter_all', label:'Filter ALL VENUES'},
+    {key:'venues_filter_quick', label:'Filter QUICK MEET'},
+    {key:'venues_filter_private', label:'Filter PRIVATE EVENTS'},
+  ],
+  PRIVATE_EVENTS: [
+    {key:'private_title', label:'Title - Private Events'},
+    {key:'private_subtitle', label:'Subtitle - Host creates attraction...'},
+    {key:'private_bottom_title', label:'Bottom - Wine tasting...'},
+    {key:'private_bottom_sub', label:'Bottom sub - NOT JUST DARK...'},
+  ],
+  GLOBAL_COLORS: [
+    {key:'color_bg', label:'Background #080808'},
+    {key:'color_card', label:'Card bg #0f0f0f'},
+    {key:'color_accent_orange', label:'Orange hover #C45A3C'},
+    {key:'color_accent_terracotta', label:'Terracotta #c96a4a'},
+    {key:'color_pill_white', label:'White pill #f5f2eb'},
+  ]
+}
+
+const FONTS = ['Inter','Instrument Serif','Space Mono','Arial','Georgia']
+const WEIGHTS = [
+  {label:'Thin (300)', value:'300'},
+  {label:'Normal (400)', value:'400'},
+  {label:'Medium (500)', value:'500'},
+  {label:'Bold (700)', value:'700'},
+  {label:'Black (900)', value:'900'},
 ]
 
-const HOW_KEYS = [
-  ['how_label','HOW label'],
-  ['how_headline_1','Headline 1 - See venue,'],
-  ['how_headline_2','Headline 2 - see vibe, join.'],
-  ['how_step1_num','Step1 num'],['how_step1_title','Step1 title'],['how_step1_desc','Step1 desc'],
-  ['how_step2_num','Step2 num'],['how_step2_title','Step2 title'],['how_step2_desc','Step2 desc'],
-  ['how_step3_num','Step3 num'],['how_step3_title','Step3 title'],['how_step3_desc','Step3 desc'],
-  ['how_step4_num','Step4 num'],['how_step4_title','Step4 title'],['how_step4_desc','Step4 desc'],
-  ['how_step5_num','Step5 num'],['how_step5_title','Step5 title'],['how_step5_desc','Step5 desc'],
-  ['how_step6_num','Step6 num'],['how_step6_title','Step6 title'],['how_step6_desc','Step6 desc'],
-  ['how_step7_num','Step7 num'],['how_step7_title','Step7 title'],['how_step7_desc','Step7 desc'],
-  ['how_cta_join','CTA Join'],['how_cta_private','CTA Private']
-]
-
-export default function Admin(){
+export default function AdminFull(){
   const [rows,setRows]=useState<any[]>([])
-  const [feat,setFeat]=useState<any>({title:'Kissa Tanaka',area:'SOHO',time:'TONIGHT 7:30PM',spots_left:3,host_label:'HOST: COMEDIAN · GOLD',price_label:'$$ · CREATIVE MINDS',vibe_label:'SOHO · KISSATEN',invite_text:'CJ INVITES YOU...',description_long:'A 6-seat counter...',image_url:'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200'})
-  const [tab,setTab]=useState<'home'|'how'|'featured'>('home')
+  const [page,setPage]=useState<keyof typeof PAGES>('HOME')
+  const [search,setSearch]=useState('')
 
   const load=async()=>{
     const {data}=await supabase.from('site_content').select('*')
     if(data) setRows(data)
-    const {data:f}=await supabase.from('featured_events').select('*').limit(1)
-    if(f&&f[0]) setFeat(f[0])
   }
   useEffect(()=>{load()},[])
 
-  const saveText = async (key:string) => {
-    const val = (document.getElementById(key) as HTMLInputElement)?.value || (document.getElementById(key) as HTMLTextAreaElement)?.value
+  const getVal = (k:string) => rows.find(r=>r.key===k)?.value || ''
+  const save = async (key:string) => {
+    const el = document.getElementById(key) as HTMLInputElement
+    const val = el?.value
+    if(!val && val!=='') return
     await supabase.from('site_content').upsert({key,value:val},{onConflict:'key'})
     load()
   }
+  const saveStyle = async (baseKey:string, prop:'color'|'size'|'weight'|'font') => {
+    const id = `${baseKey}_${prop}`
+    const el = document.getElementById(id) as HTMLInputElement
+    const val = el?.value
+    await supabase.from('site_content').upsert({key:id,value:val},{onConflict:'key'})
+    load()
+  }
+
+  const filteredKeys = PAGES[page].filter(k=> !search || k.label.toLowerCase().includes(search.toLowerCase()) || k.key.toLowerCase().includes(search.toLowerCase()))
 
   return(
-    <main className="min-h-screen bg-black text-white p-6 max-w-5xl mx-auto">
-      <h1 className="mono text-[12px] tracking-[0.2em]">ADMIN - EVERY TEXT EDITABLE</h1>
-      <div className="mt-6 flex gap-2">
-        <button onClick={()=>setTab('home')} className={`mono h-9 px-4 rounded-full text-[11px] border ${tab==='home'?'bg-white text-black':'border-zinc-800 text-zinc-500'}`}>HOME</button>
-        <button onClick={()=>setTab('how')} className={`mono h-9 px-4 rounded-full text-[11px] border ${tab==='how'?'bg-white text-black':'border-zinc-800 text-zinc-500'}`}>HOW IT WORKS</button>
-        <button onClick={()=>setTab('featured')} className={`mono h-9 px-4 rounded-full text-[11px] border ${tab==='featured'?'bg-white text-black':'border-zinc-800 text-zinc-500'}`}>FEATURED BOX</button>
+    <main className="min-h-screen bg-[#050505] text-white p-4 md:p-6 max-w-[1200px] mx-auto">
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="mono text-[14px] tracking-[0.2em]">BUDDY BLIND - FULL CMS</h1>
+          <p className="mono text-[11px] text-zinc-500 mt-1">Edit ALL pages, ALL texts, colour, size, font, bold/thin — live. No code.</p>
+        </div>
+        <div className="mono text-[10px] text-zinc-600">Total keys: {rows.length}</div>
       </div>
 
-      {tab==='home' && (
-        <div className="mt-8 grid gap-3">
-          {HOME_KEYS.map(([k,l])=>{
-            const v=rows.find(r=>r.key===k)?.value||''
-            return(<div key={k} className="grid grid-cols-[200px_1fr_60px] gap-2 items-center"><span className="mono text-[10px] text-zinc-500">{l}<br/><span className="text-zinc-700 text-[9px]">{k}</span></span><input id={k} defaultValue={v} className="bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs" /><button onClick={()=>saveText(k)} className="bg-white text-black rounded-xl h-8 text-[10px] font-bold">SAVE</button></div>)
-          })}
-        </div>
-      )}
+      <div className="mt-6 flex flex-wrap gap-2">
+        {Object.keys(PAGES).map(p=>(
+          <button key={p} onClick={()=>setPage(p as any)} className={`mono h-9 px-4 rounded-full text-[11px] border transition ${page===p?'bg-white text-black border-white':'border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>{p.replace('_',' ')}</button>
+        ))}
+      </div>
 
-      {tab==='how' && (
-        <div className="mt-8 grid gap-3">
-          <div className="mono text-[10px] text-zinc-500">HOW IT WORKS - Every box editable. Keys prefixed with how_</div>
-          {HOW_KEYS.map(([k,l])=>{
-            const v=rows.find(r=>r.key===k)?.value||rows.find(r=>r.key===k.replace('how_',''))?.value||''
-            return(<div key={k} className="grid grid-cols-[220px_1fr_60px] gap-2 items-center"><span className="mono text-[10px] text-zinc-500">{l}<br/><span className="text-zinc-700 text-[9px]">{k}</span></span><textarea id={k} defaultValue={v} className="bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs min-h-[40px]" /><button onClick={()=>saveText(k)} className="bg-white text-black rounded-xl h-8 text-[10px] font-bold">SAVE</button></div>)
-          })}
-        </div>
-      )}
+      <div className="mt-4 flex gap-2">
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search text..." className="mono flex-1 h-10 rounded-full bg-[#111] border border-zinc-800 px-4 text-[11px] text-white placeholder:text-zinc-600" />
+        <button onClick={load} className="mono h-10 px-5 rounded-full border border-zinc-800 text-[11px]">REFRESH</button>
+      </div>
 
-      {tab==='featured' && (
-        <div className="mt-8 bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-          <h2 className="mono text-xs">FEATURED TONIGHT CARD - Editable</h2>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            {Object.keys(feat).filter(k=>!['id','created_at'].includes(k)).map(key=><div key={key} className="flex flex-col"><label className="mono text-[9px] text-zinc-500">{key}</label><input value={feat[key]} onChange={e=>setFeat({...feat,[key]: key==='spots_left'?Number(e.target.value):e.target.value})} className="bg-black border border-zinc-800 rounded-xl p-2 text-xs" /></div>)}
-          </div>
-          <button onClick={async()=>{const {data:ex}=await supabase.from('featured_events').select('id').limit(1); if(ex&&ex[0]) await supabase.from('featured_events').update(feat).eq('id',ex[0].id); else await supabase.from('featured_events').insert(feat); alert('Saved')}} className="mt-4 bg-[#c96a4a] text-white px-6 h-10 rounded-xl mono text-[10px]">SAVE FEATURED</button>
+      <div className="mt-6 border border-zinc-900 rounded-[16px] overflow-hidden">
+        <div className="grid grid-cols-[220px_1fr_90px_90px_140px_80px_60px] gap-2 bg-[#111] p-3 mono text-[10px] tracking-[0.1em] text-zinc-500">
+          <div>KEY / LABEL</div><div>TEXT</div><div>SIZE</div><div>COLOR</div><div>FONT</div><div>WEIGHT</div><div>SAVE</div>
         </div>
-      )}
 
-      <pre className="mt-8 bg-black border border-zinc-900 p-4 rounded-xl text-[10px] text-zinc-600 overflow-auto">
-{`-- SQL to run once:
-create table if not exists site_content (key text primary key, value text);
-create table if not exists featured_events (id uuid primary key default gen_random_uuid(), created_at timestamp default now(), title text, area text, time text, spots_left int, host_label text, price_label text, vibe_label text, invite_text text, description_long text, image_url text);
-alter table site_content disable row level security;
-alter table featured_events disable row level security;
-alter table venues disable row level security;
-`}
-      </pre>
+        {filteredKeys.map(({key,label})=>{
+          const textVal = getVal(key)
+          const colorVal = getVal(`${key}_color`)
+          const sizeVal = getVal(`${key}_size`)
+          const fontVal = getVal(`${key}_font`)
+          const weightVal = getVal(`${key}_weight`)
+          return(
+            <div key={key} className="grid grid-cols-[220px_1fr_90px_90px_140px_80px_60px] gap-2 p-3 border-t border-zinc-900 items-start hover:bg-[#0f0f0f]">
+              <div className="mono text-[10px] leading-tight">
+                <div className="text-zinc-300">{label}</div>
+                <div className="text-zinc-600 text-[9px] mt-1">{key}</div>
+                {(colorVal || sizeVal) && (
+                  <div className="mt-2 text-[10px] p-1.5 rounded border border-zinc-800" style={{color: colorVal || 'white', fontSize: sizeVal || '11px', fontWeight: weightVal || '400', fontFamily: fontVal || 'Space Mono'}}>
+                    Preview
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <textarea id={key} defaultValue={textVal} className="w-full min-h-[36px] bg-black border border-zinc-800 rounded-lg p-2 text-xs text-white focus:border-zinc-600" placeholder="Text..." />
+                <div className="flex gap-1">
+                  <button onClick={()=>save(key)} className="mono h-7 px-3 rounded-full bg-white text-black text-[9px]">SAVE TEXT</button>
+                  <span className="mono text-[9px] text-zinc-600 self-center">{textVal ? `${textVal.length} chars` : 'empty = default'}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <input id={`${key}_size`} defaultValue={sizeVal} placeholder="e.g. 16px" className="w-full h-8 bg-black border border-zinc-800 rounded-lg px-2 text-xs font-mono" />
+                <button onClick={()=>saveStyle(key,'size')} className="mono h-6 rounded-full bg-zinc-800 text-[9px]">SAVE SIZE</button>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex gap-1">
+                  <input type="color" id={`${key}_color_picker`} defaultValue={colorVal || '#ffffff'} onChange={e=>{ (document.getElementById(`${key}_color`) as HTMLInputElement).value = e.target.value }} className="w-8 h-8 rounded bg-transparent" />
+                  <input id={`${key}_color`} defaultValue={colorVal} placeholder="#fff" className="flex-1 h-8 bg-black border border-zinc-800 rounded-lg px-2 text-xs font-mono" />
+                </div>
+                <button onClick={()=>saveStyle(key,'color')} className="mono h-6 rounded-full bg-zinc-800 text-[9px]">SAVE COLOR</button>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <select id={`${key}_font`} defaultValue={fontVal} className="w-full h-8 bg-black border border-zinc-800 rounded-lg px-2 text-xs">
+                  <option value="">Default</option>
+                  {FONTS.map(f=><option key={f} value={f}>{f}</option>)}
+                </select>
+                <button onClick={()=>saveStyle(key,'font')} className="mono h-6 rounded-full bg-zinc-800 text-[9px]">SAVE FONT</button>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <select id={`${key}_weight`} defaultValue={weightVal} className="w-full h-8 bg-black border border-zinc-800 rounded-lg px-2 text-xs">
+                  <option value="">Default</option>
+                  {WEIGHTS.map(w=><option key={w.value} value={w.value}>{w.label}</option>)}
+                </select>
+                <button onClick={()=>saveStyle(key,'weight')} className="mono h-6 rounded-full bg-zinc-800 text-[9px]">SAVE B/W</button>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <button onClick={async()=>{
+                  const t = (document.getElementById(key) as HTMLInputElement).value
+                  const c = (document.getElementById(`${key}_color`) as HTMLInputElement).value
+                  const s = (document.getElementById(`${key}_size`) as HTMLInputElement).value
+                  const f = (document.getElementById(`${key}_font`) as HTMLInputElement).value
+                  const w = (document.getElementById(`${key}_weight`) as HTMLInputElement).value
+                  if(t) await supabase.from('site_content').upsert({key,value:t},{onConflict:'key'})
+                  if(c) await supabase.from('site_content').upsert({key:`${key}_color`,value:c},{onConflict:'key'})
+                  if(s) await supabase.from('site_content').upsert({key:`${key}_size`,value:s},{onConflict:'key'})
+                  if(f) await supabase.from('site_content').upsert({key:`${key}_font`,value:f},{onConflict:'key'})
+                  if(w) await supabase.from('site_content').upsert({key:`${key}_weight`,value:w},{onConflict:'key'})
+                  load()
+                }} className="mono h-8 rounded-full bg-[#C45A3C] text-white text-[9px]">SAVE ALL</button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="mt-6 p-4 bg-[#111] border border-zinc-800 rounded-xl mono text-[11px] text-zinc-400 leading-relaxed">
+        <div className="text-white">HOW TO EDIT EVERYTHING:</div>
+        <div className="mt-2">
+          - TEXT: type new text → SAVE TEXT<br/>
+          - COLOUR: pick colour or type hex #C45A3C → SAVE COLOR<br/>
+          - SIZE: type e.g. 14px, 20px, 2rem → SAVE SIZE<br/>
+          - FONT: choose Instrument Serif (serif), Space Mono (mono), Inter → SAVE FONT<br/>
+          - BOLD/THIN: choose 300 thin, 400 normal, 700 bold, 900 black → SAVE B/W<br/>
+          - SAVE ALL saves text+colour+size+font+weight at once.<br/>
+          All pages read from Supabase site_content, so changes are live instantly after refresh.
+        </div>
+      </div>
     </main>
   )
 }
