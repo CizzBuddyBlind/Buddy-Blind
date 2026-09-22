@@ -1,1 +1,10 @@
-import Stripe from 'stripe'; import { NextResponse } from 'next/server'; const stripe=new Stripe(process.env.STRIPE_SECRET_KEY!); export async function POST(req:Request){ try{ const {amount,venue_id}=await req.json(); const i=await stripe.paymentIntents.create({amount:amount||500,currency:'hkd',metadata:{venue_id:venue_id||''},automatic_payment_methods:{enabled:true}}); return NextResponse.json({clientSecret:i.client_secret}); }catch(e:any){ return NextResponse.json({error:e.message},{status:500}); } }
+import Stripe from 'stripe';
+import { NextResponse } from 'next/server';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+export async function POST(req:Request){
+ try{
+  const {amount,venue_id}=await req.json();
+  const intent=await stripe.paymentIntents.create({amount:amount||500,currency:'hkd',metadata:{venue_id:venue_id||''},automatic_payment_methods:{enabled:true}});
+  return NextResponse.json({clientSecret:intent.client_secret});
+ }catch(e:any){ return NextResponse.json({error:e.message},{status:500}); }
+}
