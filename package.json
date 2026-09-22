@@ -1,6 +1,6 @@
 {
-  "name": "buddy-blind",
-  "version": "16.2",
+  "name": "buddy-blind-v9-heart",
+  "version": "17.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

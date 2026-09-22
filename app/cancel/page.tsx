@@ -1,1 +1,1 @@
-export default function Cancel(){ return <div className='min-h-screen bg-[#050505] text-white flex items-center justify-center'><h1 className='text-4xl font-black'>CANCELED</h1></div> }
+export default function C(){ return <div className='min-h-screen bg-[#050505] text-white p-20'>Canceled</div>; }

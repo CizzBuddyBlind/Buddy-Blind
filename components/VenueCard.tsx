@@ -1,11 +1,25 @@
 'use client';
 import { useState } from 'react';
-import { triggerCheckout } from './CheckoutButtons';
 import AuthGateModal from './AuthGateModal';
-type Venue = { id: string; name: string; location: string; places_left: number; photo_url?: string; vibe?: string; };
-export default function VenueCard({ venue }: { venue: Venue }) {
-  const [showAuth, setShowAuth] = useState(false);
-  const isVerified = () => typeof window !== 'undefined' && !!localStorage.getItem('buddy_verified_phone');
-  const handleJoin = async () => { if (!isVerified()) { setShowAuth(true); return; } await triggerCheckout('admin', venue.id); };
-  return (<><div className="bg-[#111] border border-zinc-800 rounded-[28px] p-7 hover:border-zinc-600 hover:bg-[#161616] transition-all group"><div className="flex justify-between"><div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center font-bold text-sm">{(venue.name||'B')[0]}</div><div className="px-3 py-1.5 rounded-full bg-amber-400/10 text-amber-300 border border-amber-400/20 text-[10px] tracking-widest">{venue.places_left ?? 4} LEFT</div></div><div className="mt-8 text-[22px] font-bold leading-tight">{venue.name}</div><div className="mt-2 text-sm text-zinc-500">📍 {venue.location}</div><div className="mt-6 flex justify-between items-center"><div className="text-[11px] tracking-widest text-zinc-600">BLIND DROP • {venue.vibe||'NO MENU'}</div><button onClick={handleJoin} className="px-5 py-2 rounded-full bg-white text-black font-black text-[11px] tracking-widest hover:bg-zinc-200 transition">JOIN — $5</button></div></div><AuthGateModal isOpen={showAuth} onClose={()=>setShowAuth(false)} onVerified={()=>triggerCheckout('admin', venue.id)} trigger="join" /></>);
+type Venue={id:string;name:string;location:string;places_left:number;vibe?:string;};
+export default function VenueCard({venue}:{venue:Venue}){
+  const [show,setShow]=useState(false);
+  const [booked,setBooked]=useState(false);
+  return (
+    <>
+      <div className="venue-card group">
+        <div className="flex justify-between items-start">
+          <div className="w-[52px] h-[52px] rounded-full bg-[#1E1E1E] flex items-center justify-center font-bold text-[14px]">{(venue.name||'B')[0]}</div>
+          <div className="pill-left">{venue.places_left ?? 4} LEFT</div>
+        </div>
+        <div className="mt-[56px] text-[28px] font-bold leading-[1.1] tracking-tight">{venue.name}</div>
+        <div className="mt-3 text-[14px] text-zinc-500 flex items-center gap-1.5">📍 {venue.location}</div>
+        <div className="mt-10 flex justify-between items-center">
+          <div className="text-[11px] tracking-[0.2em] text-zinc-600">BLIND DROP • {venue.vibe||'NO MENU'}</div>
+          <button onClick={()=>setShow(true)} className="join-pill">{booked?'BOOKED ✓':'JOIN — $5'}</button>
+        </div>
+      </div>
+      <AuthGateModal isOpen={show} onClose={()=>setShow(false)} onComplete={()=>setBooked(true)} venueName={venue.name} />
+    </>
+  );
 }
