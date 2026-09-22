@@ -1,1 +1,1 @@
-export default function Profile(){return(<main className='max-w-6xl mx-auto px-6 py-20'><h1 className='mono text-[12px]'>PROFILE - Next</h1></main>)}
+export default function Profile(){return(<main className="max-w-5xl mx-auto px-6 py-20"><h1 className="serif text-[28px]">Profile - Cizz</h1></main>)}

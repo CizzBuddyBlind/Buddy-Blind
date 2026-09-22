@@ -1,1 +1,1 @@
-export default function Prem(){return(<main className='max-w-6xl mx-auto px-6 py-20'><h1 className='mono text-[12px]'>PREMIUM - Next</h1></main>)}
+export default function Premium(){return(<main className="max-w-5xl mx-auto px-6 py-20"><h1 className="serif text-[52px]">PREMIUM</h1><p className="text-zinc-500 mt-2">For those with good taste that need no proof.</p></main>)}
