@@ -2,63 +2,9 @@
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { triggerCheckout } from '@/components/CheckoutButtons';
-
-function PremiumInner() {
-  const [loading, setLoading] = useState<string | null>(null);
-  const searchParams = useSearchParams();
-  const paid = searchParams.get('paid');
-  const type = searchParams.get('type');
-
-  const checkout = async (t: 'lite' | 'premium') => {
-    setLoading(t);
-    await triggerCheckout(t);
-    setLoading(null);
-  };
-
-  return (
-    <div className="min-h-screen bg-[#050505] text-white px-6 py-20 max-w-5xl mx-auto">
-      <h1 className="text-5xl font-black">PREMIUM</h1>
-      <p className="mt-4 text-zinc-400 text-sm">Choose your taste level. Premium includes 90-day free trial per Features Bible.</p>
-      {paid === 'true' && (
-        <div className="mt-8 bg-amber-400/10 border border-amber-400/20 rounded-2xl p-4 text-amber-300 text-sm">
-          ✓ Subscribed to {type?.toUpperCase()} — {type === 'premium' ? '90-day trial started, no charge today' : 'HK$10/mo active'}.
-        </div>
-      )}
-      <div className="mt-12 grid md:grid-cols-2 gap-6">
-        <div className="bg-[#111] border border-zinc-800 rounded-[32px] p-10">
-          <h3 className="text-2xl font-bold">LITE</h3>
-          <div className="mt-2 text-3xl font-black">$10<span className="text-sm font-normal text-zinc-500">/mo</span></div>
-          <ul className="mt-6 space-y-2 text-sm text-zinc-500">
-            <li>• 1 blind/month</li><li>• 1 invite/month</li><li>• Standard drops</li><li>• $5 admin fee per book</li>
-          </ul>
-          <button onClick={() => checkout('lite')} disabled={!!loading} className="mt-8 w-full h-12 rounded-full border border-zinc-700 text-white font-black text-xs tracking-widest">
-            {loading === 'lite' ? 'LOADING...' : 'UPGRADE TO LITE — HK$10'}
-          </button>
-        </div>
-        <div className="bg-white text-black rounded-[32px] p-10">
-          <div className="flex justify-between items-start">
-            <h3 className="text-2xl font-black">HEART PREMIUM</h3>
-            <span className="px-3 py-1 rounded-full bg-black text-white text-[10px] font-mono">90-DAY TRIAL</span>
-          </div>
-          <div className="mt-2 text-3xl font-black">$50<span className="text-sm font-normal text-zinc-600">/mo</span></div>
-          <div className="mt-1 text-[11px] tracking-widest text-zinc-500">FIRST 90 DAYS FREE • THEN $50/mo</div>
-          <ul className="mt-6 space-y-2 text-sm text-zinc-600">
-            <li>• 4 blinds/month</li><li>• 3 invites/month</li><li>• Private events access</li><li>• Early access Thu 8pm drops</li>
-          </ul>
-          <button onClick={() => checkout('premium')} disabled={!!loading} className="mt-8 w-full h-12 rounded-full bg-black text-white font-black text-xs tracking-widest">
-            {loading === 'premium' ? 'LOADING...' : 'GET HEART — START 90-DAY TRIAL'}
-          </button>
-          <div className="mt-3 text-center text-[11px] text-zinc-500">Test card 4242 4242 4242 4242 • Cancel anytime</div>
-        </div>
-      </div>
-    </div>
-  );
+function Inner(){
+  const [loading,setLoading]=useState<string|null>(null); const sp=useSearchParams(); const paid=sp.get('paid'); const type=sp.get('type');
+  const go=async(t:'lite'|'premium')=>{ setLoading(t); await triggerCheckout(t); setLoading(null); };
+  return(<div className="min-h-screen bg-[#050505] text-white px-6 py-20 max-w-5xl mx-auto"><h1 className="text-5xl font-black">PREMIUM</h1>{paid==='true' && (<div className="mt-8 bg-amber-400/10 border border-amber-400/20 rounded-2xl p-4 text-amber-300 text-sm">✓ Subscribed to {type?.toUpperCase()} — {type==='premium'?'90-day trial started': 'HK$10/mo active'}</div>)}<div className="mt-12 grid md:grid-cols-2 gap-6"><div className="bg-[#111] border border-zinc-800 rounded-[32px] p-10"><h3 className="text-2xl font-bold">LITE</h3><div className="mt-2 text-3xl font-black">$10<span className="text-sm font-normal text-zinc-500">/mo</span></div><ul className="mt-6 space-y-2 text-sm text-zinc-500"><li>• 1 blind/month</li><li>• 1 invite/month</li></ul><button onClick={()=>go('lite')} disabled={!!loading} className="mt-8 w-full h-12 rounded-full border border-zinc-700 text-white font-black text-xs tracking-widest">{loading==='lite'?'LOADING...':'UPGRADE TO LITE — HK$10'}</button></div><div className="bg-white text-black rounded-[32px] p-10"><div className="flex justify-between"><h3 className="text-2xl font-black">HEART PREMIUM</h3><span className="px-3 py-1 rounded-full bg-black text-white text-[10px] font-mono">90-DAY TRIAL</span></div><div className="mt-2 text-3xl font-black">$50<span className="text-sm font-normal text-zinc-600">/mo</span></div><div className="mt-1 text-[11px] tracking-widest text-zinc-500">FIRST 90 DAYS FREE</div><ul className="mt-6 space-y-2 text-sm text-zinc-600"><li>• 4 blinds/month</li><li>• 3 invites/month</li><li>• Private access</li></ul><button onClick={()=>go('premium')} disabled={!!loading} className="mt-8 w-full h-12 rounded-full bg-black text-white font-black text-xs tracking-widest">{loading==='premium'?'LOADING...':'GET HEART — START 90-DAY TRIAL'}</button></div></div></div>);
 }
-
-export default function PremiumPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-[#050505]" />}>
-      <PremiumInner />
-    </Suspense>
-  );
-}
+export default function Page(){ return (<Suspense fallback={<div className="min-h-screen bg-[#050505]"/>}><Inner/></Suspense>); }

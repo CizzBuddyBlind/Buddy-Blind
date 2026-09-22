@@ -7,5 +7,5 @@ export async function triggerCheckout(type: 'lite' | 'premium' | 'admin', venue_
   });
   const data = await res.json();
   if (data.url) window.location.href = data.url;
-  else alert('Error: ' + (data.error || 'unknown'));
+  else alert('Checkout error: ' + (data.error || 'Unknown - check env vars'));
 }

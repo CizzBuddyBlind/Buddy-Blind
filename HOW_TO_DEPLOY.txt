@@ -1,0 +1,30 @@
+
+ROOT CAUSE ANALYSIS:
+1. First error: Module not found stripe -> missing dependency -> fixed by adding stripe to package.json
+2. Second error: Type '"2024-06-20"' not assignable -> your stripe SDK version 14.25 only allows '2023-10-16'. You kept pushing old file with apiVersion 2024-06-20.
+
+SOLUTION - CLEAN PUSH:
+1. DELETE your local app/api/stripe/create-checkout folder completely
+2. Unzip this FINAL zip into project root (overwrite)
+3. Run: npm install
+4. Run: npm run build  (test locally - must say ✓ Compiled successfully)
+5. Then: git add . && git commit -m "FINAL GREEN BUILD" && git push
+6. Vercel will be GREEN.
+
+ENV VARS CHECK - Must have 6 vars in Vercel > Settings > Environment Variables:
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = pk_test_51UISW...
+STRIPE_SECRET_KEY = sk_test_51UISW... (Secret)
+STRIPE_LITE_PRICE_ID = price_1UISXEPmyR3fIMKF3EMKbkND (Config)
+STRIPE_PREMIUM_PRICE_ID = price_1UISXdPmyR3fIMKFkyKCHbsB (Config)
+STRIPE_ADMIN_FEE_PRICE_ID = price_1UISZsPmyR3fIMKFcpj7cNdy (Config)
+NEXT_PUBLIC_BASE_URL = https://buddy-blind.vercel.app (Config)
+
+All checked for Production, Preview, Development.
+
+After green deploy test:
+- /venues JOIN $5 -> Stripe checkout $5
+- /invite PAY $5 -> unlock link
+- /premium LITE $10 immediate, PREMIUM $50 with 90-day trial
+Test card 4242 4242 4242 4242
