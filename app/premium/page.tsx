@@ -1,1 +1,1 @@
-export default function Premium(){return(<main className="max-w-5xl mx-auto px-6 py-20"><h1 className="serif text-[52px]">PREMIUM</h1><p className="text-zinc-500 mt-2">For those with good taste that need no proof.</p></main>)}
+export default function Page(){return <div className='p-20 mono text-[11px] text-zinc-500'>This page will be built after HOME is locked - step by step</div>}

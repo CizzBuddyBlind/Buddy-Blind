@@ -2,13 +2,4 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 const links=[{href:'/venues',label:'VENUES'},{href:'/private-events',label:'PRIVATE EVENTS'},{href:'/how-it-works',label:'HOW IT WORKS'},{href:'/premium',label:'PREMIUM'},{href:'/profile',label:'PROFILE'}]
-export default function Navbar(){
-  const p=usePathname()
-  return(<nav className="h-[64px] border-b border-zinc-900 bg-[#080808] sticky top-0 z-50">
-    <div className="max-w-[1400px] mx-auto px-6 h-full flex items-center justify-between">
-      <Link href="/" className="flex items-center gap-2.5"><div className="w-7 h-7 rounded-full bg-[#f5f2eb] text-black flex items-center justify-center text-[11px] font-bold mono">BB</div><span className="mono text-[11px] tracking-[0.15em]">BUDDY BLIND</span></Link>
-      <div className="hidden md:flex gap-7">{links.map(l=><Link key={l.href} href={l.href} className={`mono text-[11px] tracking-[0.1em] ${p===l.href?'text-white':'text-zinc-500 hover:text-zinc-300'}`}>{l.label}</Link>)}</div>
-      <div className="flex items-center gap-3"><Link href="/profile" className="w-7 h-7 rounded-full bg-[#1a1a1a] border border-zinc-800 flex items-center justify-center text-[10px] mono">CJ</Link></div>
-    </div>
-  </nav>)
-}
+export default function Navbar(){const p=usePathname();return(<nav className="h-[64px] border-b border-zinc-900 bg-[#080808] sticky top-0 z-50"><div className="max-w-[1400px] mx-auto px-6 h-full flex items-center justify-between"><Link href="/" className="flex items-center gap-2.5"><div className="w-7 h-7 rounded-full bg-[#f5f2eb] text-black flex items-center justify-center text-[11px] font-bold mono">BB</div><span className="mono text-[11px] tracking-[0.15em]">BUDDY BLIND</span></Link><div className="hidden md:flex gap-7">{links.map(l=><Link key={l.href} href={l.href} className={`mono text-[11px] tracking-[0.1em] ${p===l.href?'text-white':'text-zinc-500 hover:text-zinc-300'}`}>{l.label}</Link>)}</div><Link href="/profile" className="w-7 h-7 rounded-full bg-[#1a1a1a] border border-zinc-800 flex items-center justify-center text-[10px] mono">CJ</Link></div></nav>)}

@@ -1,1 +1,1 @@
-export default function Profile(){return(<main className="max-w-5xl mx-auto px-6 py-20"><h1 className="serif text-[28px]">Profile - Cizz</h1></main>)}
+export default function Page(){return <div className='p-20 mono text-[11px] text-zinc-500'>This page will be built after HOME is locked - step by step</div>}
