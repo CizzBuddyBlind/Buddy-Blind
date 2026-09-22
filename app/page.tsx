@@ -74,7 +74,7 @@ export default function HomePage(){
         {/* RIGHT FEATURED */}
         <div className="lg:pt-4">
           <div className="flex items-center gap-2 mono text-[10px] tracking-[0.15em] text-zinc-500"><span className="w-1.5 h-1.5 rounded-full bg-[#c96a4a]"></span>{content.featured_label}</div>
-          <div className="mt-4 bg-[#121212] border border-zinc-900 rounded-[24px] relative">
+          <div className="mt-4 bg-[#121212] border border-zinc-900 rounded-[24px] overflow-hidden">
             {/* Image */}
             <div className="relative h-[520px] bg-zinc-900">
               <img src={featured.image_url} alt={featured.title} className="w-full h-full object-cover" />
@@ -82,7 +82,7 @@ export default function HomePage(){
                 <div className="mono text-[10px] tracking-[0.1em] bg-black/70 backdrop-blur border border-white/10 px-3 py-1.5 rounded-full text-white">{featured.area} · {featured.time}</div>
                 <div className="mono text-[10px] tracking-[0.1em] bg-[#c96a4a] px-3 py-1.5 rounded-full text-white">{featured.spots_left} SPOTS LEFT</div>
               </div>
-              <div className="absolute -top-3 right-5 z-20 flex items-center gap-2 bg-[#f5f2eb] text-black mono text-[10px] tracking-[0.1em] px-3 py-1.5 rounded-full border border-black/10"><div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center text-[9px]">C</div>{featured.host_label}</div>
+              <div className="absolute top-4 right-4 -mt-8 flex items-center gap-2 bg-[#f5f2eb] text-black mono text-[10px] tracking-[0.1em] px-3 py-1.5 rounded-full border border-black/10"><div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center text-[9px]">C</div>{featured.host_label}</div>
               <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
                 <div className="flex -space-x-2"><div className="w-8 h-8 rounded-full bg-zinc-700 border border-black overflow-hidden"></div><div className="w-8 h-8 rounded-full bg-zinc-600 border border-black"></div><div className="w-8 h-8 rounded-full bg-zinc-500 border border-black"></div><div className="w-8 h-8 rounded-full bg-white text-black border border-black flex items-center justify-center text-[11px] mono">?</div></div>
                 <div className="mono text-[10px] tracking-[0.1em] bg-black/70 backdrop-blur border border-white/10 px-3 py-1.5 rounded-full text-zinc-300">{featured.price_label}</div>
