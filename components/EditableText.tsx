@@ -110,15 +110,15 @@ export function EditableText({textKey, defaultValue, as='span', className='', st
       </Tag>
 
       {showEdit && (
-        <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur flex items-center justify-center p-4" onClick={()=>setShowEdit(false)}>
-          <div className="bg-[#0f0f0f] border border-zinc-800 rounded-[16px] p-5 w-full max-w-[480px] max-h-[90vh] overflow-auto" onClick={e=>e.stopPropagation()}>
+        <div className="fixed inset-0 z-[200] bg-black backdrop-blur flex items-center justify-center p-4" onClick={()=>setShowEdit(false)}>
+          <div className="bg-[#0f0f0f] border border-zinc-800 rounded-2xl p-5 w-full max-w-[480px] max-h-[90vh] overflow-auto" onClick={e=>e.stopPropagation()}>
             <div className="flex justify-between items-center">
-              <div className="mono text-[11px] text-white">Edit Text: {textKey}</div>
+              <div className="mono text-xs text-white">Edit Text: {textKey}</div>
               <div className="mono text-[9px] text-zinc-500">All pages - font, colour, size, bold/thin</div>
             </div>
             
             <div className="mt-4">
-              <label className="mono text-[10px] text-zinc-400">TEXT</label>
+              <label className="mono text-xs text-zinc-400">TEXT</label>
               <textarea value={editText} onChange={e=>setEditText(e.target.value)} className="mt-1 w-full min-h-[80px] bg-black border border-zinc-800 rounded-xl p-3 text-sm text-white focus:border-[#C45A3C]" />
             </div>
 
@@ -150,7 +150,7 @@ export function EditableText({textKey, defaultValue, as='span', className='', st
                   <option value="">Default</option>
                   {ALL_FONTS.map(f=><option key={f.value} value={f.value}>{f.label}</option>)}
                 </select>
-                <div className="mt-2 mono text-[10px] p-2 rounded border border-zinc-800" style={{fontFamily: editFont || 'Inter', color: editColor, fontSize: editSize || '14px', fontWeight: editWeight || '400'}}>Preview: {editText.slice(0,20) || 'Text preview'}</div>
+                <div className="mt-2 mono text-xs p-2 rounded border border-zinc-800" style={{fontFamily: editFont || 'Inter', color: editColor, fontSize: editSize || '14px', fontWeight: editWeight || '400'}}>Preview: {editText.slice(0,20) || 'Text preview'}</div>
               </div>
               <div>
                 <label className="mono text-[9px] text-zinc-500">BOLD / THIN - weight</label>
@@ -171,8 +171,8 @@ export function EditableText({textKey, defaultValue, as='span', className='', st
             </div>
 
             <div className="mt-6 flex gap-2">
-              <button onClick={save} className="flex-1 h-11 rounded-full bg-white text-black mono text-[11px] font-bold hover:bg-zinc-200">SAVE (Draft - instant)</button>
-              <button onClick={()=>setShowEdit(false)} className="flex-1 h-11 rounded-full border border-zinc-800 mono text-[11px] text-zinc-500">CANCEL</button>
+              <button onClick={save} className="flex-1 h-11 rounded-full bg-white text-black mono text-xs font-bold hover:bg-zinc-200">SAVE (Draft - instant)</button>
+              <button onClick={()=>setShowEdit(false)} className="flex-1 h-11 rounded-full border border-zinc-800 mono text-xs text-zinc-500">CANCEL</button>
             </div>
             <div className="mt-3 mono text-[9px] text-zinc-600 text-center">Save = draft, instant on all pages. Use PUBLISH in top bar to go live.</div>
           </div>

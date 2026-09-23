@@ -31,7 +31,7 @@ const DEFAULT: Content = {
   step7_num: '07',
   step7_title: 'Create your own',
   step7_desc: 'Premium unlocks private up to 20. Wine, industry, 50+ social, hike — host creates attraction and download reasons.',
-  cta_join: 'JOIN A BLIND DINNER ->',
+  cta_join: 'JOIN A BLIND DINNER →',
   cta_private: 'PRIVATE EVENTS'
 }
 
@@ -73,26 +73,26 @@ export default function HowItWorksPage(){
   return(
     <main className="bg-[#080808] min-h-screen">
       <div className="max-w-[800px] mx-auto px-6 pt-16 pb-20">
-        <div className="mono text-[11px] tracking-[0.15em] text-[#c96a4a]">{content.label}</div>
+        <div className="mono text-xs tracking-[0.15em] text-[#c96a4a]">{content.label}</div>
         <h1 className="serif mt-6 text-[64px] md:text-[84px] leading-[0.85] tracking-[-0.02em] text-white">
           {content.headline_1}<br/>{content.headline_2}
         </h1>
 
-        <div className="mt-16 bg-[#0f0f0f] border border-zinc-900 rounded-[20px] overflow-hidden">
+        <div className="mt-16 bg-[#0f0f0f] border border-zinc-900 rounded-2xl overflow-hidden">
           {steps.map((s,i)=>(
-            <div key={i} className="grid grid-cols-[60px_1fr] md:grid-cols-[80px_1fr] gap-4 px-6 md:px-10 py-8 border-b border-zinc-900 last:border-b-0 hover:bg-[#111] transition">
-              <div className="mono text-[12px] text-zinc-700 pt-1">{s.num}</div>
+            <div key={i} className="grid grid-cols-[60px_1fr] md:grid-cols-[80px_1fr] gap-4 px-6 md:px-10 py-8 border-b border-zinc-900 last:border-b-0 hover:bg-zinc-900 transition">
+              <div className="mono text-xs text-zinc-700 pt-1">{s.num}</div>
               <div>
                 <h3 className="serif text-[22px] md:text-[26px] leading-tight text-white">{s.title}</h3>
-                <p className="mt-3 text-[15px] leading-relaxed text-zinc-500 max-w-[560px]">{s.desc}</p>
+                <p className="mt-3 text-[15px] leading-relaxed text-zinc-500 max-w-lg">{s.desc}</p>
               </div>
             </div>
           ))}
         </div>
 
         <div className="mt-10 flex gap-3 justify-center">
-          <Link href="/venues" className="mono h-12 px-8 rounded-full bg-[#f5f2eb] text-black text-[11px] tracking-[0.15em] flex items-center hover:bg-white transition">{content.cta_join}</Link>
-          <Link href="/private-events" className="mono h-12 px-8 rounded-full border border-zinc-800 text-[11px] tracking-[0.15em] flex items-center text-zinc-400 hover:border-zinc-600 hover:text-zinc-200 transition">{content.cta_private}</Link>
+          <Link href="/venues" className="mono h-12 px-8 rounded-full bg-[#f5f2eb] text-black text-xs tracking-[0.15em] flex items-center hover:bg-white transition">{content.cta_join}</Link>
+          <Link href="/private-events" className="mono h-12 px-8 rounded-full border border-zinc-800 text-xs tracking-[0.15em] flex items-center text-zinc-400 hover:border-zinc-600 hover:text-zinc-200 transition">{content.cta_private}</Link>
         </div>
       </div>
     </main>

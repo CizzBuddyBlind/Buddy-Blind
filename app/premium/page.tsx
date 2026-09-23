@@ -81,16 +81,16 @@ export default function PremiumPage(){
   return(
     <main className="bg-[#080808] min-h-screen">
       <div className="max-w-[1200px] mx-auto px-6 pt-16 pb-20">
-        <EditableText textKey="premium_label" defaultValue={getText('premium_label')} as="div" className="mono text-[11px] tracking-[0.15em] text-[#c96a4a]" style={getStyle('premium_label')} />
+        <EditableText textKey="premium_label" defaultValue={getText('premium_label')} as="div" className="mono text-xs tracking-[0.15em] text-[#c96a4a]" style={getStyle('premium_label')} />
         <h1 className="serif mt-6 text-[56px] md:text-[72px] leading-[0.9] tracking-[-0.02em] text-white max-w-[700px]">
           <EditableText textKey="premium_headline_1" defaultValue={getText('premium_headline_1')} as="span" style={getStyle('premium_headline_1')} />
           <br/>
           <EditableText textKey="premium_headline_2" defaultValue={getText('premium_headline_2')} as="span" style={getStyle('premium_headline_2')} />
         </h1>
-        <EditableText textKey="premium_sub" defaultValue={getText('premium_sub')} as="p" className="mt-6 text-[16px] leading-relaxed text-zinc-400 max-w-[600px]" style={getStyle('premium_sub')} />
+        <EditableText textKey="premium_sub" defaultValue={getText('premium_sub')} as="p" className="mt-6 text-base leading-relaxed text-zinc-400 max-w-[600px]" style={getStyle('premium_sub')} />
 
         {isAdmin && (
-          <div className="mt-6 bg-[#0f0f0f] border border-[#C45A3C] rounded-xl p-3 mono text-[11px] text-white flex flex-wrap justify-between items-center gap-2">
+          <div className="mt-6 bg-[#0f0f0f] border border-[#C45A3C] rounded-xl p-3 mono text-xs text-white flex flex-wrap justify-between items-center gap-2">
             <span>ADMIN: All buttons now perfectly aligned same line - fixed. Add text boxes as needed.</span>
             <div className="flex gap-2">
               <button onClick={()=>{const d=JSON.parse(localStorage.getItem('bb_draft')||'{}'); saveDraft(d); alert('Draft saved!')}} className="bg-zinc-800 text-white px-4 py-1.5 rounded-full border border-zinc-700">SAVE DRAFT</button>
@@ -99,24 +99,24 @@ export default function PremiumPage(){
           </div>
         )}
 
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 border border-zinc-900 rounded-[20px] overflow-hidden bg-[#0f0f0f] auto-rows-fr">
+        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 border border-zinc-900 rounded-2xl overflow-hidden bg-[#0f0f0f] auto-rows-fr">
           {tiers.map(tier=>{
             const isPremium = tier.id==='premium'
             return(
-              <div key={tier.id} className={`p-8 flex flex-col h-full ${!isPremium ? 'border-b md:border-b-0 md:border-r border-zinc-900' : ''} ${isPremium ? 'bg-[#f5f2eb] text-black rounded-b-[20px] md:rounded-bl-none md:rounded-r-[20px]' : 'bg-[#0f0f0f] md:bg-[#111]'} relative`}>
+              <div key={tier.id} className={`p-8 flex flex-col h-full ${!isPremium ? 'border-b md:border-b-0 md:border-r border-zinc-900' : ''} ${isPremium ? 'bg-[#f5f2eb] text-black rounded-b-[20px] md:rounded-bl-none md:rounded-r-[20px]' : 'bg-[#0f0f0f] md:bg-zinc-900'} relative`}>
                 {isAdmin && (
                   <div className="absolute -top-2 left-2">
-                    <button onClick={()=>handleAddTextBox(tier.id)} className="mono text-[9px] bg-[#C45A3C] text-white px-2 py-1 rounded-full">+ ADD TEXT BOX</button>
+                    <button onClick={()=>handleAddTextBox(tier.id)} className="mono text-xs bg-[#C45A3C] text-white px-2 py-1 rounded-full">+ ADD TEXT BOX</button>
                   </div>
                 )}
                 <div className="flex justify-between items-start min-h-[32px]">
                   <EditableText textKey={`premium_${tier.id}_title`} defaultValue={tier.title} as="h3" className={`serif text-[28px] ${isPremium?'text-black':'text-white'}`} />
-                  <EditableText textKey={`premium_${tier.id}_tag`} defaultValue={tier.tag} as="span" className="mono text-[11px] tracking-[0.1em] text-zinc-600 max-w-[140px] text-right" />
+                  <EditableText textKey={`premium_${tier.id}_tag`} defaultValue={tier.tag} as="span" className="mono text-xs tracking-[0.1em] text-zinc-600 max-w-[140px] text-right" />
                 </div>
                 <EditableText textKey={`premium_${tier.id}_price`} defaultValue={tier.price} as="div" className={`mt-6 serif text-[48px] ${isPremium?'text-black':'text-white'}`} />
 
                 <div className="mt-8 flex-1 flex flex-col">
-                  <div className="space-y-3 mono text-[12px] tracking-[0.05em] flex-1 min-h-[180px]">
+                  <div className="space-y-3 mono text-xs tracking-[0.05em] flex-1 min-h-[180px]">
                     {tier.features.map((f,i)=>(
                       <div key={i} className="group relative flex gap-2 items-start">
                         <span className={isPremium?'text-zinc-400':'text-zinc-600'}>—</span>
@@ -130,17 +130,17 @@ export default function PremiumPage(){
                       </div>
                     ))}
                     {isAdmin && (
-                      <button onClick={()=>handleAddTextBox(tier.id)} className="mt-2 mono text-[10px] border border-dashed border-zinc-700 px-3 py-1.5 rounded-full text-zinc-500 hover:border-zinc-500">+ ADD TEXT BOX HERE</button>
+                      <button onClick={()=>handleAddTextBox(tier.id)} className="mt-2 mono text-xs border border-dashed border-zinc-700 px-3 py-1.5 rounded-full text-zinc-500 hover:border-zinc-500">+ ADD TEXT BOX HERE</button>
                     )}
                   </div>
 
                   <div className="mt-auto pt-10">
-                    <button onClick={()=>handleUpgrade(tier.id)} className={`w-full h-12 rounded-full mono text-[11px] tracking-[0.15em] transition ${isPremium ? 'bg-black text-white hover:bg-zinc-900' : 'bg-[#f5f2eb] text-black hover:bg-white'} ${currentPlan===tier.id ? 'ring-2 ring-[#C45A3C]' : ''}`}>
+                    <button onClick={()=>handleUpgrade(tier.id)} className={`w-full h-12 rounded-full mono text-xs tracking-[0.15em] transition ${isPremium ? 'bg-black text-white hover:bg-zinc-900' : 'bg-[#f5f2eb] text-black hover:bg-white'} ${currentPlan===tier.id ? 'ring-2 ring-[#C45A3C]' : ''}`}>
                       {currentPlan===tier.id ? (tier.id==='free'?'CURRENT':'CURRENT PLAN') : tier.btn}
                     </button>
                     <div className="min-h-[50px] mt-4 flex items-start justify-center">
                       {tier.foot ? (
-                        <EditableText textKey={`premium_${tier.id}_foot`} defaultValue={tier.foot} as="div" className="mono text-[10px] tracking-[0.05em] text-zinc-500 leading-relaxed text-center" />
+                        <EditableText textKey={`premium_${tier.id}_foot`} defaultValue={tier.foot} as="div" className="mono text-xs tracking-[0.05em] text-zinc-500 leading-relaxed text-center" />
                       ) : (
                         <div className="h-[10px]"></div>
                       )}
@@ -152,7 +152,7 @@ export default function PremiumPage(){
           })}
         </div>
 
-        <EditableText textKey="bottom_text" defaultValue={getText('bottom_text')} as="div" className="mt-12 text-center mono text-[11px] tracking-[0.15em] text-zinc-600" style={getStyle('bottom_text')} />
+        <EditableText textKey="bottom_text" defaultValue={getText('bottom_text')} as="div" className="mt-12 text-center mono text-xs tracking-[0.15em] text-zinc-600" style={getStyle('bottom_text')} />
       </div>
     </main>
   )
