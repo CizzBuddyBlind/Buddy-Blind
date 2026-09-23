@@ -1,0 +1,112 @@
+"use client";
+
+import { useBB } from "./Providers";
+
+export function Editable({ value, onChange, className = "", as = "span", locked = false }) {
+  const { editing } = useBB();
+  const Tag = as;
+  if (!editing || locked) return <Tag className={className}>{value}</Tag>;
+  return (
+    <Tag
+      className={`${className} cursor-text rounded-sm`}
+      contentEditable
+      suppressContentEditableWarning
+      onClick={(e) => e.stopPropagation()}
+      onBlur={(e) => {
+        const next = (e.currentTarget.textContent || "").replace(/\s+/g, " ").trim();
+        if (next && next !== value) onChange(next);
+      }}
+    >
+      {value}
+    </Tag>
+  );
+}
+
+export function fileToCover(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const max = 1100;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.72));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read photo"));
+    };
+    img.src = url;
+  });
+}
+
+export function Photo({ src, alt, onChange, className = "" }) {
+  const { editing } = useBB();
+  async function take(file) {
+    if (!file || !onChange) return;
+    try {
+      onChange(await fileToCover(file));
+    } catch {
+      /* ignore bad files */
+    }
+  }
+  return (
+    <div
+      className={`relative h-full w-full ${className}`}
+      onDragOver={(e) => {
+        if (!editing) return;
+        e.preventDefault();
+      }}
+      onDrop={(e) => {
+        if (!editing) return;
+        e.preventDefault();
+        take(e.dataTransfer.files?.[0]);
+      }}
+    >
+      <img src={src} alt={alt || ""} className="h-full w-full object-cover" />
+      {editing && (
+        <label className="absolute inset-0 grid cursor-pointer place-items-center bg-black/50 text-[11px] font-semibold uppercase tracking-[0.14em] text-white opacity-0 transition hover:opacity-100">
+          Drop photo · fits the frame
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              take(file);
+            }}
+          />
+        </label>
+      )}
+    </div>
+  );
+}
+
+export function Sheet({ open, title, body, confirmLabel, onClose, onConfirm }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[80] grid place-items-end bg-black/70 p-4 sm:place-items-center" onClick={onClose}>
+      <div
+        className="w-full max-w-md rounded-2xl border border-white/10 bg-card p-6 text-fg shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="bb-kicker text-mute">Buddy Blind</p>
+        <h2 className="mt-2 font-serif text-2xl">{title}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-mute">{body}</p>
+        <div className="mt-6 flex gap-3">
+          <button type="button" onClick={onClose} className="flex-1 rounded-full border border-white/15 py-3 text-sm">
+            Cancel
+          </button>
+          <button type="button" onClick={onConfirm} className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink">
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

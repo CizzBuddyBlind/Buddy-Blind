@@ -1,1 +1,0 @@
-'use client'; import { EditableText } from '@/components/EditableText'; export default function Page(){ return <main className='p-10'><h1 className='text-3xl'><EditableText field='heroRightTitle' /></h1></main> }

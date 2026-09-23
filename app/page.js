@@ -1,79 +1,121 @@
-'use client';
-import EditableText from '@/components/EditableText';
+"use client";
 
-const venues = [
-  { name: "Cafe 001 — Grey Lynn", img: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800" },
-  { name: "Wine Bar — Ponsonby", img: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800" },
-  { name: "Rooftop — CBD", img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800" },
-  { name: "Bakery — Mt Eden", img: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800" },
-  { name: "Studio — K Road", img: "https://images.unsplash.com/photo-1497366811353-26cc3f4fa5fa?w=800" },
-  { name: "House — Herne Bay", img: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800" },
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { Editable, Photo, Sheet } from "@/components/Bits";
+import { useBB } from "@/components/Providers";
+
+const FILTERS = [
+  { id: "all", label: "ALL" },
+  { id: "tst", label: "TST" },
+  { id: "cwb", label: "CWB" },
+  { id: "central", label: "CENTRAL" },
+  { id: "tonight", label: "TONIGHT" },
 ];
 
-export default function Page() {
+export default function HomePage() {
+  const { content, editing, update, setSelectedId, selectedId, act, notify } = useBB();
+  const [filter, setFilter] = useState("all");
+  const [sheet, setSheet] = useState(null);
+  const venues = content.venues.filter((v) => editing || !v.hidden);
+  const shown = useMemo(() => {
+    if (filter === "tonight") return venues.filter((v) => v.tonight);
+    if (filter !== "all") return venues.filter((v) => v.area === filter);
+    return venues;
+  }, [venues, filter]);
+  const copy = content.copy.venues;
+
+  async function confirmSheet() {
+    const res = await act("venue", sheet.id, sheet.mode);
+    if (res.needLogin) {
+      window.location.href = "/login";
+      return;
+    }
+    if (res.error) notify(res.error);
+    else notify(sheet.mode === "invite" ? "Table opened · +2 pts" : "You're in · +1 pt");
+    setSheet(null);
+  }
+
   return (
-    <main className="min-h-screen bg-[#FFFEF9]">
-      <header className="flex justify-between items-center px-6 md:px-10 py-6 text-[11px] tracking-[0.2em] uppercase">
-        <div className="font-medium">Buddy Blind</div>
-        <div className="opacity-60">Auckland — Est 2024</div>
-      </header>
-
-      <section className="grid grid-cols-1 md:grid-cols-2 min-h-[72vh] border-y border-black/10">
-        <div className="flex items-center justify-center p-10 md:p-16 bg-[#FFFEF9] border-b md:border-b-0 md:border-r border-black/10">
-          <h1 className="text-[12vw] md:text-[8vw] leading-[0.9] tracking-tight">
-            <EditableText field="heroLeft" as="span" className="text-[#C45A3C] font-[700] block" />
-          </h1>
+    <main className="bb-frame pb-28 pt-6 md:pb-16">
+      <section className="mx-auto max-w-2xl py-8 text-center">
+        <div className="mb-7 flex justify-between gap-4 text-mute">
+          <Editable className="bb-kicker" value={copy.kickerLeft} onChange={(kickerLeft) => update((d) => { d.copy.venues.kickerLeft = kickerLeft; })} />
+          <Editable className="bb-kicker text-right" value={copy.kickerRight} onChange={(kickerRight) => update((d) => { d.copy.venues.kickerRight = kickerRight; })} />
         </div>
-        <div className="flex flex-col justify-center p-10 md:p-16 gap-8">
-          <div>
-            <EditableText field="heroRightTitle" as="h2" className="text-3xl font-medium tracking-tight" />
-            <EditableText field="heroRightDesc" as="p" className="mt-3 text-[15px] leading-6 opacity-70 max-w-[32ch]" />
-          </div>
-          <div className="pt-8 border-t border-black/10">
-            <div className="text-[10px] tracking-[0.2em] uppercase opacity-40 mb-3">Next Gathering</div>
-            <EditableText field="heroRightEvent" as="div" className="inline-block border border-black px-4 py-2 rounded-full text-sm" />
-          </div>
-        </div>
+        <h1 className="bb-hero-title">
+          <Editable value={copy.title} onChange={(title) => update((d) => { d.copy.venues.title = title; })} />
+          <br />
+          <Editable className="italic text-ember" value={copy.accent} onChange={(accent) => update((d) => { d.copy.venues.accent = accent; })} />
+        </h1>
+        <Editable
+          as="p"
+          className="mx-auto mt-4 max-w-md text-[0.9rem] leading-relaxed text-mute"
+          value={copy.sub}
+          onChange={(sub) => update((d) => { d.copy.venues.sub = sub; })}
+        />
       </section>
 
-      <section className="px-6 md:px-10 py-16">
-        <div className="flex justify-between items-end mb-8">
-          <EditableText field="venuesTitle" as="h3" className="text-[11px] tracking-[0.2em] uppercase opacity-60" />
-          <span className="text-[11px] opacity-40">6 places, 6 nights</span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] bg-black/10 border border-black/10">
-          {venues.map((v,i) => (
-            <div key={i} className="bg-[#FFFEF9] group">
-              <div className="aspect-[4/3] overflow-hidden bg-neutral-100">
-                <img src={v.img} alt={v.name} className="w-full h-full object-cover group-hover:scale-[1.02] transition duration-700" />
+      <div className="flex gap-2 overflow-x-auto pb-4">
+        {FILTERS.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => setFilter(f.id)}
+            className={`shrink-0 rounded-full border px-4 py-2 text-[0.75rem] font-medium tracking-[0.06em] ${filter === f.id ? "border-fg bg-fg text-ink" : "border-white/15 text-mute"}`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {shown.map((venue) => (
+          <article
+            key={venue.id}
+            onClick={() => editing && setSelectedId(venue.id)}
+            className={`bb-card transition ${venue.hidden ? "opacity-40" : ""} ${selectedId === venue.id ? "ring-2 ring-ember" : ""} ${venue.locked ? "ring-1 ring-white/20" : ""}`}
+          >
+            <Link href={`/venues/${venue.id}`} className="bb-img block" onClick={(e) => editing && e.preventDefault()}>
+              <Photo
+                src={venue.imageUrl}
+                alt={venue.imageAlt}
+                onChange={(imageUrl) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.imageUrl = imageUrl; })}
+              />
+              <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[0.7rem] font-semibold text-white">{venue.spots} SPOTS</span>
+              <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-[0.7rem] font-semibold text-char">{venue.timeLabel}</span>
+            </Link>
+            <div className="px-4 pb-[18px] pt-4">
+              <h3 className="font-serif text-[1.2rem] text-ember-soft">
+                <Editable locked={venue.locked} value={venue.name} onChange={(name) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.name = name; })} />
+              </h3>
+              <p className="mt-1 text-[0.72rem] tracking-wide text-mute">
+                <Editable locked={venue.locked} value={venue.typeLabel} onChange={(typeLabel) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.typeLabel = typeLabel; })} />
+              </p>
+              <p className="text-[0.72rem] tracking-wide text-mute">
+                <Editable locked={venue.locked} value={venue.locationLabel} onChange={(locationLabel) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.locationLabel = locationLabel; })} />
+              </p>
+              <p className="mb-3.5 mt-1 text-[0.8rem] text-mute">
+                <Editable locked={venue.locked} value={venue.priceLabel} onChange={(priceLabel) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.priceLabel = priceLabel; })} />
+              </p>
+              <div className="flex gap-2.5">
+                <button type="button" className="flex-1 rounded-full border border-white/15 py-2.5 text-[0.8rem] font-semibold" onClick={() => setSheet({ id: venue.id, name: venue.name, mode: "invite" })}>INVITE</button>
+                <button type="button" className="flex-1 rounded-full bg-fg py-2.5 text-[0.8rem] font-semibold text-ink" onClick={() => setSheet({ id: venue.id, name: venue.name, mode: "join" })}>JOIN</button>
               </div>
-              <div className="p-4 text-[12px] tracking-wide">{v.name}</div>
             </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 md:grid-cols-2 border-y border-black/10">
-        <div className="p-10 md:p-16">
-          <EditableText field="privateTitle" as="h3" className="text-[11px] tracking-[0.2em] uppercase opacity-60 mb-6" />
-          <div className="group cursor-pointer">
-            <EditableText field="privateDesc" as="p" className="text-[5vw] md:text-[3.5vw] leading-[0.95] tracking-tight group-hover:text-[#C45A3C] transition-colors duration-300" />
-            <div className="mt-6 text-[11px] tracking-[0.2em] uppercase underline underline-offset-4 group-hover:text-[#C45A3C] transition-colors">Enquire →</div>
-          </div>
-        </div>
-        <div className="p-10 md:p-16 bg-black text-white flex flex-col justify-between">
-          <div>
-            <EditableText field="quickTitle" as="h4" className="text-[11px] tracking-[0.2em] uppercase opacity-50 mb-6" />
-            <ul className="space-y-3">
-              {['How it works','FAQ','Contact'].map(link => (<li key={link} className="text-2xl hover:text-[#C45A3C] transition-colors cursor-pointer">{link}</li>))}
-            </ul>
-          </div>
-          <div className="mt-16 flex gap-4 text-[11px] opacity-50">
-            <span>© {new Date().getFullYear()} Buddy Blind</span><span>·</span><EditableText field="profileName" as="span" /> <span className="opacity-40">—</span> <EditableText field="profileRole" as="span" className="opacity-40" />
-          </div>
-        </div>
-      </section>
-      <div className="h-24" />
+          </article>
+        ))}
+      </div>
+      {shown.length === 0 && <p className="pb-10 text-center text-sm text-mute">Nothing in this filter tonight.</p>}
+      <Editable as="p" className="pb-8 text-center text-[0.7rem] tracking-[0.08em] text-mute" value={copy.footer} onChange={(footer) => update((d) => { d.copy.venues.footer = footer; })} />
+      <Sheet
+        open={!!sheet}
+        title={sheet ? `${sheet.mode === "invite" ? "Invite a table" : "Join"} · ${sheet.name}` : ""}
+        body={sheet?.mode === "invite" ? "You open the table. HK$5 admin fee in the real checkout. +2 points. Still no faces." : "Free. Instant. +1 point. You still don't know who sits down."}
+        confirmLabel={sheet?.mode === "invite" ? "Open table" : "Join"}
+        onClose={() => setSheet(null)}
+        onConfirm={confirmSheet}
+      />
     </main>
   );
 }
