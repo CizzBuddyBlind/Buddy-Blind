@@ -18,7 +18,16 @@ export default function PrivateEventsPage(){
   const [showJoin,setShowJoin]=useState(false);
   const [showAuth,setShowAuth]=useState(false);
 
-  const openJoin = (v:any)=>{ setSelected(v); setShowJoin(true); };
+  const openJoin = (v:any)=>{
+      if(typeof window!=='undefined'){
+        const isRegistered = localStorage.getItem('buddy_registered')==='1';
+        if(!isRegistered){
+          window.location.href=`/auth?redirect=/private-events&action=invite&venue=${v.id}`;
+          return;
+        }
+      }
+      setSelected(v); setShowJoin(true);
+    };
   const confirmFirst = ()=>{ setShowJoin(false); setShowAuth(true); };
   const confirmSaved = ()=>{ setShowJoin(false); window.location.href=`/invite?paid=true&ref=cizz-HEART&saved=1&event=${selected?.id||''}`; };
 

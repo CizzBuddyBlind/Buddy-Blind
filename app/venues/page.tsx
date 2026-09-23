@@ -20,7 +20,16 @@ export default function VenuesPage(){
   const [hasSaved,setHasSaved]=useState(false);
   useEffect(()=>{ if(typeof window!=='undefined') setHasSaved(localStorage.getItem('buddy_card_saved')==='1'); },[]);
 
-  const openJoin = (v:any)=>{ setSelected(v); setShowJoin(true); };
+  const openJoin = (v:any)=>{
+      if(typeof window!=='undefined'){
+        const isRegistered = localStorage.getItem('buddy_registered')==='1';
+        if(!isRegistered){
+          window.location.href=`/auth?redirect=/venues&action=join&venue=${v.id}`;
+          return;
+        }
+      }
+      setSelected(v); setShowJoin(true);
+    };
   const confirmFirst = ()=>{ setShowJoin(false); setShowAuth(true); };
   const confirmSaved = ()=>{ setShowJoin(false); window.location.href=`/join?paid=true&venue_id=${selected?.id||'kissa-tanaka'}&ref=cizz-HEART&saved=1`; };
 
