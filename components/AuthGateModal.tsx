@@ -28,7 +28,10 @@ export default function AuthGateModal({isOpen,onClose,onSuccess,onComplete,onVer
       const j=await r.json();
       if(j.error) throw new Error(j.error);
       await new Promise(res=>setTimeout(res,900));
-      if(typeof window!=='undefined'){ localStorage.setItem('buddy_verified_phone',form.phone); localStorage.setItem('buddy_user',JSON.stringify(form)); }
+      if(typeof window!=='undefined'){ localStorage.setItem('buddy_verified_phone',form.phone);
+        localStorage.setItem('buddy_card_saved','1');
+        localStorage.setItem('buddy_card_last4','4242');
+        localStorage.setItem('buddy_card_brand','Visa'); localStorage.setItem('buddy_user',JSON.stringify(form)); }
       setPaying(false); done(form); onClose(); setTimeout(()=>alert('BOOKED ✓ $5 已付，留喺 Buddy Blind 黑色 modal 入面，冇跳去白色 Stripe 網'),400);
     }catch(e:any){ setPaying(false); alert('Payment Error: '+e.message+' - 請檢查 Vercel 有冇 set STRIPE_SECRET_KEY'); }
   };
