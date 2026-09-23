@@ -54,13 +54,13 @@ function AuthContent(){
         {/* RIGHT - FORM - Impeccable design system - no purple */}
         <div className="md:w-[58%] bg-black p-8 flex flex-col">
           <h1 className="text-3xl font-black text-white tracking-tight">Create an account</h1>
-          <div className="mt-2 text-xs text-zinc-500">Already have an account? <button onClick={()=>setMode(mode==='create'?'login':'create')} className="underline text-white hover:text-orange-400 transition-colors">{mode==='create'?'Log in':'Create account'}</button> — Orange matches brand, no purple</div>
+          <div className="mt-2 text-xs text-zinc-500">Create account only <button onClick={()=>setMode(mode==='create'?'login':'create')} className="underline text-white hover:text-orange-400 transition-colors">{mode==='create'?'Sign in via Welcome':'Create account'}</button> — Orange matches brand, no purple</div>
           
           {mode==='login' ? (
             <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <input value={loginForm.email} onChange={e=>setLoginForm({...loginForm,email:e.target.value})} placeholder="Email" className="w-full h-12 rounded-xl bg-zinc-900 border border-zinc-800 focus:border-orange-500 px-4 text-sm outline-none text-white transition-colors"/>
               <input value={loginForm.password} onChange={e=>setLoginForm({...loginForm,password:e.target.value})} type="password" placeholder="Password" className="w-full h-12 rounded-xl bg-zinc-900 border border-zinc-800 focus:border-orange-500 px-4 text-sm outline-none text-white transition-colors"/>
-              <button onClick={handleLogin} className="w-full h-12 rounded-full bg-white text-black font-black text-xs tracking-widest hover:scale-[1.02] hover:shadow-lg transition-all">Log in — Continue to {action}</button>
+              <button onClick={handleLogin} className="w-full h-12 rounded-full bg-white text-black font-black text-xs tracking-widest hover:scale-[1.02] hover:shadow-lg transition-all">Sign in via Welcome — Continue to {action}</button>
               <div className="text-xs text-zinc-500 text-center">Initials: Alan Lee = AL, Alan = A, Cizz Jun = CJ</div>
             </div>
           ) : (
