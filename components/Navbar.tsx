@@ -93,7 +93,7 @@ export default function Navbar(){
       {isAdmin && (
         <div className="sticky top-[64px] z-30 bg-[#C45A3C] text-white mono text-[11px] tracking-[0.05em] px-6 py-2.5 flex flex-wrap justify-between items-center gap-2">
           <div className="flex items-center gap-3">
-            <span>ADMIN EDIT MODE - Upload photos from computer, move boxes ←→↑↓, edit text/colour/size/font, add/delete boxes.</span>
+            <span>ADMIN EDIT MODE - Upload photos from computer, move boxes ←->↑↓, edit text/colour/size/font, add/delete boxes.</span>
             {draftStatus && <span className="bg-black px-2 py-0.5 rounded-full text-[10px]">{draftStatus}</span>}
           </div>
           <div className="flex gap-2">

@@ -15,7 +15,7 @@ const DEFAULT_CONTENT:Record<string,string> = {
   headline_3: "That's the point.",
   subtext_1: 'Restaurants provide the scene. Private events create the reason.',
   subtext_2: 'You bring curiosity.',
-  cta_join: 'JOIN A BLIND DINNER →',
+  cta_join: 'JOIN A BLIND DINNER ->',
   cta_private: 'PRIVATE EVENTS',
   stat1_num: '89',
   stat1_label: 'HOSTS WHO SHOW UP',

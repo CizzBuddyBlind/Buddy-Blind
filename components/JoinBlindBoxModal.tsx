@@ -27,13 +27,13 @@ export default function JoinBlindBoxModal({isOpen,onClose,onConfirm,onConfirmWit
         {hasSaved ? (
           <div className="mt-4 bg-green-50 border border-green-200 rounded-[12px] p-3 flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px]">✓</div>
-            <div className="text-[11px]"><span className="font-bold">Saved payment:</span> Visa •••• {last4} • 4242 • Single button checkout</div>
+            <div className="text-[11px]"><span className="font-bold">Saved payment:</span> Visa ---- {last4} - 4242 - Single button checkout</div>
           </div>
         ) : (
           <div className="mt-4 bg-amber-50 border border-amber-200 rounded-[12px] p-3 text-[11px] text-amber-800">First time: OTP 123456 + card 4242 4242 4242 4242 Exp 12/34 CVC 123, then save for 1-click.</div>
         )}
         <div className="mt-6 flex gap-3">
-          <button disabled={paying} onClick={handleConfirm} className="flex-1 h-[48px] rounded-full bg-black text-white font-bold text-[12px] tracking-widest disabled:opacity-50">{paying?'PAYING...': hasSaved ? `CONFIRM JOIN · HK$5 · •••• ${last4}` : 'CONFIRM JOIN · HK$5'}</button>
+          <button disabled={paying} onClick={handleConfirm} className="flex-1 h-[48px] rounded-full bg-black text-white font-bold text-[12px] tracking-widest disabled:opacity-50">{paying?'PAYING...': hasSaved ? `CONFIRM JOIN · HK$5 · ---- ${last4}` : 'CONFIRM JOIN · HK$5'}</button>
           <button onClick={onClose} className="px-6 h-[48px] rounded-full border border-zinc-300 text-[12px] tracking-widest">CANCEL</button>
         </div>
         <div className="mt-4 text-[10px] tracking-[0.2em] text-zinc-400 text-center">DIFFERENT PHOTOS PER EVENT · MORE HEART · NO REPEATS {hasSaved ? '· 1-CLICK' : ''}</div>

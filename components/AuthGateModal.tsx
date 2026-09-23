@@ -33,7 +33,7 @@ export default function AuthGateModal({isOpen,onClose,onSuccess,onComplete,onVer
         <div className="w-full max-w-[440px] bg-[#111] border border-zinc-800 rounded-[32px] p-8 text-center">
           <div className="w-12 h-12 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center mx-auto">✓</div>
           <h2 className="mt-4 text-[18px] font-black">Welcome back</h2>
-          <p className="mt-2 text-[12px] text-zinc-500">Saved payment: Visa •••• 4242 • Test card 4242 4242 4242 4242</p>
+          <p className="mt-2 text-[12px] text-zinc-500">Saved payment: Visa ---- 4242 - Test card 4242 4242 4242 4242</p>
           <p className="mt-1 text-[11px] text-zinc-600">Single button and done - no retyping</p>
           <button disabled={paying} onClick={async()=>{
             setPaying(true);
@@ -47,7 +47,7 @@ export default function AuthGateModal({isOpen,onClose,onSuccess,onComplete,onVer
               onClose();
             }catch(e){ setPaying(false); setShowRegister(true); }
           }} className="mt-6 w-full h-[52px] rounded-full bg-white text-black font-black text-[12px] disabled:opacity-50">
-            {paying ? 'PAYING...' : `CONFIRM JOIN · HK$5 · •••• 4242`}
+            {paying ? 'PAYING...' : `CONFIRM JOIN · HK$5 · ---- 4242`}
           </button>
           <button onClick={()=>{ setHasSaved(false); setShowRegister(true); }} className="mt-3 text-[10px] tracking-widest text-zinc-500 underline">Use different payment method</button>
         </div>

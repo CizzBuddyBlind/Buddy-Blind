@@ -9,7 +9,7 @@ type Props = { isOpen: boolean; onClose: () => void; onConfirm: (data:any)=>void
 const DEFAULT_VENUES: Venue[] = [
   { id:'kissa-tanaka', name:'Kissa Tanaka', locations:['SOHO'] },
   { id:'yardbird', name:'Yardbird', locations:['SHEUNG WAN','CENTRAL'] },
-  { id:'mcdonalds', name:"McDonald's", locations:['SOHO','CENTRAL','CWB','TST','SAI KUNG','MONG KOK','SHAM SHUI PO'] },
+  { id:'mcdonalds', name:"McDonalds", locations:['SOHO','CENTRAL','CWB','TST','SAI KUNG','MONG KOK','SHAM SHUI PO'] },
   { id:'la-cabane', name:'La Cabane', locations:['CWB','SOHO'] },
   { id:'mott32', name:'Mott 32', locations:['CENTRAL'] },
 ];
@@ -101,13 +101,13 @@ export default function InviteBlindBoxModal({isOpen,onClose,onConfirm,venue}:Pro
           {step===1 && !isSingleLocation && (
             <div>
               <div className="text-[12px] tracking-[0.2em] text-zinc-500 mb-2">STEP 1 — LOCATION (Dynamic from admin)</div>
-              <div className="text-[11px] text-zinc-600 mb-4">{currentVenue?.name || data.venueName} has {locations.length} locations: {locations.join(', ')}. {locations.length===1 ? 'Single location → auto skip.' : 'Choose one.'} Example McDonald's everywhere.</div>
+              <div className="text-[11px] text-zinc-600 mb-4">{currentVenue?.name || data.venueName} has {locations.length} locations: {locations.join(', ')}. {locations.length===1 ? 'Single location -> auto skip.' : 'Choose one.'} Example McDonalds everywhere.</div>
               <div className="grid grid-cols-2 gap-3">
                 {locations.map((l:string)=>(
                   <button key={l} onClick={()=>{setData({...data,location:l}); setTimeout(()=>setStep(2),200);}} className={`h-[56px] rounded-full border text-[14px] tracking-widest font-medium ${data.location===l?'bg-white text-black border-white':'border-zinc-800 bg-transparent'}`}>{l}</button>
                 ))}
               </div>
-              <div className="mt-4 text-[10px] text-zinc-600">Admin can add restaurant with few locations → this list auto updates. If only 1 location, user no need to choose.</div>
+              <div className="mt-4 text-[10px] text-zinc-600">Admin can add restaurant with few locations -> this list auto updates. If only 1 location, user no need to choose.</div>
             </div>
           )}
 
@@ -193,7 +193,7 @@ export default function InviteBlindBoxModal({isOpen,onClose,onConfirm,venue}:Pro
                 <div className="flex items-center gap-3"><span className="text-[11px] text-zinc-600 w-[90px] tracking-widest">ORIENTATION</span><div className="flex gap-2">{['ANY','STRAIGHT','QUEER-FRIENDLY'].map(o=><button key={o} onClick={()=>setData({...data,orientation:o})} className={`px-4 h-[40px] rounded-full border text-[12px] tracking-widest ${data.orientation===o?'bg-white text-black':'border-zinc-800'}`}>{o}</button>)}</div></div>
                 <div className="flex items-center gap-3"><span className="text-[11px] text-zinc-600 w-[90px] tracking-widest">AGE RANGE</span><div className="flex gap-2">{['20-30','30-40','40-50','50+'].map(a=><button key={a} onClick={()=>setData({...data,age:a})} className={`px-4 h-[40px] rounded-full border text-[13px] tracking-widest ${data.age===a?'bg-white text-black':'border-zinc-800'}`}>{a}</button>)}</div></div>
               </div>
-              <button onClick={()=>setStep(7)} className="mt-8 w-full h-[56px] rounded-full bg-[#EDEBE8] text-black font-bold text-[13px] tracking-widest">CONTINUE → SUMMARY</button>
+              <button onClick={()=>setStep(7)} className="mt-8 w-full h-[56px] rounded-full bg-[#EDEBE8] text-black font-bold text-[13px] tracking-widest">CONTINUE -> SUMMARY</button>
             </div>
           )}
 

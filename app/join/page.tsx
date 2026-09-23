@@ -19,7 +19,7 @@ function JoinContent(){
             <div className="mt-6 bg-black border border-zinc-800 rounded-[16px] p-4 text-left text-[12px] space-y-1 font-mono">
               <div>Venue: {venue_id || 'Kissa Tanaka'}</div>
               <div>Ref: {ref || 'cizz-HEART'}</div>
-              <div>Status: Paid • $88 deposit at venue</div>
+              <div>Status: Paid - $88 deposit at venue</div>
               <div>Test Card: 4242 4242 4242 4242 | Exp 12/34 | CVC 123</div>
               <div>Address: Sent 2h before</div>
             </div>
@@ -32,7 +32,7 @@ function JoinContent(){
           <>
             <h1 className="text-[24px] font-black">JOIN BLIND DINNER</h1>
             <p className="mt-2 text-[13px] text-zinc-500">Choose a venue. $5 admin fee.</p>
-            <Link href="/venues" className="mt-6 block h-[56px] rounded-full bg-white text-black font-black text-[12px] flex items-center justify-center">BROWSE VENUES →</Link>
+            <Link href="/venues" className="mt-6 block h-[56px] rounded-full bg-white text-black font-black text-[12px] flex items-center justify-center">BROWSE VENUES -></Link>
           </>
         )}
       </div>

@@ -83,7 +83,7 @@ export default function ShareModal({isOpen,onClose,title,url}:Props){
         <div className="mt-6 bg-black border border-zinc-800 rounded-[12px] p-3">
           <div className="text-[10px] tracking-[0.2em] text-zinc-500">SHARE LINK</div>
           <div className="mt-1 text-[11px] text-zinc-400 font-mono truncate">{shareUrl}</div>
-          <div className="mt-1 text-[10px] text-zinc-600">V9 Heart • Different photos per event • More heart • No repeats • Test card 4242</div>
+          <div className="mt-1 text-[10px] text-zinc-600">V9 Heart - Different photos per event - More heart - No repeats - Test card 4242</div>
         </div>
       </div>
     </div>

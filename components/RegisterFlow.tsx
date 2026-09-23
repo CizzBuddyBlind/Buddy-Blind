@@ -79,7 +79,7 @@ export default function RegisterFlow({isOpen,onClose,onComplete,venueName}:Props
 
         {step===1 && (
           <div className="mt-6 space-y-4">
-            <div className="text-[10px] tracking-[0.2em] text-zinc-500">STEP 1 — IDENTITY • Gender, Age (5yr gap), Orientation (Optional), Phone MUST</div>
+            <div className="text-[10px] tracking-[0.2em] text-zinc-500">STEP 1 — IDENTITY - Gender, Age (5yr gap), Orientation (Optional), Phone MUST</div>
             
             <div className="grid grid-cols-2 gap-3">
               <input value={form.firstName} onChange={e=>setForm({...form,firstName:e.target.value})} placeholder="First name" className="h-[48px] rounded-[12px] bg-black border border-zinc-800 px-4 text-[13px] outline-none"/>
@@ -101,7 +101,7 @@ export default function RegisterFlow({isOpen,onClose,onComplete,venueName}:Props
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <input value={form.exactAge} onChange={e=>handleAgeChange(e.target.value)} placeholder="Enter exact age e.g. 18" type="number" className="w-full h-[48px] rounded-[12px] bg-black border border-zinc-800 px-4 text-[13px] outline-none"/>
-                <div className="mt-1 text-[10px] text-amber-300">Auto → {form.ageRange} (5yr gap)</div>
+                <div className="mt-1 text-[10px] text-amber-300">Auto -> {form.ageRange} (5yr gap)</div>
               </div>
               <div className="h-[48px] rounded-[12px] bg-zinc-900 border border-zinc-800 px-4 flex items-center text-[13px] text-zinc-400">
                 Age range: <span className="ml-2 text-white font-bold">{form.ageRange}</span>
@@ -122,7 +122,7 @@ export default function RegisterFlow({isOpen,onClose,onComplete,venueName}:Props
 
             <label className="flex gap-2 items-start text-[11px] text-zinc-400"><input type="checkbox" checked={form.agreeTerms} onChange={e=>setForm({...form,agreeTerms:e.target.checked})} className="mt-1 accent-white"/>I agree to the <span className="underline">Terms & Conditions</span></label>
 
-            <button disabled={!form.firstName||!form.email||!form.phone||!form.exactAge} onClick={()=>setStep(2)} className="w-full h-[52px] rounded-full bg-[#8B5CF6] text-white font-black text-[12px] tracking-widest disabled:opacity-30">Next → Free Trial</button>
+            <button disabled={!form.firstName||!form.email||!form.phone||!form.exactAge} onClick={()=>setStep(2)} className="w-full h-[52px] rounded-full bg-[#8B5CF6] text-white font-black text-[12px] tracking-widest disabled:opacity-30">Next -> Free Trial</button>
 
             <div className="flex items-center gap-3 mt-4"><div className="h-[1px] flex-1 bg-zinc-800"/><span className="text-[10px] text-zinc-600">Or register with</span><div className="h-[1px] flex-1 bg-zinc-800"/></div>
             <div className="grid grid-cols-2 gap-3">
@@ -134,7 +134,7 @@ export default function RegisterFlow({isOpen,onClose,onComplete,venueName}:Props
 
         {step===2 && (
           <div className="mt-6">
-            <div className="text-[10px] tracking-[0.2em] text-zinc-500 mb-4">STEP 2 — 90-DAY FREE TRIAL • Premium plan details</div>
+            <div className="text-[10px] tracking-[0.2em] text-zinc-500 mb-4">STEP 2 — 90-DAY FREE TRIAL - Premium plan details</div>
             
             <div className="bg-black border border-zinc-800 rounded-[20px] p-5 space-y-3">
               <div className="text-[14px] font-bold">Featured in 100+ countries</div>
@@ -169,7 +169,7 @@ export default function RegisterFlow({isOpen,onClose,onComplete,venueName}:Props
 
         {step===3 && (
           <div className="mt-6">
-            <div className="text-[10px] tracking-[0.2em] text-zinc-500 mb-4">STEP 3 — SUBSCRIBE • Disclaimer + Confirm (from Features Bible)</div>
+            <div className="text-[10px] tracking-[0.2em] text-zinc-500 mb-4">STEP 3 — SUBSCRIBE - Disclaimer + Confirm (from Features Bible)</div>
             
             <div className="bg-black border border-zinc-800 rounded-[20px] p-5 space-y-4">
               <div className="flex justify-between items-center"><span className="text-[10px] tracking-[0.2em] text-zinc-500">PREMIUM PLAN</span><span className="text-[20px] font-black">$50/mo</span></div>
@@ -185,29 +185,29 @@ export default function RegisterFlow({isOpen,onClose,onComplete,venueName}:Props
               </div>
 
               <div className="text-[10px] leading-relaxed text-zinc-500 space-y-2">
-                <div className="font-bold text-zinc-300">90-DAY FREE TRIAL • Features Bible disclaimer:</div>
-                <div>• Restaurants provide the scene. Private events create the reason. You bring curiosity.</div>
-                <div>• Blind dining: address sent 2h before event, no menu shown before.</div>
-                <div>• $5 admin fee per blind box + $88 deposit at venue. Premium $50/mo after 90-day free trial, cancel anytime in app.</div>
-                <div>• 18+ only. Be respectful. No photos/names before event - that's the point.</div>
-                <div>• Photos always coloured, different photos per event, more heart, no repeats.</div>
-                <div>• By subscribing, you agree to Terms & Conditions and authorize recurring $50/mo after trial unless cancelled.</div>
+                <div className="font-bold text-zinc-300">90-DAY FREE TRIAL - Features Bible disclaimer:</div>
+                <div>- Restaurants provide the scene. Private events create the reason. You bring curiosity.</div>
+                <div>- Blind dining: address sent 2h before event, no menu shown before.</div>
+                <div>- $5 admin fee per blind box + $88 deposit at venue. Premium $50/mo after 90-day free trial, cancel anytime in app.</div>
+                <div>- 18+ only. Be respectful. No photos/names before event - that's the point.</div>
+                <div>- Photos always coloured, different photos per event, more heart, no repeats.</div>
+                <div>- By subscribing, you agree to Terms & Conditions and authorize recurring $50/mo after trial unless cancelled.</div>
               </div>
             </div>
 
             <label className="mt-4 flex gap-2 items-start text-[11px] text-zinc-400 bg-zinc-900/50 rounded-[12px] p-3 border border-zinc-800">
               <input type="checkbox" checked={form.agreeTrial} onChange={e=>setForm({...form,agreeTrial:e.target.checked})} className="mt-1 accent-[#8B5CF6]"/>
-              <span>I agree to 90-DAY FREE, then $50/month, billed monthly. I understand $5 admin per join + $88 deposit at venue. Saved card Visa •••• 4242 for 1-click next time.</span>
+              <span>I agree to 90-DAY FREE, then $50/month, billed monthly. I understand $5 admin per join + $88 deposit at venue. Saved card Visa ---- 4242 for 1-click next time.</span>
             </label>
 
             <div className="mt-4 flex gap-3">
               <button onClick={()=>setStep(2)} className="flex-1 h-[52px] rounded-full border border-zinc-700 text-[11px] tracking-widest">BACK</button>
               <button disabled={paying||!form.agreeTrial} onClick={handleSubscribe} className="flex-1 h-[52px] rounded-full bg-[#8B5CF6] text-white font-black text-[12px] tracking-widest disabled:opacity-50">
-                {paying ? 'SUBSCRIBING...' : 'Subscribe → Confirm'}
+                {paying ? 'SUBSCRIBING...' : 'Subscribe -> Confirm'}
               </button>
             </div>
 
-            <div className="mt-3 text-[9px] text-zinc-600 text-center">Try 90 days free, then $50/month • Test: 4242 4242 4242 4242</div>
+            <div className="mt-3 text-[9px] text-zinc-600 text-center">Try 90 days free, then $50/month - Test: 4242 4242 4242 4242</div>
           </div>
         )}
       </div>

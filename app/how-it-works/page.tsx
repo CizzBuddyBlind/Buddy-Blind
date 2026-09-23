@@ -31,7 +31,7 @@ const DEFAULT: Content = {
   step7_num: '07',
   step7_title: 'Create your own',
   step7_desc: 'Premium unlocks private up to 20. Wine, industry, 50+ social, hike — host creates attraction and download reasons.',
-  cta_join: 'JOIN A BLIND DINNER →',
+  cta_join: 'JOIN A BLIND DINNER ->',
   cta_private: 'PRIVATE EVENTS'
 }
 

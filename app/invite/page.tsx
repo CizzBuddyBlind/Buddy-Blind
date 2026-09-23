@@ -28,7 +28,7 @@ function InviteContent(){
           <>
             <h1 className="text-[24px] font-black">CREATE INVITE</h1>
             <p className="mt-2 text-[13px] text-zinc-500">Host private blind dinner. $5 admin.</p>
-            <Link href="/private-events" className="mt-6 block h-[56px] rounded-full bg-white text-black font-black text-[12px] flex items-center justify-center">SEE PRIVATE EVENTS →</Link>
+            <Link href="/private-events" className="mt-6 block h-[56px] rounded-full bg-white text-black font-black text-[12px] flex items-center justify-center">SEE PRIVATE EVENTS -></Link>
           </>
         )}
       </div>
