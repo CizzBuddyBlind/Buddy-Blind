@@ -141,7 +141,7 @@ export default function RegisterFlow({isOpen,onClose,onComplete,venueName}:Props
               <div className="text-[20px] font-black">BuddyBlind®</div>
               <div className="space-y-2 mt-3">
                 {[
-                  'Enjoy your first 90 days, it’s free',
+                  'Enjoy your first 90 days, it's free',
                   'Cancel from the app or your iCloud account',
                   'Quick match & immediate blind dinners',
                   'Detailed venue info & blind reasons',
