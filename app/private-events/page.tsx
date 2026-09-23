@@ -38,16 +38,16 @@ export default function PrivateEventsPage(){
         <p className="mt-4 text-sm text-zinc-500 max-w-xl">Host creates attraction Six cards six different photos Share only after completed No share on cards</p>
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
           {PRIVATE_DATA.map(v=>(
-            <div key={v.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-3 group hover:border-zinc-700">
+            <div key={v.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-3 group hover:border-orange-600 hover:-translate-y-2 hover:scale-[1.02] hover:shadow-2xl hover:shadow-orange-900/30 transition-all duration-300 cursor-pointer">
               <div className="relative overflow-hidden rounded-2xl h-80">
-                <img src={v.img} alt={v.title} className="w-full h-full object-cover"/>
+                <img src={v.img} alt={v.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
                 <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black bg-opacity-70 text-xs text-white">{v.badge}</div>
               </div>
               <div className="p-3">
-                <h3 className="text-xl font-serif text-white">{v.title}</h3>
-                <div className="mt-1 text-sm text-zinc-500">{v.desc}</div>
-                <div className="mt-3 text-xs tracking-widest text-zinc-600">{v.host}</div>
-                <div className="mt-3 text-xs text-zinc-500 italic leading-relaxed group-hover:text-orange-600">{v.attraction}</div>
+                <h3 className="text-xl font-serif text-white group-hover:text-orange-500 transition-colors duration-300">{v.title}</h3>
+                <div className="mt-1 text-sm text-zinc-400 group-hover:text-orange-400 transition-colors duration-300">{v.desc}</div>
+                <div className="mt-3 text-xs tracking-widest text-zinc-500 group-hover:text-orange-500 transition-colors duration-300">{v.host}</div>
+                <div className="mt-3 text-xs text-zinc-400 italic leading-relaxed group-hover:text-orange-400 group-hover:font-bold transition-all duration-300">{v.attraction}</div>
                 <div className="mt-4 flex gap-2">
                   <button onClick={()=>openJoin(v)} className="flex-1 h-10 rounded-full bg-white text-black text-xs font-medium">JOIN</button>
                   <button onClick={()=>{

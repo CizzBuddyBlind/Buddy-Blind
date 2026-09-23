@@ -38,9 +38,9 @@ export default function VenuesPage(){
         <p className="mt-4 text-sm text-zinc-400 max-w-xl">Restaurants provide the scene Private events create the reason You bring curiosity Six cards six photos different per event coloured more heart no repeats Share only after completed invite or join</p>
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
           {VENUE_DATA.map(v=>(
-            <div key={v.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-3 group hover:border-zinc-700">
+            <div key={v.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-3 group hover:border-zinc-600 hover:-translate-y-2 hover:scale-[1.02] hover:shadow-2xl hover:shadow-orange-900/20 transition-all duration-300 cursor-pointer">
               <div className="relative overflow-hidden rounded-2xl h-80">
-                <img src={v.img} alt={v.name} className="w-full h-full object-cover"/>
+                <img src={v.img} alt={v.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
                 <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black bg-opacity-70 text-xs text-white">{v.badge}</div>
                 <div className="absolute bottom-3 left-3 right-3 flex justify-between text-xs">
                   <span className="px-2 py-1 rounded-full bg-black bg-opacity-70 text-white">{v.area}</span>

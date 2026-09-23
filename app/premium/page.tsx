@@ -113,7 +113,7 @@ export default function PremiumPage(){
               if(tier.id==='premium') btnText = 'UPGRADE TO PREMIUM'
             }
             return(
-              <div key={tier.id} className={'p-8 flex flex-col h-full ' + (!isPremium ? 'border-b md:border-b-0 md:border-r border-zinc-800' : '') + ' ' + (isPremium ? 'bg-white text-black rounded-b-2xl md:rounded-bl-none md:rounded-r-2xl' : 'bg-zinc-900')}>
+              <div key={tier.id} className={'p-8 flex flex-col h-full hover:-translate-y-2 hover:scale-[1.02] hover:shadow-2xl transition-all duration-300 cursor-pointer ' + (!isPremium ? 'border-b md:border-b-0 md:border-r border-zinc-800' : '') + ' ' + (isPremium ? 'bg-white text-black rounded-b-2xl md:rounded-bl-none md:rounded-r-2xl' : 'bg-zinc-900')}>
                 <div className="flex justify-between items-start min-h-[32px]">
                   <h3 className={'font-serif text-2xl ' + (isPremium?'text-black':'text-white')}>{tier.title}</h3>
                   <span className="text-xs tracking-widest text-zinc-500 max-w-[140px] text-right">{tier.tag}</span>
