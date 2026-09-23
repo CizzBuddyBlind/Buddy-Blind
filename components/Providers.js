@@ -3,7 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { SEED, SEED_ACCOUNTS } from "@/lib/defaults";
 import { loadSharedContent, saveSharedContent, supabaseReady } from "@/lib/supabase";
-import { bookingHold, logEntry, normalizeContent, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
+import { bookingHold, logEntry, normalizeContent, pingWindow, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
+import { channelNote, notifyRestaurant } from "@/lib/notify";
 
 const Ctx = createContext(null);
 export function useBB() {
@@ -616,6 +617,7 @@ export function BuddyProvider({ children }) {
     const valueLang = next === "zh" || next === "zh-HK" ? next : "en";
     setLangState(valueLang);
     write(LANG, valueLang);
+    if (typeof document !== "undefined") document.documentElement.lang = valueLang === "zh-HK" ? "zh-Hant" : valueLang;
   }, []);
 
   const trialOk = !!(trial?.at && !trial.cancelled && Date.now() - trial.at < (trial.days || TRIAL_DAYS) * 86400000);
@@ -759,10 +761,30 @@ export function BuddyProvider({ children }) {
       area: branch?.area || venue.area,
       address: branch?.address || venue.address,
       inviteText: `${session.handle} invites you to join a dinner and meet new friends.`,
+      participants: [{ handle: session.handle, role: "host" }],
+      pings: [],
     };
     venue.tables = [...(venue.tables || []), table];
     const hold = bookingHold(table);
-    base.bookingLog = [logEntry({ venue, table, hold, action: "opened", host: session.handle }), ...(base.bookingLog || [])].slice(0, 40);
+    const entry = logEntry({ venue, table, hold, action: "opened", host: session.handle });
+    const result = await notifyRestaurant({
+      venueName: venue.name,
+      email: venue.email,
+      phone: venue.phone,
+      method: venue.contactMethod || "email",
+      action: "opened",
+      dateISO: table.dateISO,
+      time: table.time,
+      host: session.handle,
+      participants: hold.joined,
+      held: hold.held,
+      status: hold.status,
+      reason: hold.reason,
+      userEmail: session.email,
+    });
+    entry.channelNote = channelNote(result);
+    entry.status = result.email === "sent" || result.sms === "sent" || result.whatsapp === "sent" ? "sent" : "pending";
+    base.bookingLog = [entry, ...(base.bookingLog || [])].slice(0, 40);
     const saved = await applyLive(base);
     if (!saved.ok && saved.error) return { error: saved.error };
     const points = grantPoints("invite");
@@ -785,8 +807,30 @@ export function BuddyProvider({ children }) {
     if (before.closed || before.places <= 0 || before.status === "walk-in") return { error: before.reason };
     table.joined += 1;
     if ((venue.spots || 0) > 0) venue.spots -= 1;
+    if (!Array.isArray(table.participants)) table.participants = [];
+    if (!table.participants.some((p) => p.handle === session.handle)) {
+      table.participants.push({ handle: session.handle, role: "guest" });
+    }
     const hold = bookingHold(table);
-    base.bookingLog = [logEntry({ venue, table, hold, action: "joined", host: table.hostHandle }), ...(base.bookingLog || [])].slice(0, 40);
+    const entry = logEntry({ venue, table, hold, action: "joined", host: table.hostHandle });
+    const result = await notifyRestaurant({
+      venueName: venue.name,
+      email: venue.email,
+      phone: venue.phone,
+      method: venue.contactMethod || "email",
+      action: "joined",
+      dateISO: table.dateISO,
+      time: table.time,
+      host: table.hostHandle,
+      participants: hold.joined,
+      held: hold.held,
+      status: hold.status,
+      reason: hold.reason,
+      userEmail: session.email,
+    });
+    entry.channelNote = channelNote(result);
+    entry.status = result.email === "sent" || result.sms === "sent" || result.whatsapp === "sent" ? "sent" : "pending";
+    base.bookingLog = [entry, ...(base.bookingLog || [])].slice(0, 40);
     const saved = await applyLive(base);
     if (!saved.ok && saved.error) return { error: saved.error };
     const points = grantPoints("join");
@@ -825,6 +869,8 @@ export function BuddyProvider({ children }) {
       videoUrl: input.videoUrl || "",
       showHostPhoto: !!input.showHostPhoto,
       imageUrl: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80",
+      participants: [{ handle: session.handle, role: "host" }],
+      pings: [],
     };
     const saved = await insertEvent(item, 5);
     if (!saved?.ok) return saved;
@@ -840,6 +886,10 @@ export function BuddyProvider({ children }) {
     if ((item.spots || 0) <= 0) return { error: "FULL" };
     item.spots -= 1;
     item.joined = (item.joined || 1) + 1;
+    if (!Array.isArray(item.participants)) item.participants = [];
+    if (!item.participants.some((p) => p.handle === session.handle)) {
+      item.participants.push({ handle: session.handle, role: "guest" });
+    }
     const saved = await applyLive(base);
     if (!saved.ok && saved.error) return { error: saved.error };
     const points = grantPoints("join");
@@ -850,6 +900,87 @@ export function BuddyProvider({ children }) {
     pushNote("Private event", `${item.name} · ${item.timeLabel} · ${item.location}`);
     return { ok: true };
   }, [applyLive, editing, pushNote, session]);
+
+  const sendPing = useCallback(async ({ venueId, tableId, eventId }) => {
+    if (!session) return { needLogin: true };
+    const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
+    const target = eventId
+      ? base.events.find((e) => e.id === eventId)
+      : base.venues.find((v) => v.id === venueId)?.tables?.find((t) => t.id === tableId);
+    if (!target) return { error: "That event is gone." };
+    const joined = (target.participants || []).some((p) => p.handle === session.handle)
+      || target.hostHandle === session.handle
+      || target.hostName === session.handle;
+    if (!joined) return { error: "Join this table first." };
+    const mode = pingWindow(target);
+    if (!mode) return { error: "That button opens only in the 2 hours before, or the 30 minutes after the start." };
+    target.pings = [...(target.pings || []), {
+      id: `ping-${Date.now().toString(36)}`,
+      from: session.handle,
+      kind: mode,
+      at: Date.now(),
+      replies: [],
+    }];
+    const saved = await applyLive(base);
+    if (!saved.ok && saved.error) return { error: saved.error };
+    pushNote(mode === "see-you" ? "See you there" : "Are you coming?", "The other people on this table will see it in Buddy Blind.");
+    return { ok: true };
+  }, [applyLive, editing, pushNote, session]);
+
+  const replyPing = useCallback(async ({ venueId, tableId, eventId, pingId, choice }) => {
+    if (!session) return { needLogin: true };
+    const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
+    const target = eventId
+      ? base.events.find((e) => e.id === eventId)
+      : base.venues.find((v) => v.id === venueId)?.tables?.find((t) => t.id === tableId);
+    const ping = target?.pings?.find((p) => p.id === pingId);
+    if (!ping) return { error: "That note is gone." };
+    if (!(ping.replies || []).some((r) => r.from === session.handle)) {
+      ping.replies = [...(ping.replies || []), { from: session.handle, choice, at: Date.now() }];
+    }
+    const saved = await applyLive(base);
+    if (!saved.ok && saved.error) return { error: saved.error };
+    const socialNext = { ...emptySocial(), ...read(SOCIAL, {}) };
+    socialNext.notes = (socialNext.notes || []).map((n) => (n.ping?.pingId === pingId ? { ...n, replied: true } : n));
+    saveSocial(socialNext);
+    return { ok: true };
+  }, [applyLive, editing, session]);
+
+  useEffect(() => {
+    if (!ready || !session) return;
+    const mine = session.handle;
+    const additions = [];
+    const seen = new Set((social.notes || []).map((n) => n.id));
+    const collect = (ping, meta, title) => {
+      const id = `ping-note-${ping.id}`;
+      if (ping.from === mine || seen.has(id)) return;
+      if ((ping.replies || []).some((r) => r.from === mine)) return;
+      seen.add(id);
+      additions.push({
+        id,
+        title,
+        body: ping.kind === "see-you" ? `${ping.from} says see you there.` : `${ping.from} asks if you are coming.`,
+        at: ping.at || Date.now(),
+        read: false,
+        ping: { ...meta, pingId: ping.id, kind: ping.kind },
+      });
+    };
+    (content.venues || []).forEach((venue) => {
+      (venue.tables || []).forEach((table) => {
+        const joined = (table.participants || []).some((p) => p.handle === mine) || table.hostHandle === mine;
+        if (!joined) return;
+        (table.pings || []).forEach((ping) => collect(ping, { venueId: venue.id, tableId: table.id }, `${venue.name} · ${table.time}`));
+      });
+    });
+    (content.events || []).forEach((event) => {
+      if (event.kind !== "private") return;
+      const joined = (event.participants || []).some((p) => p.handle === mine) || event.hostName === mine;
+      if (!joined) return;
+      (event.pings || []).forEach((ping) => collect(ping, { eventId: event.id }, event.name));
+    });
+    if (!additions.length) return;
+    saveSocial({ ...emptySocial(), ...read(SOCIAL, {}), notes: [...additions, ...(read(SOCIAL, {}).notes || [])].slice(0, 40) });
+  }, [content, ready, session, social.notes]);
 
   useEffect(() => {
     if (!ready || !session || social.notesOn === false) return;
@@ -932,6 +1063,8 @@ export function BuddyProvider({ children }) {
       joinTable,
       createPrivate,
       joinPrivate,
+      sendPing,
+      replyPing,
     }),
     [
       ready, remote, content, session, staff, editing, preview, device, panel, dirty, toast, notify,
@@ -940,7 +1073,7 @@ export function BuddyProvider({ children }) {
       versions, restoreVersion, act, insertEvent, removeBlock, duplicateBlock, addBlock, toggleLock,
       toggleHide, resetDraft, confirm, lang, setLang, trial, premium, acceptTrial, cancelTrial,
       updateProfile, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
-      addReview, flow, openTable, joinTable, createPrivate, joinPrivate,
+      addReview, flow, openTable, joinTable, createPrivate, joinPrivate, sendPing, replyPing,
     ],
   );
 

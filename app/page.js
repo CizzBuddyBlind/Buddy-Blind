@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Editable, Photo } from "@/components/Bits";
+import { Copy, Editable, Photo } from "@/components/Bits";
 import { HostBadge } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
@@ -54,19 +54,20 @@ function Home() {
     <main className="bb-frame pb-28 pt-6 md:pb-16">
       <section className="mx-auto max-w-2xl py-8 text-center">
         <div className="mb-7 flex justify-between gap-4 text-mute">
-          <Editable className="bb-kicker" value={copy.kickerLeft} onChange={(kickerLeft) => update((d) => { d.copy.venues.kickerLeft = kickerLeft; })} />
-          <Editable className="bb-kicker text-right" value={copy.kickerRight} onChange={(kickerRight) => update((d) => { d.copy.venues.kickerRight = kickerRight; })} />
+          <Copy k="hero.left" legacy={copy.kickerLeft} className="bb-kicker" onEnglish={(d, next) => { d.copy.venues.kickerLeft = next; }} />
+          <Copy k="hero.right" legacy={copy.kickerRight} className="bb-kicker text-right" onEnglish={(d, next) => { d.copy.venues.kickerRight = next; }} />
         </div>
         <h1 className="bb-hero-title">
-          <Editable value={copy.title} onChange={(title) => update((d) => { d.copy.venues.title = title; })} />
+          <Copy k="hero.title" legacy={copy.title} onEnglish={(d, next) => { d.copy.venues.title = next; }} />
           <br />
-          <Editable className="italic text-ember" value={copy.accent} onChange={(accent) => update((d) => { d.copy.venues.accent = accent; })} />
+          <Copy k="hero.accent" legacy={copy.accent} className="italic text-ember" onEnglish={(d, next) => { d.copy.venues.accent = next; }} />
         </h1>
-        <Editable
+        <Copy
           as="p"
+          k="hero.sub"
+          legacy={copy.sub}
           className="mx-auto mt-4 max-w-md text-[0.9rem] leading-relaxed text-mute"
-          value={copy.sub}
-          onChange={(sub) => update((d) => { d.copy.venues.sub = sub; })}
+          onEnglish={(d, next) => { d.copy.venues.sub = next; }}
         />
       </section>
 
@@ -125,50 +126,51 @@ function Home() {
               onClick={() => editing && setSelectedId(venue.id)}
               className={`bb-card transition ${venue.hidden ? "opacity-40" : ""} ${selectedId === venue.id ? "ring-2 ring-ember" : ""} ${venue.locked ? "ring-1 ring-white/20" : ""}`}
             >
-              <Link href={`/venues/${venue.id}`} className="bb-img block" onClick={(e) => editing && e.preventDefault()}>
-                <Photo
-                  src={venue.imageUrl}
-                  alt={venue.imageAlt}
-                  onChange={(imageUrl) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.imageUrl = imageUrl; })}
-                />
-                <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[0.7rem] font-semibold text-white">{venue.spots} {t("spots")}</span>
-                <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-[0.7rem] font-semibold text-char">{venue.timeLabel}</span>
-              </Link>
-              <div className="px-4 pb-[18px] pt-4">
-                <h3 className="font-serif text-[1.2rem] text-ember-soft">
-                  <Editable locked={venue.locked} value={venue.name} onChange={(name) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.name = name; })} />
-                </h3>
-                <p className="mt-1 text-[0.72rem] tracking-wide text-mute">
-                  <Editable locked={venue.locked} value={venue.cuisine || venue.typeLabel} onChange={(cuisine) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.cuisine = cuisine; })} />
-                </p>
-                <p className="text-[0.72rem] tracking-wide text-mute">
-                  <Editable locked={venue.locked} value={venue.locationLabel} onChange={(locationLabel) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.locationLabel = locationLabel; })} />
-                </p>
-                <p className="mt-1 text-[0.8rem] text-mute">
-                  <Editable locked={venue.locked} value={venue.priceLabel} onChange={(priceLabel) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.priceLabel = priceLabel; })} />
-                </p>
-                {preview && (
-                  <div className="mb-3 mt-3 rounded-xl bg-white/5 px-3 py-2 text-[0.75rem]">
-                    <div className="flex items-center gap-2">
-                      <HostBadge handle={preview.table.hostHandle} tier={preview.table.hostTier} />
-                      <span>{preview.table.hostHandle} {t("host.line")}</span>
-                    </div>
-                    <p className="mt-2 text-mute">{prettyDate(preview.table.dateISO, lang)} · {preview.table.time} · {preview.hold.held} people · {preview.hold.places} left</p>
-                    <p className="text-mute">{tablePrefs(preview.table)}</p>
-                    {more > 0 && <p className="mt-1 text-ember">+ {t("moreEvents")}</p>}
-                  </div>
-                )}
-                <div className="mt-3 flex gap-2.5">
-                  <button type="button" className="flex-1 rounded-full border border-white/15 py-2.5 text-[0.8rem] font-semibold" onClick={() => setFlow({ type: "invite", venueId: venue.id })}>{t("btn.invite")}</button>
-                  <button type="button" className="flex-1 rounded-full bg-fg py-2.5 text-[0.8rem] font-semibold text-ink" onClick={() => setFlow({ type: "join", venueId: venue.id })}>{t("btn.join")}</button>
+              <Link href={`/venues/${venue.id}`} className="block" onClick={(e) => editing && e.preventDefault()}>
+                <div className="bb-img">
+                  <Photo
+                    src={venue.imageUrl}
+                    alt={venue.imageAlt}
+                    onChange={(imageUrl) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) { v.imageUrl = imageUrl; v.galleryVersion = 2; } })}
+                  />
+                  <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[0.7rem] font-semibold text-white">{venue.spots} {t("spots")}</span>
+                  <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-[0.7rem] font-semibold text-char">{venue.timeLabel}</span>
                 </div>
+                <div className="px-4 pb-2 pt-4">
+                  <h3 className="font-serif text-[1.2rem] text-ember-soft">
+                    <Editable locked={venue.locked} value={venue.name} onChange={(name) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.name = name; })} />
+                  </h3>
+                  <p className="mt-1 text-[0.72rem] tracking-wide text-mute">
+                    <Editable locked={venue.locked} value={venue.cuisine || venue.typeLabel} onChange={(cuisine) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.cuisine = cuisine; })} />
+                  </p>
+                  <p className="text-[0.72rem] tracking-wide text-mute">
+                    <Editable locked={venue.locked} value={venue.locationLabel} onChange={(locationLabel) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.locationLabel = locationLabel; })} />
+                  </p>
+                  <p className="mt-1 text-[0.8rem] text-mute">{venue.priceTier} · {venue.hours}</p>
+                  {venue.petFriendly && <p className="mt-1 text-[0.72rem] uppercase tracking-[0.12em] text-ember">{t("venue.pet")}</p>}
+                  {preview && (
+                    <div className="mb-3 mt-3 rounded-xl bg-white/5 px-3 py-2 text-[0.75rem]">
+                      <div className="flex items-center gap-2">
+                        <HostBadge handle={preview.table.hostHandle} tier={preview.table.hostTier} />
+                        <span>{preview.table.hostHandle} {t("host.line")}</span>
+                      </div>
+                      <p className="mt-2 text-mute">{prettyDate(preview.table.dateISO, lang)} · {preview.table.time} · {preview.hold.held} people · {preview.hold.places} left</p>
+                      <p className="text-mute">{tablePrefs(preview.table)}</p>
+                      {more > 0 && <p className="mt-1 text-ember">+ {t("moreEvents")}</p>}
+                    </div>
+                  )}
+                </div>
+              </Link>
+              <div className="flex gap-2.5 px-4 pb-[18px]">
+                <button type="button" className="flex-1 rounded-full border border-white/15 py-2.5 text-[0.8rem] font-semibold" onClick={() => setFlow({ type: "invite", venueId: venue.id })}>{t("btn.invite")}</button>
+                <button type="button" className="flex-1 rounded-full bg-fg py-2.5 text-[0.8rem] font-semibold text-ink" onClick={() => setFlow({ type: "join", venueId: venue.id })}>{t("btn.join")}</button>
               </div>
             </article>
           );
         })}
       </div>
-      {shown.length === 0 && <p className="pb-10 text-center text-sm text-mute">Nothing in this filter.</p>}
-      <Editable as="p" className="pb-8 text-center text-[0.7rem] tracking-[0.08em] text-mute" value={copy.footer} onChange={(footer) => update((d) => { d.copy.venues.footer = footer; })} />
+      {shown.length === 0 && <p className="pb-10 text-center text-sm text-mute">{t("empty.filter")}</p>}
+      <Copy as="p" k="hero.footer" legacy={copy.footer} className="pb-8 text-center text-[0.7rem] tracking-[0.08em] text-mute" onEnglish={(d, next) => { d.copy.venues.footer = next; }} />
     </main>
   );
 }

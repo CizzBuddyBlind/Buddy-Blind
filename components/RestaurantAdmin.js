@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useBB } from "./Providers";
 import { CUISINES, prettyDate } from "@/lib/bible";
+import { channelNote, notifyRestaurant } from "@/lib/notify";
 
 export function RestaurantAdmin() {
   const bb = useBB();
   const venues = bb.content.venues;
   const [id, setId] = useState(venues[0]?.id || "");
   const venue = venues.find((v) => v.id === id) || venues[0];
+  const [sending, setSending] = useState(false);
   if (!venue) return <p className="text-xs text-mute">No restaurants yet. Add a venue card first.</p>;
 
   function patch(partial) {
@@ -60,13 +62,44 @@ export function RestaurantAdmin() {
           {["$", "$$", "$$$", "$$$$"].map((p) => <option key={p}>{p}</option>)}
         </select>
       </label>
-      <p className="text-mute">Preview · {venue.cuisine} · {venue.priceTier} · {venue.address}</p>
+      <label className="flex items-center gap-2">
+        <input type="checkbox" checked={!!venue.petFriendly} onChange={(e) => patch({ petFriendly: e.target.checked })} />
+        Pet friendly
+      </label>
+      <p className="text-mute">Preview · {venue.cuisine} · {venue.priceTier} · {venue.address}{venue.petFriendly ? " · pet friendly" : ""}</p>
+      <button
+        type="button"
+        disabled={sending}
+        className="rounded-full bg-ember px-3 py-1 font-semibold text-white disabled:opacity-40"
+        onClick={async () => {
+          setSending(true);
+          const result = await notifyRestaurant({
+            venueName: venue.name,
+            email: venue.email,
+            phone: venue.phone,
+            method: venue.contactMethod || "email",
+            action: "test",
+            dateISO: new Date().toISOString().slice(0, 10),
+            time: "7:00 PM",
+            host: bb.session?.handle || "Buddy",
+            participants: 2,
+            held: 4,
+            status: "test",
+            reason: "Test from the restaurant editor.",
+            userEmail: bb.session?.email || "",
+          });
+          setSending(false);
+          bb.notify(channelNote(result));
+        }}
+      >
+        {sending ? "Sending…" : "Send test to this restaurant"}
+      </button>
       <button type="button" className="rounded-full border border-white/15 px-3 py-1" onClick={() => bb.toggleHide("venue", venue.id)}>
         {venue.hidden ? "Activate on the site" : "Deactivate"}
       </button>
       <div className="border-t border-white/10 pt-3">
         <p className="bb-kicker text-mute">Point badges</p>
-        <p className="text-mute">Silver and Gold thresholds. Exact points stay private. 100 pts = 5% off the fee, 300 = 10%, 500 = 20%.</p>
+        <p className="text-mute">Silver and Gold thresholds. Exact points stay private. They do not change the HK$5 administration fee.</p>
         <div className="mt-2 flex gap-2">
           <label>Silver
             <input type="number" value={bb.content.pointThresholds?.silver || 100} onChange={(e) => bb.update((d) => { d.pointThresholds.silver = Number(e.target.value) || 100; })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2" />

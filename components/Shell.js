@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
-import { JoinWizard, OpenTableWizard, PrivateWizard, TodayPopup, TrialGate } from "./Flows";
+import { JoinWizard, LangSwitch, OpenTableWizard, PrivateWizard, TodayPopup, TrialGate } from "./Flows";
 import { RestaurantAdmin } from "./RestaurantAdmin";
 import { iso } from "@/lib/bible";
 
@@ -118,13 +118,7 @@ export function Shell({ children }) {
                 })}
               </nav>
               <div className="relative flex items-center gap-2">
-                <div className={`flex rounded-full border p-0.5 text-[10px] ${light ? "border-black/15" : "border-white/15"}`}>
-                  {[["en", "EN"], ["zh", "简"], ["zh-HK", "繁"]].map(([id, label]) => (
-                    <button key={id} type="button" onClick={() => bb.setLang(id)} className={`rounded-full px-2 py-1 ${bb.lang === id ? (light ? "bg-char text-paper" : "bg-fg text-ink") : "text-mute"}`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                <LangSwitch light={light} />
                 {!bb.session ? (
                   <Link href="/login" className={`rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] ${light ? "bg-char text-paper" : "bg-fg text-ink"}`}>
                     {t("nav.login")}

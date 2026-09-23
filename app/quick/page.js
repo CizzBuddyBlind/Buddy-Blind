@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Editable, Photo, Sheet } from "@/components/Bits";
+import { Copy, Editable, Photo, Sheet } from "@/components/Bits";
 import { useBB } from "@/components/Providers";
 
 export default function QuickPage() {
@@ -31,11 +31,11 @@ export default function QuickPage() {
     <main className="bb-frame pb-28 pt-8 md:pb-16">
       <section className="mx-auto max-w-xl text-center">
         <h1 className="bb-hero-title text-char">
-          <Editable value={copy.title} onChange={(title) => update((d) => { d.copy.quick.title = title; })} />
+          <Copy k="quick.title" legacy={copy.title} onEnglish={(d, next) => { d.copy.quick.title = next; }} />
           <br />
-          <Editable className="italic text-ember" value={copy.accent} onChange={(accent) => update((d) => { d.copy.quick.accent = accent; })} />
+          <Copy k="quick.accent" legacy={copy.accent} className="italic text-ember" onEnglish={(d, next) => { d.copy.quick.accent = next; }} />
         </h1>
-        <Editable as="p" className="mt-3 text-[0.72rem] tracking-[0.14em] text-mute" value={copy.sub} onChange={(sub) => update((d) => { d.copy.quick.sub = sub; })} />
+        <Copy as="p" k="quick.sub" legacy={copy.sub} className="mt-3 text-[0.72rem] tracking-[0.14em] text-mute" onEnglish={(d, next) => { d.copy.quick.sub = next; }} />
       </section>
       <div className="mx-auto mt-6 max-w-2xl">
         <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Central, CWB, TST, or a place" className="w-full rounded-full border border-black/10 bg-white px-4 py-3 text-sm" />
@@ -66,7 +66,7 @@ export default function QuickPage() {
         ))}
       </div>
       <div className="mx-auto mt-8 max-w-xl text-center">
-        <Editable as="p" className="text-sm leading-relaxed text-mute" value={copy.note} onChange={(note) => update((d) => { d.copy.quick.note = note; })} />
+        <Copy as="p" k="quick.note" legacy={copy.note} className="text-sm leading-relaxed text-mute" onEnglish={(d, next) => { d.copy.quick.note = next; }} />
         <button type="button" className="mt-4 rounded-full border border-char px-5 py-2 text-sm" onClick={() => setSheet({ id: "create", name: "a quick seat", mode: "create-new" })}>
           I'm free now
         </button>

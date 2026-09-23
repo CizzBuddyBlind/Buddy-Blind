@@ -1,10 +1,12 @@
 "use client";
 
-import { Editable } from "@/components/Bits";
+import Link from "next/link";
+import { Copy, Editable } from "@/components/Bits";
 import { useBB } from "@/components/Providers";
+import { translate } from "@/lib/i18n";
 
 export default function HowPage() {
-  const { content, update } = useBB();
+  const { content, update, lang } = useBB();
   const copy = content.copy.how;
   return (
     <main className="bb-frame pb-28 pt-10 md:pb-16">
@@ -28,7 +30,10 @@ export default function HowPage() {
         ))}
       </ol>
       <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-mute">
-        Points stay on a badge in public: Bronze, Silver, Gold. The number is private. 100 points takes 5% off the HK$5 admin fee, 300 takes 10%, 500 takes 20%. Opening a table is +2, joining is +1, creating a private event is +5.
+        <Copy as="span" k="how.note" />
+      </p>
+      <p className="mt-6 text-center">
+        <Link href="/about" className="text-sm text-ember">{translate(lang, "how.link")}</Link>
       </p>
     </main>
   );

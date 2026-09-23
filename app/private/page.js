@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Editable, Photo } from "@/components/Bits";
+import { Copy, Editable, Photo } from "@/components/Bits";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
 import { AGE_RANGES } from "@/lib/bible";
@@ -36,11 +36,11 @@ export default function PrivatePage() {
           <Editable className="bb-kicker text-ember" value={copy.kickerRight} onChange={(kickerRight) => update((d) => { d.copy.private.kickerRight = kickerRight; })} />
         </div>
         <h1 className="bb-hero-title text-char">
-          <Editable value={copy.title} onChange={(title) => update((d) => { d.copy.private.title = title; })} />
+          <Copy k="private.title" legacy={copy.title} onEnglish={(d, next) => { d.copy.private.title = next; }} />
           <br />
-          <Editable className="italic text-ember" value={copy.accent} onChange={(accent) => update((d) => { d.copy.private.accent = accent; })} />
+          <Copy k="private.accent" legacy={copy.accent} className="italic text-ember" onEnglish={(d, next) => { d.copy.private.accent = next; }} />
         </h1>
-        <Editable as="p" className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-mute" value={copy.sub} onChange={(sub) => update((d) => { d.copy.private.sub = sub; })} />
+        <Copy as="p" k="private.sub" legacy={copy.sub} className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-mute" onEnglish={(d, next) => { d.copy.private.sub = next; }} />
       </section>
 
       {campaign && (

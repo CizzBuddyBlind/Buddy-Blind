@@ -1,24 +1,60 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useBB } from "./Providers";
+import { resolveCopy } from "@/lib/i18n";
+
+function escapeText(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&")
+    .replace(/</g, "<")
+    .replace(/>/g, ">");
+}
 
 export function Editable({ value, onChange, className = "", as = "span", locked = false }) {
   const { editing } = useBB();
+  const ref = useRef(null);
   const Tag = as;
-  if (!editing || locked) return <Tag className={className}>{value}</Tag>;
+  const safe = value ?? "";
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || document.activeElement === el) return;
+    if (el.textContent !== safe) el.textContent = safe;
+  }, [safe, editing]);
+  if (!editing || locked) return <Tag className={className}>{safe}</Tag>;
   return (
     <Tag
+      ref={ref}
       className={`${className} cursor-text rounded-sm`}
       contentEditable
       suppressContentEditableWarning
+      dangerouslySetInnerHTML={{ __html: escapeText(safe) }}
+      onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       onBlur={(e) => {
         const next = (e.currentTarget.textContent || "").replace(/\s+/g, " ").trim();
-        if (next && next !== value) onChange(next);
+        if (next !== safe) onChange(next);
       }}
-    >
-      {value}
-    </Tag>
+    />
+  );
+}
+
+export function Copy({ k, legacy, className = "", as = "span", locked = false, onEnglish }) {
+  const { lang, content, update } = useBB();
+  const value = resolveCopy(content, lang, k, legacy);
+  return (
+    <Editable
+      as={as}
+      className={className}
+      locked={locked}
+      value={value}
+      onChange={(next) => update((draft) => {
+        if (!draft.copy.locales) draft.copy.locales = {};
+        if (!draft.copy.locales[lang]) draft.copy.locales[lang] = {};
+        draft.copy.locales[lang][k] = next;
+        if (lang === "en" && onEnglish) onEnglish(draft, next);
+      })}
+    />
   );
 }
 

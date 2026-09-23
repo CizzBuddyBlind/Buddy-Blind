@@ -11,6 +11,7 @@ import {
   iso,
   nextDays,
   prettyDate,
+  pingWindow,
   tablePrefs,
 } from "@/lib/bible";
 
@@ -66,7 +67,7 @@ function PayStep({ fee, checked, setChecked, onConfirm, busy }) {
     <div className="space-y-3 text-sm">
       <div className="rounded-xl border border-white/10 p-3">
         <div className="flex justify-between"><span>{t("pay.admin")}</span><span>HK${fee.base.toFixed(2)}</span></div>
-        {fee.off > 0 && <div className="mt-1 flex justify-between text-ember"><span>Points {Math.round(fee.off * 100)}%</span><span>− HK${(fee.base - fee.total).toFixed(2)}</span></div>}
+        <p className="mt-2 text-xs text-mute">{t("pay.fixed")}</p>
         <div className="mt-2 flex justify-between font-semibold"><span>{t("pay.total")}</span><span>HK${fee.total.toFixed(2)}</span></div>
       </div>
       <p className="text-mute">{paid ? t("pay.why") : t("pay.free")}</p>
@@ -97,8 +98,8 @@ export function OpenTableWizard({ venue, onClose }) {
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const branch = (venue.branches || []).find((b) => b.id === branchId) || venue.branches?.[0];
-  const fee = adminFee(bb.session?.points || 0);
-  const titles = ["Location", "Date", "Time", "Table type", "Participants", "Preferences", "Summary", "Payment"];
+  const fee = { base: 5, total: 5 };
+  const titles = [t("step.location"), t("step.date"), t("step.time"), t("step.type"), t("step.people"), t("step.prefs"), t("step.summary"), t("step.pay")];
 
   async function close() {
     if (step > 0) {
@@ -344,12 +345,33 @@ export function TodayPopup({ onJoin, onBrowse }) {
   );
 }
 
+export function LangSwitch({ light = false }) {
+  const bb = useBB();
+  return (
+    <div className={`flex rounded-full border p-0.5 text-[10px] ${light ? "border-black/15 bg-white" : "border-white/20 bg-black/60"}`}>
+      {[["en", "EN"], ["zh", "简"], ["zh-HK", "繁"]].map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => bb.setLang(id)}
+          className={`rounded-full px-2.5 py-1 ${bb.lang === id ? (light ? "bg-char text-paper" : "bg-fg text-ink") : (light ? "text-char" : "text-fg")}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function TrialGate() {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
   const [checked, setChecked] = useState(false);
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-4">
+      <div className="absolute right-3 top-3 z-[120]">
+        <LangSwitch />
+      </div>
       <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#121212] p-6 text-fg">
         <p className="bb-kicker text-ember">{t("trial.kicker")}</p>
         <h2 className="mt-2 font-serif text-3xl">{t("trial.title")}</h2>
@@ -488,4 +510,46 @@ export async function shareLink(path, title) {
   } catch {
     window.prompt("Copy this event", text);
   }
+}
+
+const REPLY = {
+  "see-you": ["see-ya", "next-time"],
+  arrive: ["coming", "next-time"],
+};
+
+export function PingBox({ table, joined, onSend }) {
+  const bb = useBB();
+  const t = (key) => translate(bb.lang, key);
+  const mode = pingWindow(table);
+  const mine = bb.session?.handle;
+  const label = { "see-ya": "ping.seeYa", coming: "ping.coming", "next-time": "ping.next" };
+  return (
+    <div className="mt-3 rounded-xl border border-white/10 p-3 text-sm">
+      {!mine && <p className="text-mute">{t("ping.needJoin")}</p>}
+      {mine && !joined && <p className="text-mute">{t("ping.needJoin")}</p>}
+      {mine && joined && !mode && <p className="text-mute">{t("ping.wait")}</p>}
+      {mine && joined && mode && (
+        <button type="button" className="rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => onSend(mode)}>
+          {mode === "see-you" ? t("ping.seeYou") : t("ping.areYou")}
+        </button>
+      )}
+      {(table.pings || []).slice().reverse().map((ping) => (
+        <div key={ping.id} className="mt-3 border-t border-white/10 pt-2">
+          <p>{ping.from} · {ping.kind === "see-you" ? t("ping.seeYou") : t("ping.areYou")}</p>
+          {(ping.replies || []).map((reply) => (
+            <p key={reply.from + reply.choice} className="text-mute">{reply.from} · {t(label[reply.choice] || "ping.next")}</p>
+          ))}
+          {mine && joined && ping.from !== mine && !(ping.replies || []).some((r) => r.from === mine) && (
+            <div className="mt-2 flex flex-col gap-2">
+              {(REPLY[ping.kind] || []).map((choice) => (
+                <button key={choice} type="button" className="rounded-full border border-white/15 px-3 py-2 text-left text-xs" onClick={() => bb.replyPing({ venueId: table.venueId, eventId: table.eventId, tableId: table.id, pingId: ping.id, choice })}>
+                  {t(label[choice])}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }

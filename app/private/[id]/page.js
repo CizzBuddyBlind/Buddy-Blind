@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Editable, Photo, fileToCover } from "@/components/Bits";
-import { shareLink } from "@/components/Flows";
+import { PingBox, shareLink } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 
 export default function PrivateDetailPage() {
@@ -76,7 +76,12 @@ export default function PrivateDetailPage() {
           <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
           <span>I understand the other guests stay unknown. The host is the only person shown.</span>
         </label>
-        <div className="mt-4 flex gap-2">
+        <PingBox
+          table={{ ...event, id: event.id, time: event.timeLabel, eventId: event.id }}
+          joined={!!(bb.session && ((event.participants || []).some((p) => p.handle === bb.session.handle) || event.hostName === bb.session.handle))}
+          onSend={() => bb.sendPing({ eventId: event.id }).then((res) => res?.error && bb.notify(res.error))}
+        />
+        <div className="mt-4 flex flex-wrap gap-2">
           <button type="button" disabled={!checked || busy || full} onClick={join} className="rounded-full bg-char px-5 py-3 text-sm font-semibold text-paper disabled:opacity-40">
             {full ? "FULL" : "JOIN"}
           </button>

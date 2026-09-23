@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useBB } from "@/components/Providers";
-import { tierFromPoints } from "@/lib/bible";
-import { AGE_RANGES } from "@/lib/bible";
+import { AGE_RANGES, tierFromPoints } from "@/lib/bible";
+import { translate } from "@/lib/i18n";
 
 export default function ProfilePage() {
   const bb = useBB();
@@ -25,6 +25,7 @@ export default function ProfilePage() {
       </main>
     );
   }
+  const t = (key) => translate(bb.lang, key);
   const form = draft || {
     handle: session.handle,
     gender: session.gender || "",
@@ -77,7 +78,7 @@ export default function ProfilePage() {
             <p className="text-[0.75rem] tracking-wide">BADGE · {metal.toUpperCase()}</p>
             <p className="mt-2 text-sm text-mute">Other people only see this badge. The number below is for you.</p>
             <p className="mt-3 text-sm">Private points · {points}. Silver {content.pointThresholds?.silver || 100} · Gold {content.pointThresholds?.gold || 500}.</p>
-            <p className="mt-2 text-[0.8rem] text-mute">2 invite · 1 join · 5 create. 100 = 5% off the fee, 300 = 10%, 500 = 20%.</p>
+            <p className="mt-2 text-[0.8rem] text-mute">2 invite · 1 join · 5 create. The HK$5 administration fee does not change with points.</p>
           </div>
           <form className="space-y-2 rounded-2xl border border-white/10 bg-card p-[18px]" onSubmit={(e) => { e.preventDefault(); bb.updateProfile(form); setDraft(null); }}>
             {[
@@ -170,6 +171,15 @@ export default function ProfilePage() {
             <article key={n.id} className="rounded-2xl border border-white/10 bg-card px-4 py-3">
               <p className="text-sm">{n.title}</p>
               <p className="text-sm text-mute">{n.body}</p>
+              {n.ping && !n.replied && (
+                <div className="mt-3 flex flex-col gap-2">
+                  {(n.ping.kind === "see-you" ? [["see-ya", "ping.seeYa"], ["next-time", "ping.next"]] : [["coming", "ping.coming"], ["next-time", "ping.next"]]).map(([choice, key]) => (
+                    <button key={choice} type="button" className="rounded-full border border-white/15 px-3 py-2 text-left text-xs" onClick={() => bb.replyPing({ ...n.ping, choice })}>
+                      {t(key)}
+                    </button>
+                  ))}
+                </div>
+              )}
             </article>
           ))}
         </div>
