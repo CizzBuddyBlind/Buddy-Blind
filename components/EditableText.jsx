@@ -1,9 +1,17 @@
 'use client';
 import { useSiteContent } from '@/lib/useSiteContent';
 
-export default function EditableText({ field, as: Tag = 'span', className = '', children, ...props }: any) {
-  const { content, isEditMode, updateField, mounted } = useSiteContent();
-  const value = content[field] ?? children;
+type Props = {
+  field?: string;
+  as?: any;
+  className?: string;
+  children?: any;
+  [key: string]: any;
+};
+
+export function EditableText({ field = '', as: Tag = 'span', className = '', children, ...props }: Props) {
+  const { content, isEditMode, updateField, mounted } = useSiteContent() as any;
+  const value = field ? (content?.[field] ?? children) : children;
   if (!mounted) return <Tag className={className} {...props}>{value}</Tag>;
   if (!isEditMode) return <Tag className={className} {...props}>{value}</Tag>;
   return (
@@ -11,12 +19,15 @@ export default function EditableText({ field, as: Tag = 'span', className = '', 
       className={`${className} outline outline-1 outline-orange-300 bg-orange-50/50 rounded px-1`}
       contentEditable
       suppressContentEditableWarning
-      onBlur={(e: any) => updateField(field, e.currentTarget.textContent)}
+      onBlur={(e: any) => field && updateField(field, e.currentTarget.textContent)}
       {...props}
     >
       {value}
     </Tag>
   );
 }
-// compat export as Editable too
+
+// Support every legacy name
 export const Editable = EditableText;
+export const EditableTextComponent = EditableText;
+export default EditableText;

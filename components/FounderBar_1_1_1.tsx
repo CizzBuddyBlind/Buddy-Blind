@@ -1,0 +1,13 @@
+'use client';
+import { useSiteContent } from '@/lib/useSiteContent';
+export default function FounderBar() {
+  const { isEditMode, setIsEditMode, resetContent, mounted } = useSiteContent();
+  if (!mounted) return null;
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black text-white px-4 py-2 rounded-full shadow-lg text-sm">
+      <button onClick={() => setIsEditMode((v: boolean) => !v)} className={`px-3 py-1 rounded-full transition ${isEditMode ? 'bg-white text-black' : 'bg-neutral-800'}`}>Founder Edit: {isEditMode ? 'ON' : 'OFF'}</button>
+      <span className="opacity-30">|</span>
+      <button onClick={resetContent} className="opacity-70 hover:opacity-100">Reset</button>
+    </div>
+  );
+}
