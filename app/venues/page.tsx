@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import JoinBlindBoxModal from '@/components/JoinBlindBoxModal';
 import AuthGateModal from '@/components/AuthGateModal';
-import ShareModal from '@/components/ShareModal';
 import InviteBlindBoxModal from '@/components/InviteBlindBoxModal';
 
 const VENUE_DATA = [
@@ -20,15 +19,10 @@ export default function VenuesPage(){
   const [showJoin,setShowJoin]=useState(false);
   const [showAuth,setShowAuth]=useState(false);
   const [showInvite,setShowInvite]=useState(false);
-  const [showShare,setShowShare]=useState(false);
-  const [shareData,setShareData]=useState<any>(null);
   const openJoin = (v:any)=>{
     if(typeof window!=='undefined'){
       const isRegistered = localStorage.getItem('buddy_registered')==='1';
-      if(!isRegistered){
-        window.location.href='/auth?redirect=/venues&action=join&venue=' + v.id;
-        return;
-      }
+      if(!isRegistered){ window.location.href='/auth?redirect=/venues&action=join&venue=' + v.id; return; }
     }
     setSelected(v); setShowJoin(true);
   };
@@ -37,23 +31,26 @@ export default function VenuesPage(){
   return (
     <div className="min-h-screen bg-black text-white pt-16">
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <h1 className="text-5xl font-serif">Where it happens</h1>
-        <p className="mt-4 text-sm text-zinc-500 max-w-xl">Restaurants provide the scene Private events create the reason You bring curiosity Six cards six photos different per event coloured more heart no repeats</p>
+        <div className="flex items-center gap-4">
+          <button onClick={()=>window.history.back()} className="w-10 h-10 rounded-full border border-zinc-600 flex items-center justify-center text-white text-sm">{"<"}</button>
+          <h1 className="text-5xl font-serif">Where it happens</h1>
+        </div>
+        <p className="mt-4 text-sm text-zinc-400 max-w-xl">Restaurants provide the scene Private events create the reason You bring curiosity Six cards six photos different per event coloured more heart no repeats Share only after completed invite or join</p>
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
           {VENUE_DATA.map(v=>(
             <div key={v.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-3 group hover:border-zinc-700">
               <div className="relative overflow-hidden rounded-2xl h-80">
                 <img src={v.img} alt={v.name} className="w-full h-full object-cover"/>
-                <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black bg-opacity-70 text-xs">{v.badge}</div>
+                <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black bg-opacity-70 text-xs text-white">{v.badge}</div>
                 <div className="absolute bottom-3 left-3 right-3 flex justify-between text-xs">
-                  <span className="px-2 py-1 rounded-full bg-black bg-opacity-70">{v.area}</span>
-                  <span className="px-2 py-1 rounded-full bg-black bg-opacity-70">{v.spots}</span>
+                  <span className="px-2 py-1 rounded-full bg-black bg-opacity-70 text-white">{v.area}</span>
+                  <span className="px-2 py-1 rounded-full bg-black bg-opacity-70 text-white">{v.spots}</span>
                 </div>
               </div>
               <div className="p-3">
-                <h3 className="text-xl font-serif">{v.name}</h3>
-                <div className="mt-1 text-xs text-zinc-500">{v.time} {v.host}</div>
-                <div className="mt-1 text-xs text-zinc-600">Locations {v.locations.join(', ')} {v.locations.length===1 ? 'auto skip' : 'choose location'}</div>
+                <h3 className="text-xl font-serif text-white">{v.name}</h3>
+                <div className="mt-1 text-xs text-zinc-400">{v.time} {v.host}</div>
+                <div className="mt-1 text-xs text-zinc-500">Locations {v.locations.join(', ')} {v.locations.length===1 ? 'auto skip' : 'choose location'}</div>
                 <div className="mt-4 flex gap-2">
                   <button onClick={()=>openJoin(v)} className="flex-1 h-10 rounded-full bg-white text-black text-xs font-medium">JOIN</button>
                   <button onClick={()=>{
@@ -62,17 +59,15 @@ export default function VenuesPage(){
                       if(!isRegistered){ window.location.href='/auth?redirect=/venues&action=invite&venue=' + v.id; return; }
                     }
                     setSelected(v); setShowInvite(true);
-                  }} className="px-4 h-10 rounded-full border border-zinc-800 text-xs">INVITE</button>
-                  <button onClick={()=>{ setShareData(v); setShowShare(true); }} className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center text-xs">Share</button>
+                  }} className="px-6 h-10 rounded-full border border-zinc-700 text-xs text-white">INVITE</button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       </div>
-      <InviteBlindBoxModal isOpen={showInvite} onClose={()=>setShowInvite(false)} onConfirm={(data)=>{ setShowInvite(false); if(typeof window!=='undefined' && localStorage.getItem('buddy_card_saved')==='1'){ window.location.href='/invite?paid=true&ref=cizz-HEART&saved=1&venue=' + (selected?.id||''); } else { setShowAuth(true); } }} venue={selected} />
-      <ShareModal isOpen={showShare} onClose={()=>setShowShare(false)} title={shareData ? shareData.name + ' Buddy Blind' : 'Buddy Blind'} url={shareData ? 'https://buddy-blind.vercel.app/venues/' + shareData.id : undefined} />
-      <JoinBlindBoxModal isOpen={showJoin} onClose={()=>setShowJoin(false)} onConfirm={confirmFirst} onConfirmWithSaved={confirmSaved} venue={selected ? { scene: selected.name, time: selected.time, host: selected.host } : undefined} />
+      <InviteBlindBoxModal isOpen={showInvite} onClose={()=>setShowInvite(false)} onConfirm={(data)=>{ if(typeof window!=='undefined'){ localStorage.setItem('buddy_last_invite', JSON.stringify(data)); } setShowInvite(false); if(typeof window!=='undefined' && localStorage.getItem('buddy_card_saved')==='1'){ window.location.href='/invite?paid=true&ref=cizz-HEART&saved=1&venue=' + (selected?.id||''); } else { setShowAuth(true); } }} venue={selected} />
+      <JoinBlindBoxModal isOpen={showJoin} onClose={()=>setShowJoin(false)} onConfirm={confirmFirst} onConfirmWithSaved={confirmSaved} venue={selected ? { scene: selected.name, time: selected.time, host: selected.host, area: selected.area, locations: selected.locations, spots: selected.spots } : undefined} />
       <AuthGateModal isOpen={showAuth} onClose={()=>setShowAuth(false)} onSuccess={()=>{ setShowAuth(false); window.location.href='/join?paid=true&ref=cizz-HEART&saved=1'; }} venueName={selected?.name || 'Kissa Tanaka'} trigger="venue-join" />
     </div>
   );

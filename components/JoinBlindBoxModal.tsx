@@ -1,42 +1,43 @@
+
 'use client';
-import { useState, useEffect } from 'react';
-type Props = { isOpen: boolean; onClose: () => void; onConfirm: ()=>void; onConfirmWithSaved?: ()=>void; venue?: any; };
+type Props = { isOpen: boolean; onClose: () => void; onConfirm: () => void; onConfirmWithSaved?: () => void; venue?: any; };
 export default function JoinBlindBoxModal({isOpen,onClose,onConfirm,onConfirmWithSaved,venue}:Props){
-  const [hasSaved,setHasSaved]=useState(false);
-  const [last4,setLast4]=useState('4242');
-  const [paying,setPaying]=useState(false);
-  useEffect(()=>{ if(typeof window!=='undefined'){ setHasSaved(localStorage.getItem('buddy_card_saved')==='1'); setLast4(localStorage.getItem('buddy_card_last4')||'4242'); } },[isOpen]);
   if(!isOpen) return null;
-  const v = venue || { scene:'KISSA TANAKA · SOHO', time:'TONIGHT 7:30PM · 3 SPOTS LEFT', host:'COMEDIAN · GOLD' };
-  const handleConfirm = async ()=>{
-    if(hasSaved && onConfirmWithSaved){
-      setPaying(true);
-      try{ const r=await fetch('/api/stripe/create-intent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:500,venue_id:venue?.id||'kissa', saved:true})}); await r.json(); setPaying(false); onConfirmWithSaved(); }catch(e){ setPaying(false); onConfirm(); }
-    } else { onConfirm(); }
-  };
+  const scene = venue?.scene || venue?.name || 'Yardbird';
+  const time = venue?.time || 'TOMORROW 8PM';
+  const host = venue?.host || 'CHEF TABLE';
+  const location = venue?.locations ? venue.locations[0] : venue?.area || 'SOHO';
+  const spots = venue?.spots || '3 SPOTS LEFT';
+  const hasSaved = typeof window!=='undefined' && localStorage.getItem('buddy_card_saved')==='1';
   return (
-    <div className="fixed inset-0 z-40 bg-black backdrop-blur flex items-center justify-center p-4">
-      <div className="w-full max-w-[460px] bg-white rounded-3xl p-8 text-black">
-        <h2 className="text-[32px] font-serif leading-[0.9] tracking-tight">Join this<br/>Blind Box?</h2>
-        <p className="mt-4 text-sm text-zinc-600 leading-relaxed">You won't see names or photos before. You'll see neighborhood, vibe, time, places left. That's the point.</p>
-        <div className="mt-6 bg-white/70 border border-zinc-200 rounded-2xl p-4 space-y-2 text-xs">
-          <div className="flex justify-between"><span className="text-zinc-500 tracking-widest">SCENE</span><span className="tracking-widest font-medium">{v.scene}</span></div>
-          <div className="flex justify-between"><span className="text-zinc-500 tracking-widest">TIME</span><span className="tracking-widest font-medium">{v.time}</span></div>
-          <div className="flex justify-between"><span className="text-zinc-500 tracking-widest">HOST</span><span className="tracking-widest font-medium">{v.host}</span></div>
+    <div className="fixed inset-0 z-40 bg-black bg-opacity-90 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white text-black rounded-3xl p-8">
+        <div className="flex justify-between items-start">
+          <h2 className="text-3xl font-serif leading-tight">Join this<br/>Blind Box?</h2>
+          <button onClick={onClose} className="px-4 py-2 rounded-full border border-zinc-300 text-xs font-bold">CLOSE</button>
         </div>
-        {hasSaved ? (
-          <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs">✓</div>
-            <div className="text-xs"><span className="font-bold">Saved payment:</span> Visa •••• {last4} • 4242 • Single button checkout</div>
+        <p className="mt-4 text-sm text-zinc-600 leading-relaxed">You wont see names or photos before. You will see neighborhood, vibe, time, places left. That is the point.</p>
+        
+        <div className="mt-6 bg-zinc-50 border border-zinc-200 rounded-2xl p-5 space-y-3">
+          <div className="flex justify-between text-sm"><span className="text-zinc-500 tracking-widest">SCENE</span><span className="font-medium tracking-widest">{scene}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-zinc-500 tracking-widest">TIME</span><span className="font-medium tracking-widest">{time}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-zinc-500 tracking-widest">HOST</span><span className="font-medium tracking-widest">{host}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-zinc-500 tracking-widest">LOCATION</span><span className="font-medium tracking-widest">{location}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-zinc-500 tracking-widest">SEATS</span><span className="font-medium tracking-widest">{spots}</span></div>
+        </div>
+
+        <div className="mt-4 bg-green-50 border border-green-200 rounded-2xl p-4 flex gap-3 items-center">
+          <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white">v</div>
+          <div className="text-sm"><span className="font-bold">Saved payment:</span> Visa 4242 Single button checkout</div>
+        </div>
+
+        <div className="mt-6">
+          <button onClick={()=>{ if(hasSaved && onConfirmWithSaved){ onConfirmWithSaved(); } else { onConfirm(); } }} className="w-full h-14 rounded-full bg-black text-white font-black text-sm tracking-widest">CONFIRM JOIN HK$5 4242</button>
+          <div className="mt-3 flex justify-between">
+            <button onClick={onClose} className="text-xs tracking-widest text-zinc-500 font-bold">BACK TO VENUES</button>
+            <span className="text-xs tracking-widest text-zinc-400">DIFFERENT PHOTOS PER EVENT MORE HEART NO REPEATS 1-CLICK</span>
           </div>
-        ) : (
-          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">First time: OTP 123456 + card 4242 4242 4242 4242 Exp 12/34 CVC 123, then save for 1-click.</div>
-        )}
-        <div className="mt-6 flex gap-3">
-          <button disabled={paying} onClick={handleConfirm} className="flex-1 h-12 rounded-full bg-black text-white font-bold text-xs tracking-widest disabled:opacity-50">{paying?'PAYING...': hasSaved ? `CONFIRM JOIN · HK$5 · •••• ${last4}` : 'CONFIRM JOIN · HK$5'}</button>
-          <button onClick={onClose} className="px-6 h-12 rounded-full border border-zinc-300 text-xs tracking-widest">CANCEL</button>
         </div>
-        <div className="mt-4 text-xs tracking-[0.2em] text-zinc-400 text-center">DIFFERENT PHOTOS PER EVENT · MORE HEART · NO REPEATS {hasSaved ? '· 1-CLICK' : ''}</div>
       </div>
     </div>
   );
