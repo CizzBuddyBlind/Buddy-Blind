@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import JoinBlindBoxModal from '@/components/JoinBlindBoxModal';
 import AuthGateModal from '@/components/AuthGateModal';
+import ShareModal from '@/components/ShareModal';
+import InviteBlindBoxModal from '@/components/InviteBlindBoxModal';
 
 const VENUES_DATA = [
   { id:'kissa-tanaka', name:'Kissa Tanaka', sub:'KISSATEN · JAPANESE · $$', tag:'CREATIVE MINDS', area:'SOHO', time:'TONIGHT 7:30PM', spots:'3 SPOTS LEFT', host:'COMEDIAN · GOLD', letter:'C', invite:'CJ INVITES YOU TO JOIN - CREATIVE MINDS. 4 PEOPLE, 30-40, MEET NEW FRIENDS.', meta:'TODAY 7PM · 4 PEOPLE · FEMALE 30-40 · + MORE THAN ONE EVENT', img:'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800', bg:'bg-[#F5F3EF]' },
@@ -17,6 +19,9 @@ export default function VenuesPage(){
   const [selected,setSelected]=useState<any>(null);
   const [showJoin,setShowJoin]=useState(false);
   const [showAuth,setShowAuth]=useState(false);
+  const [showShare,setShowShare]=useState(false);
+  const [showInvite,setShowInvite]=useState(false);
+  const [shareData,setShareData]=useState<any>(null);
   const [hasSaved,setHasSaved]=useState(false);
   useEffect(()=>{ if(typeof window!=='undefined') setHasSaved(localStorage.getItem('buddy_card_saved')==='1'); },[]);
 
@@ -73,7 +78,14 @@ export default function VenuesPage(){
                 <div className="mt-3 text-[10px] tracking-widest text-zinc-600">{v.meta}</div>
                 <div className="mt-4 flex gap-2">
                   <button onClick={()=>openJoin(v)} className="flex-1 h-[40px] rounded-full bg-[#F5F3EF] text-black text-[11px] tracking-widest font-medium">JOIN</button>
-                  <button onClick={()=>openJoin(v)} className="px-5 h-[40px] rounded-full border border-zinc-800 text-[11px] tracking-widest">INVITE</button>
+                  <button onClick={()=>{
+                    if(typeof window!=='undefined'){
+                      const isRegistered = localStorage.getItem('buddy_registered')==='1';
+                      if(!isRegistered){ window.location.href=`/auth?redirect=/venues&action=invite&venue=${v.id}`; return; }
+                    }
+                    setSelected(v); setShowInvite(true);
+                  }} className="px-4 h-[40px] rounded-full border border-zinc-800 text-[10px] tracking-widest">INVITE</button>
+                  <button onClick={()=>{ setShareData(v); setShowShare(true); }} className="w-[40px] h-[40px] rounded-full border border-zinc-800 flex items-center justify-center text-[12px]">↗</button>
                 </div>
               </div>
             </div>
@@ -81,6 +93,8 @@ export default function VenuesPage(){
         </div>
       </div>
 
+      <InviteBlindBoxModal isOpen={showInvite} onClose={()=>setShowInvite(false)} onConfirm={(data)=>{ setShowInvite(false); if(typeof window!=='undefined' && localStorage.getItem('buddy_card_saved')==='1'){ window.location.href=`/invite?paid=true&ref=cizz-HEART&saved=1&venue=${selected?.id||''}`; } else { setShowAuth(true); } }} />
+      <ShareModal isOpen={showShare} onClose={()=>setShowShare(false)} title={shareData ? `${shareData.name} - Buddy Blind` : 'Buddy Blind'} url={shareData ? `https://buddy-blind.vercel.app/venues/${shareData.id}` : undefined} />
       <JoinBlindBoxModal isOpen={showJoin} onClose={()=>setShowJoin(false)} onConfirm={confirmFirst} onConfirmWithSaved={confirmSaved} venue={selected ? { scene: `${selected.name} · ${selected.area}`, time: `${selected.time} · ${selected.spots}`, host: selected.host, id: selected.id } : undefined} />
       <AuthGateModal isOpen={showAuth} onClose={()=>setShowAuth(false)} onSuccess={()=>{ setShowAuth(false); window.location.href=`/join?paid=true&venue_id=${selected?.id||'kissa-tanaka'}&ref=cizz-HEART`; }} venueName={selected?.name} trigger="venue-join" />
     </div>

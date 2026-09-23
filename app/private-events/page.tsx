@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import JoinBlindBoxModal from '@/components/JoinBlindBoxModal';
 import AuthGateModal from '@/components/AuthGateModal';
+import ShareModal from '@/components/ShareModal';
+import InviteBlindBoxModal from '@/components/InviteBlindBoxModal';
 
 const PRIVATE_DATA = [
   { id:'speakeasy', title:'Speakeasy Laughs', desc:'Comedian hosts a no-phone, real-talk dinner', host:'HOST: COMEDIAN · STAND-UP CROWD', attraction:'Attraction: If you laugh at the same dark joke, you will stay for dessert.', badge:'12 DINNERS', img:'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=800' },
@@ -15,6 +17,9 @@ const PRIVATE_DATA = [
 
 export default function PrivateEventsPage(){
   const [selected,setSelected]=useState<any>(null);
+  const [showInvite,setShowInvite]=useState(false);
+  const [showShare,setShowShare]=useState(false);
+  const [shareData,setShareData]=useState<any>(null);
   const [showJoin,setShowJoin]=useState(false);
   const [showAuth,setShowAuth]=useState(false);
 
@@ -51,7 +56,14 @@ export default function PrivateEventsPage(){
                 <div className="mt-3 text-[11px] text-zinc-500 italic leading-relaxed group-hover:text-[#C45A3C] transition-colors">“{v.attraction}”</div>
                 <div className="mt-4 flex gap-2">
                   <button onClick={()=>openJoin(v)} className="flex-1 h-[40px] rounded-full bg-[#F5F3EF] text-black text-[11px] tracking-widest font-medium">JOIN</button>
-                  <button onClick={()=>openJoin(v)} className="px-5 h-[40px] rounded-full border border-zinc-800 text-[11px] tracking-widest">INVITE</button>
+                  <button onClick={()=>{
+                    if(typeof window!=='undefined'){
+                      const isRegistered = localStorage.getItem('buddy_registered')==='1';
+                      if(!isRegistered){ window.location.href=`/auth?redirect=/private-events&action=invite&venue=${v.id}`; return; }
+                    }
+                    setSelected(v); setShowInvite(true);
+                  }} className="px-4 h-[40px] rounded-full border border-zinc-800 text-[10px] tracking-widest">INVITE</button>
+                  <button onClick={()=>{ setShareData(v); setShowShare(true); }} className="w-[40px] h-[40px] rounded-full border border-zinc-800 flex items-center justify-center text-[12px]">↗</button>
                 </div>
               </div>
             </div>
@@ -59,6 +71,8 @@ export default function PrivateEventsPage(){
         </div>
       </div>
 
+      <InviteBlindBoxModal isOpen={showInvite} onClose={()=>setShowInvite(false)} onConfirm={(data)=>{ setShowInvite(false); setSelected(data); if(typeof window!=='undefined' && localStorage.getItem('buddy_card_saved')==='1'){ window.location.href=`/invite?paid=true&ref=cizz-HEART&saved=1&venue=${selected?.id||''}`; } else { setShowAuth(true); } }} />
+      <ShareModal isOpen={showShare} onClose={()=>setShowShare(false)} title={shareData ? `${shareData.title} - Buddy Blind Private` : 'Buddy Blind Private Events'} url={shareData ? `https://buddy-blind.vercel.app/private-events/${shareData.id}` : undefined} />
       <JoinBlindBoxModal isOpen={showJoin} onClose={()=>setShowJoin(false)} onConfirm={confirmFirst} onConfirmWithSaved={confirmSaved} venue={selected ? { scene: selected.title, time: selected.badge, host: selected.host } : undefined} />
       <AuthGateModal isOpen={showAuth} onClose={()=>setShowAuth(false)} onSuccess={()=>{ setShowAuth(false); window.location.href=`/invite?paid=true&ref=cizz-HEART&saved=1`; }} venueName={selected?.title || 'Private Event'} trigger="private-invite" />
     </div>
