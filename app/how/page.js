@@ -17,7 +17,7 @@ export default function HowPage() {
         <Editable as="p" className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-mute" value={copy.sub} onChange={(sub) => update((d) => { d.copy.how.sub = sub; })} />
       </section>
       <ol className="mx-auto mt-10 max-w-2xl space-y-4">
-        {copy.steps.map((step, index) => (
+        {(copy.steps || []).map((step, index) => (
           <li key={step.n} className="rounded-2xl border border-white/10 bg-card px-5 py-5">
             <div className="text-xs tracking-[0.16em] text-ember">{step.n}</div>
             <h2 className="mt-2 font-serif text-2xl">
@@ -27,6 +27,9 @@ export default function HowPage() {
           </li>
         ))}
       </ol>
+      <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-mute">
+        Points stay on a badge in public: Bronze, Silver, Gold. The number is private. 100 points takes 5% off the HK$5 admin fee, 300 takes 10%, 500 takes 20%. Opening a table is +2, joining is +1, creating a private event is +5.
+      </p>
     </main>
   );
 }

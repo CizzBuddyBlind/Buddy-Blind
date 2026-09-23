@@ -7,8 +7,14 @@ import { useBB } from "@/components/Providers";
 export default function QuickPage() {
   const { content, editing, update, act, notify, setSelectedId, selectedId, insertEvent } = useBB();
   const [sheet, setSheet] = useState(null);
+  const [area, setArea] = useState("");
   const copy = content.copy.quick;
-  const rows = content.events.filter((e) => e.kind === "quick" && (editing || !e.hidden));
+  const query = area.trim().toLowerCase();
+  const rows = content.events.filter((e) => e.kind === "quick" && (editing || !e.hidden)).filter((row) => {
+    if (!query) return true;
+    const blob = `${row.name} ${row.timeLabel} ${row.area || ""} ${row.detail || ""}`.toLowerCase();
+    return blob.includes(query);
+  });
 
   async function confirmSheet() {
     const res = await act("event", sheet.id, sheet.mode);
@@ -31,6 +37,9 @@ export default function QuickPage() {
         </h1>
         <Editable as="p" className="mt-3 text-[0.72rem] tracking-[0.14em] text-mute" value={copy.sub} onChange={(sub) => update((d) => { d.copy.quick.sub = sub; })} />
       </section>
+      <div className="mx-auto mt-6 max-w-2xl">
+        <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Central, CWB, TST, or a place" className="w-full rounded-full border border-black/10 bg-white px-4 py-3 text-sm" />
+      </div>
       <div className="mx-auto mt-8 max-w-2xl space-y-3">
         {rows.map((row) => (
           <article
@@ -73,9 +82,10 @@ export default function QuickPage() {
             const res = await insertEvent({
               id: `quick-${Date.now().toString(36)}`,
               kind: "quick",
-              name: "My table",
+              name: area.trim() ? `Free in ${area.trim()}` : "My table",
               typeLabel: "NOW",
-              timeLabel: "NOW · NEAR ME",
+              timeLabel: `NOW · ${(area.trim() || "NEAR ME").toUpperCase()}`,
+              area: area.trim().toLowerCase(),
               detail: "You created this",
               spots: 2,
               hidden: false,

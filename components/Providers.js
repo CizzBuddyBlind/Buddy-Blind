@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { SEED, SEED_ACCOUNTS } from "@/lib/defaults";
 import { loadSharedContent, saveSharedContent, supabaseReady } from "@/lib/supabase";
+import { bookingHold, logEntry, normalizeContent, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
 
 const Ctx = createContext(null);
 export function useBB() {
@@ -21,6 +22,14 @@ const POINTS = "bb_points_v1";
 const BOOKS = "bb_books_v1";
 const VERSIONS = "bb_versions_v1";
 const ACTIVITY = "bb_activity_v1";
+const TRIAL = "bb_trial_v1";
+const SOCIAL = "bb_social_v1";
+const PROFILES = "bb_profile_v1";
+const LANG = "bb_lang_v1";
+
+function emptySocial() {
+  return { buddies: [], reviews: [], notes: [], notesOn: true };
+}
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -49,6 +58,8 @@ function blankProfile(partial) {
     neighborhood: "CENTRAL",
     ageRange: "30-40",
     occupation: "Guest",
+    gender: "",
+    phone: "",
     verified: false,
     ...partial,
   };
@@ -74,6 +85,10 @@ export function BuddyProvider({ children }) {
   const [modal, setModal] = useState(null);
   const [ready, setReady] = useState(false);
   const [remote, setRemote] = useState(supabaseReady ? "checking" : "off");
+  const [lang, setLangState] = useState("en");
+  const [trial, setTrial] = useState(null);
+  const [social, setSocial] = useState(emptySocial);
+  const [flow, setFlow] = useState(null);
 
   const publishedRef = useRef(published);
   const draftRef = useRef(draft);
@@ -100,6 +115,9 @@ export function BuddyProvider({ children }) {
       setInvites(read(INVITES, []));
       setVersions(read(VERSIONS, []));
       setActivity(read(ACTIVITY, []));
+      setLangState(read(LANG, "en") || "en");
+      setTrial(read(TRIAL, null));
+      setSocial({ ...emptySocial(), ...read(SOCIAL, {}) });
 
       let pub = local?.venues && local?.copy ? local : clone(SEED);
       const res = await loadSharedContent();
@@ -119,10 +137,11 @@ export function BuddyProvider({ children }) {
       }
 
       publishedRef.current = pub;
-      setPublished(pub);
-      write(PUB, pub);
-      setDraft(dr);
-      const start = dr || clone(pub);
+      setPublished(normalizeContent(pub));
+      write(PUB, normalizeContent(pub));
+      const normalizedDraft = dr ? normalizeContent(dr) : null;
+      setDraft(normalizedDraft);
+      const start = normalizedDraft || clone(pub);
       hist.current = [clone(start)];
       histI.current = 0;
       setReady(true);
@@ -160,8 +179,9 @@ export function BuddyProvider({ children }) {
   };
 
   const commit = useCallback((next) => {
-    draftRef.current = next;
-    setDraft(next);
+    const normalized = normalizeContent(next);
+    draftRef.current = normalized;
+    setDraft(normalized);
     setDirty(true);
     const cut = hist.current.slice(0, histI.current + 1);
     cut.push(clone(next));
@@ -272,16 +292,19 @@ export function BuddyProvider({ children }) {
       if (found.role !== "founder" && blocked.includes(found.email.toLowerCase())) return "This admin seat was removed.";
       const pointsMap = read(POINTS, {});
       const books = read(BOOKS, {});
+      const extra = read(PROFILES, {})[found.email] || {};
       const ses = {
         email: found.email,
         username: found.username,
         role: found.role,
-        handle: found.handle,
+        handle: extra.handle || found.handle,
         points: pointsMap[found.email] ?? found.points,
-        neighborhood: found.neighborhood,
-        ageRange: found.ageRange,
-        occupation: found.occupation,
-        verified: !!found.verified,
+        neighborhood: extra.neighborhood || found.neighborhood,
+        ageRange: extra.ageRange || found.ageRange,
+        occupation: extra.occupation || found.occupation,
+        gender: extra.gender || found.gender || "",
+        phone: extra.phone || found.phone || "",
+        verified: extra.verified ?? !!found.verified,
         bookings: books[found.email] || [],
       };
       persistSession(ses);
@@ -310,6 +333,8 @@ export function BuddyProvider({ children }) {
     if (!email.includes("@") || username.length < 2 || password.length < 6) {
       return "Use a real email, a username, and a password of at least 6 characters.";
     }
+    const phone = String(input.phone || "").trim();
+    if (phone.replace(/\D/g, "").length < 8) return "Enter a phone number with at least 8 digits.";
     const all = [...SEED_ACCOUNTS, ...read(USERS, [])];
     if (all.some((a) => a.email === email || a.username === username)) return "That email or username is already taken.";
     const nextUser = blankProfile({
@@ -318,6 +343,9 @@ export function BuddyProvider({ children }) {
       password,
       handle: input.handle?.trim() || username,
       role: "user",
+      phone,
+      gender: input.gender || "",
+      verified: !!input.verified,
     });
     const next = [...read(USERS, []), nextUser];
     write(USERS, next);
@@ -579,6 +607,264 @@ export function BuddyProvider({ children }) {
     notify("Restored the original pages.");
   }, [confirm, log, notify]);
 
+  const saveSocial = (next) => {
+    write(SOCIAL, next);
+    setSocial(next);
+  };
+
+  const setLang = useCallback((next) => {
+    const valueLang = next === "zh" || next === "zh-HK" ? next : "en";
+    setLangState(valueLang);
+    write(LANG, valueLang);
+  }, []);
+
+  const trialOk = !!(trial?.at && !trial.cancelled && Date.now() - trial.at < (trial.days || TRIAL_DAYS) * 86400000);
+  const premium = trialOk || staff;
+
+  const acceptTrial = useCallback(() => {
+    const next = { at: Date.now(), days: TRIAL_DAYS, cancelled: false };
+    write(TRIAL, next);
+    setTrial(next);
+    notify("Premium trial started. HK$50/month after 90 days unless you cancel.");
+  }, [notify]);
+
+  const cancelTrial = useCallback(async () => {
+    const ok = await confirm("Cancel the Premium trial?", "You will not be charged. Private event hosting closes until you start again.");
+    if (!ok) return;
+    const next = { ...(trial || {}), at: trial?.at || Date.now(), days: TRIAL_DAYS, cancelled: true };
+    write(TRIAL, next);
+    setTrial(next);
+    notify("Trial cancelled. No charge.");
+  }, [confirm, notify, trial]);
+
+  const updateProfile = useCallback((partial) => {
+    if (!session) return;
+    const allowed = ["handle", "gender", "occupation", "neighborhood", "ageRange", "phone", "verified"];
+    const extra = { ...(read(PROFILES, {})[session.email] || {}) };
+    allowed.forEach((key) => {
+      if (partial[key] !== undefined) extra[key] = partial[key];
+    });
+    const all = { ...read(PROFILES, {}), [session.email]: extra };
+    write(PROFILES, all);
+    const nextUsers = read(USERS, []).map((u) => (u.email === session.email ? { ...u, ...extra } : u));
+    write(USERS, nextUsers);
+    setUsers(nextUsers);
+    persistSession({ ...session, ...extra });
+    notify("Profile saved on this browser.");
+  }, [notify, session]);
+
+  const toggleNotes = useCallback((on) => {
+    const next = { ...social, notesOn: on };
+    saveSocial(next);
+    notify(on ? "Event reminders on." : "Event reminders off.");
+  }, [notify, social]);
+
+  const pushNote = useCallback((title, body) => {
+    const current = { ...emptySocial(), ...read(SOCIAL, {}) };
+    if (current.notesOn === false) return;
+    const next = {
+      ...current,
+      notes: [{ id: `n-${Date.now()}`, title, body, at: new Date().toISOString(), read: false }, ...(current.notes || [])].slice(0, 30),
+    };
+    saveSocial(next);
+  }, []);
+
+  const markNotesRead = useCallback(() => {
+    const next = { ...social, notes: (social.notes || []).map((n) => ({ ...n, read: true })) };
+    saveSocial(next);
+  }, [social]);
+
+  const requestBuddy = useCallback((name) => {
+    if (!session) return { needLogin: true };
+    const buddy = { id: `b-${Date.now()}`, name, status: "pending", at: Date.now() };
+    const next = { ...social, buddies: [buddy, ...(social.buddies || [])] };
+    saveSocial(next);
+    pushNote("Buddy request", `${name} — Hey! You are my vibe, let's be buddies!`);
+    return { ok: true };
+  }, [pushNote, session, social]);
+
+  const respondBuddy = useCallback((id, accept) => {
+    const next = {
+      ...social,
+      buddies: (social.buddies || []).map((b) => (b.id === id ? { ...b, status: accept ? "accepted" : "declined" } : b)),
+    };
+    saveSocial(next);
+  }, [social]);
+
+  const inviteBuddies = useCallback((eventName) => {
+    const accepted = (social.buddies || []).filter((b) => b.status === "accepted");
+    if (!accepted.length) return { error: "No buddies yet." };
+    pushNote("Buddy invite", `You asked ${accepted.map((b) => b.name).join(", ")} to join ${eventName}.`);
+    notify("Invite sent inside Notifications.");
+    return { ok: true };
+  }, [notify, pushNote, social]);
+
+  const addReview = useCallback((stars, body) => {
+    const text = String(body || "").trim();
+    if (!text) return;
+    const next = {
+      ...social,
+      reviews: [{ id: `r-${Date.now()}`, stars: Number(stars) || 5, body: text, from: session?.handle || "Guest", at: Date.now() }, ...(social.reviews || [])].slice(0, 20),
+    };
+    saveSocial(next);
+    notify("Review saved.");
+  }, [notify, session, social]);
+
+  const applyLive = useCallback(async (base) => {
+    if (editing) {
+      commit(base);
+      return { ok: true, draft: true };
+    }
+    return pushLive(base);
+  }, [commit, editing, pushLive]);
+
+  const grantPoints = (mode) => {
+    const gain = mode === "invite" ? 2 : mode === "create" ? 5 : 1;
+    const points = (session.points || 0) + gain;
+    const pointsMap = read(POINTS, {});
+    pointsMap[session.email] = points;
+    write(POINTS, pointsMap);
+    return points;
+  };
+
+  const rememberBooking = (booking, points) => {
+    const books = read(BOOKS, {});
+    books[session.email] = [...(books[session.email] || []), booking].slice(-20);
+    write(BOOKS, books);
+    persistSession({ ...session, points, bookings: books[session.email] });
+  };
+
+  const openTable = useCallback(async (input) => {
+    if (!session) return { needLogin: true };
+    const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
+    const venue = base.venues.find((v) => v.id === input.venueId);
+    if (!venue) return { error: "That restaurant is not on the page." };
+    if (venue.hidden) return { error: "This restaurant is not taking tables." };
+    const branch = (venue.branches || []).find((b) => b.id === input.branchId) || venue.branches?.[0];
+    const capacity = Math.min(6, Math.max(2, Number(input.participants) || 2));
+    const table = {
+      id: `tbl-${Date.now().toString(36)}`,
+      auto: false,
+      dateISO: input.dateISO,
+      time: input.time,
+      tableType: input.tableType,
+      capacity,
+      joined: 1,
+      hostHandle: session.handle,
+      hostTier: tierFromPoints(session.points || 0, base.pointThresholds),
+      gender: input.gender || "",
+      orientation: input.orientation || "",
+      ageRange: input.ageRange || "",
+      branchId: branch?.id || "main",
+      area: branch?.area || venue.area,
+      address: branch?.address || venue.address,
+      inviteText: `${session.handle} invites you to join a dinner and meet new friends.`,
+    };
+    venue.tables = [...(venue.tables || []), table];
+    const hold = bookingHold(table);
+    base.bookingLog = [logEntry({ venue, table, hold, action: "opened", host: session.handle }), ...(base.bookingLog || [])].slice(0, 40);
+    const saved = await applyLive(base);
+    if (!saved.ok && saved.error) return { error: saved.error };
+    const points = grantPoints("invite");
+    rememberBooking({
+      id: table.id, venueId: venue.id, name: venue.name, kind: "table", mode: "invite", at: Date.now(),
+      dateISO: table.dateISO, time: table.time, location: table.address,
+    }, points);
+    pushNote("Table opened", `${venue.name} · ${table.time} · ${table.dateISO}. Restaurant queued via ${venue.contactMethod || "email"}.`);
+    log(`Opened ${venue.name}`);
+    return { ok: true, tableId: table.id, venueId: venue.id };
+  }, [applyLive, editing, log, pushNote, session]);
+
+  const joinTable = useCallback(async ({ venueId, tableId }) => {
+    if (!session) return { needLogin: true };
+    const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
+    const venue = base.venues.find((v) => v.id === venueId);
+    const table = venue?.tables?.find((t) => t.id === tableId);
+    if (!venue || !table) return { error: "That table is gone." };
+    const before = bookingHold(table);
+    if (before.closed || before.places <= 0 || before.status === "walk-in") return { error: before.reason };
+    table.joined += 1;
+    if ((venue.spots || 0) > 0) venue.spots -= 1;
+    const hold = bookingHold(table);
+    base.bookingLog = [logEntry({ venue, table, hold, action: "joined", host: table.hostHandle }), ...(base.bookingLog || [])].slice(0, 40);
+    const saved = await applyLive(base);
+    if (!saved.ok && saved.error) return { error: saved.error };
+    const points = grantPoints("join");
+    rememberBooking({
+      id: table.id, venueId: venue.id, name: venue.name, kind: "table", mode: "join", at: Date.now(),
+      dateISO: table.dateISO, time: table.time, location: table.address || venue.locationLabel,
+    }, points);
+    pushNote("You're booked", `${venue.name} · ${table.time} · ${hold.joined} people · ${hold.status}.`);
+    if (hold.status === "walk-in") pushNote("Walk-in", `${venue.name} is no longer holding a table. You can still go without a reservation.`);
+    return { ok: true };
+  }, [applyLive, editing, pushNote, session]);
+
+  const createPrivate = useCallback(async (input) => {
+    if (!session) return { needLogin: true };
+    if (!premium) return { error: "Premium trial required to host a private event." };
+    const capacity = Math.min(20, Math.max(2, Number(input.capacity) || 8));
+    const item = {
+      id: `priv-${Date.now().toString(36)}`,
+      kind: "private",
+      name: input.name.trim(),
+      typeLabel: input.forWhom || "Private",
+      hostLabel: `Blind with ${session.handle}`,
+      hostName: session.handle,
+      upcomingLabel: `${capacity - 1} places`,
+      spots: capacity - 1,
+      joined: 1,
+      capacity,
+      hidden: false,
+      featured: false,
+      dateISO: input.dateISO,
+      timeLabel: input.time,
+      location: input.location,
+      description: input.description,
+      forWhom: input.forWhom,
+      ageRange: input.ageRange || "",
+      videoUrl: input.videoUrl || "",
+      showHostPhoto: !!input.showHostPhoto,
+      imageUrl: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80",
+    };
+    const saved = await insertEvent(item, 5);
+    if (!saved?.ok) return saved;
+    pushNote("Private event", `${item.name} is live for Premium members. ${capacity - 1} places.`);
+    return { ok: true, id: item.id };
+  }, [insertEvent, premium, pushNote, session]);
+
+  const joinPrivate = useCallback(async (id) => {
+    if (!session) return { needLogin: true };
+    const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
+    const item = base.events.find((e) => e.id === id && e.kind === "private");
+    if (!item) return { error: "That event is gone." };
+    if ((item.spots || 0) <= 0) return { error: "FULL" };
+    item.spots -= 1;
+    item.joined = (item.joined || 1) + 1;
+    const saved = await applyLive(base);
+    if (!saved.ok && saved.error) return { error: saved.error };
+    const points = grantPoints("join");
+    rememberBooking({
+      id: item.id, name: item.name, kind: "private", mode: "join", at: Date.now(),
+      dateISO: item.dateISO, time: item.timeLabel, location: item.location,
+    }, points);
+    pushNote("Private event", `${item.name} · ${item.timeLabel} · ${item.location}`);
+    return { ok: true };
+  }, [applyLive, editing, pushNote, session]);
+
+  useEffect(() => {
+    if (!ready || !session || social.notesOn === false) return;
+    const today = new Date();
+    const key = `bb_remind_${today.getFullYear()}${today.getMonth()}${today.getDate()}_${session.email}`;
+    if (typeof window === "undefined" || localStorage.getItem(key)) return;
+    const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const hits = (session.bookings || []).filter((b) => b.dateISO === todayISO);
+    if (!hits.length) return;
+    localStorage.setItem(key, "1");
+    hits.forEach((hit) => {
+      pushNote("2-hour reminder", `Your Buddy Blind plan is today. ${hit.name} · ${hit.time || ""} · ${hit.location || ""}. This is the in-app reminder. SMS is not connected.`);
+    });
+  }, [pushNote, ready, session, social.notesOn]);
+
   const value = useMemo(
     () => ({
       ready,
@@ -626,13 +912,35 @@ export function BuddyProvider({ children }) {
       toggleHide,
       resetDraft,
       confirm,
+      lang,
+      setLang,
+      trial,
+      premium,
+      acceptTrial,
+      cancelTrial,
+      updateProfile,
+      social,
+      toggleNotes,
+      markNotesRead,
+      requestBuddy,
+      respondBuddy,
+      inviteBuddies,
+      addReview,
+      flow,
+      setFlow,
+      openTable,
+      joinTable,
+      createPrivate,
+      joinPrivate,
     }),
     [
       ready, remote, content, session, staff, editing, preview, device, panel, dirty, toast, notify,
       selectedId, canUndo, canRedo, undo, redo, update, saveDraft, publish, login, logout,
       register, createInvite, activate, revokeAdmin, invites, revoked, users, activity,
       versions, restoreVersion, act, insertEvent, removeBlock, duplicateBlock, addBlock, toggleLock,
-      toggleHide, resetDraft, confirm,
+      toggleHide, resetDraft, confirm, lang, setLang, trial, premium, acceptTrial, cancelTrial,
+      updateProfile, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
+      addReview, flow, openTable, joinTable, createPrivate, joinPrivate,
     ],
   );
 

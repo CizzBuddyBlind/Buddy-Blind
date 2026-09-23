@@ -2,14 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useBB } from "./Providers";
+import { translate } from "@/lib/i18n";
+import { JoinWizard, OpenTableWizard, PrivateWizard, TodayPopup, TrialGate } from "./Flows";
+import { RestaurantAdmin } from "./RestaurantAdmin";
+import { iso } from "@/lib/bible";
 
 const NAV = [
-  { href: "/", label: "Venues" },
-  { href: "/quick", label: "Quick" },
-  { href: "/private", label: "Private" },
-  { href: "/how", label: "How it works" },
+  { href: "/", key: "nav.venues" },
+  { href: "/quick", key: "nav.quick" },
+  { href: "/private", key: "nav.private" },
+  { href: "/how", key: "nav.how" },
+  { href: "/about", key: "nav.about" },
 ];
 
 function Icon({ d }) {
@@ -21,20 +26,23 @@ function Icon({ d }) {
 }
 
 const BOTTOM = [
-  { href: "/", label: "VENUES", icon: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" },
-  { href: "/quick", label: "QUICK", icon: "M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" },
-  { href: "/how", label: "HOW", center: true },
-  { href: "/private", label: "PRIVATE", icon: "M12 3l2.2 6.4H21l-5.4 3.9 2.1 6.4L12 16.8 6.3 19.7l2.1-6.4L3 9.4h6.8z" },
-  { href: "/profile", label: "PROFILE", icon: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0" },
+  { href: "/", key: "nav.venues", icon: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" },
+  { href: "/quick", key: "nav.quick", icon: "M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" },
+  { href: "/how", key: "nav.how", center: true },
+  { href: "/private", key: "nav.private", icon: "M12 3l2.2 6.4H21l-5.4 3.9 2.1 6.4L12 16.8 6.3 19.7l2.1-6.4L3 9.4h6.8z" },
+  { href: "/profile", key: "nav.profile", icon: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0" },
 ];
 
 export function Shell({ children }) {
   const path = usePathname() || "/";
   const light = path === "/quick" || path.startsWith("/private");
   const bb = useBB();
+  const t = (key) => translate(bb.lang, key);
   const [menu, setMenu] = useState(false);
   const [link, setLink] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
+  const [showToday, setShowToday] = useState(false);
+  const trialLive = !!(bb.trial?.at && !bb.trial.cancelled && Date.now() - bb.trial.at < 90 * 86400000);
   const initial = (bb.session?.handle || "B").slice(0, 1).toUpperCase();
   const frame =
     bb.editing && bb.device === "mobile"
@@ -47,6 +55,18 @@ export function Shell({ children }) {
     bb.content.venues.find((v) => v.id === bb.selectedId) ||
     bb.content.events.find((v) => v.id === bb.selectedId);
   const selectedKind = bb.content.venues.some((v) => v.id === bb.selectedId) ? "venue" : "event";
+  const flowVenue = bb.content.venues.find((v) => v.id === bb.flow?.venueId);
+
+  useEffect(() => {
+    if (!bb.ready || path !== "/" || !trialLive || bb.editing || bb.flow) return;
+    const key = `bb_today_${iso(0)}`;
+    if (!localStorage.getItem(key)) setShowToday(true);
+  }, [bb.ready, bb.editing, bb.flow, path, trialLive]);
+
+  function dismissToday() {
+    localStorage.setItem(`bb_today_${iso(0)}`, "1");
+    setShowToday(false);
+  }
 
   return (
     <div className={light ? "min-h-dvh bg-paper text-char" : "min-h-dvh bg-ink text-fg"}>
@@ -87,20 +107,27 @@ export function Shell({ children }) {
           <header className={`sticky z-40 border-b backdrop-blur-xl ${bb.editing ? "top-[46px]" : "top-0"} ${light ? "border-black/10 bg-paper/95" : "border-white/10 bg-ink/90"}`}>
             <div className="bb-frame flex h-14 items-center justify-between gap-4">
               <Link href="/" className="font-serif text-[1.05rem] tracking-wide">BUDDY BLIND</Link>
-              <nav className="hidden items-center gap-7 md:flex">
+              <nav className="hidden items-center gap-6 md:flex">
                 {NAV.map((item) => {
                   const active = item.href === "/" ? path === "/" : path.startsWith(item.href);
                   return (
                     <Link key={item.href} href={item.href} className={`text-[0.78rem] font-medium uppercase tracking-[0.08em] ${active ? "" : "text-mute"}`}>
-                      {item.label}
+                      {t(item.key)}
                     </Link>
                   );
                 })}
               </nav>
-              <div className="relative">
+              <div className="relative flex items-center gap-2">
+                <div className={`flex rounded-full border p-0.5 text-[10px] ${light ? "border-black/15" : "border-white/15"}`}>
+                  {[["en", "EN"], ["zh", "简"], ["zh-HK", "繁"]].map(([id, label]) => (
+                    <button key={id} type="button" onClick={() => bb.setLang(id)} className={`rounded-full px-2 py-1 ${bb.lang === id ? (light ? "bg-char text-paper" : "bg-fg text-ink") : "text-mute"}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 {!bb.session ? (
                   <Link href="/login" className={`rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] ${light ? "bg-char text-paper" : "bg-fg text-ink"}`}>
-                    Login
+                    {t("nav.login")}
                   </Link>
                 ) : (
                   <button
@@ -118,7 +145,9 @@ export function Shell({ children }) {
                       <div className="text-sm">{bb.session.handle}</div>
                       <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ember">{bb.session.role}</div>
                     </div>
-                    <Link href="/profile" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>Profile</Link>
+                    <Link href="/profile" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>{t("nav.profile")}</Link>
+                    <Link href="/subscribe" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>{t("nav.subscribe")}</Link>
+                    <Link href="/about" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>{t("nav.about")}</Link>
                     <button
                       type="button"
                       className="block w-full px-4 py-2.5 text-left text-sm hover:bg-white/5"
@@ -127,7 +156,7 @@ export function Shell({ children }) {
                         bb.logout();
                       }}
                     >
-                      Log out
+                      {t("nav.logout")}
                     </button>
                   </div>
                 )}
@@ -151,7 +180,7 @@ export function Shell({ children }) {
                 return (
                   <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-0.5 py-2.5 text-[0.62rem] font-medium tracking-[0.08em] ${active ? "" : "text-mute"}`}>
                     <Icon d={item.icon} />
-                    {item.label}
+                    {t(item.key)}
                   </Link>
                 );
               })}
@@ -168,6 +197,7 @@ export function Shell({ children }) {
             ["layers", "Ly"],
             ["media", "Ph"],
             ["history", "Hi"],
+            ["restaurants", "Rs"],
           ].map(([id, label]) => (
             <button key={id} type="button" onClick={() => bb.setPanel(bb.panel === id ? null : id)} className={`grid h-11 w-11 place-items-center rounded-full text-[11px] font-bold ${bb.panel === id ? "bg-ember text-white" : "bg-[#161616] text-fg ring-1 ring-white/15"}`}>
               {label}
@@ -194,9 +224,9 @@ export function Shell({ children }) {
           {bb.panel === "pages" && (
             <div className="space-y-2">
               <p className="bb-kicker text-mute">Pages</p>
-              {[...NAV, { href: "/profile", label: "Profile" }, { href: "/login", label: "Login" }].map((item) => (
+              {[...NAV, { href: "/profile", key: "nav.profile" }, { href: "/subscribe", key: "nav.subscribe" }, { href: "/login", key: "nav.login" }].map((item) => (
                 <Link key={item.href} href={item.href} className="block rounded-lg px-2 py-2 hover:bg-white/5" onClick={() => bb.setPanel(null)}>
-                  {item.label}
+                  {t(item.key)}
                 </Link>
               ))}
             </div>
@@ -245,6 +275,7 @@ export function Shell({ children }) {
               ))}
             </div>
           )}
+          {bb.panel === "restaurants" && bb.staff && <RestaurantAdmin />}
           {bb.panel === "admins" && bb.session?.role === "founder" && (
             <div className="space-y-3">
               <p className="bb-kicker text-mute">Admin management</p>
@@ -314,6 +345,24 @@ export function Shell({ children }) {
           {bb.toast}
         </div>
       )}
+      {bb.ready && !trialLive && <TrialGate />}
+      {showToday && !bb.flow && (
+        <TodayPopup
+          onJoin={(venueId, tableId) => {
+            dismissToday();
+            bb.setFlow({ type: "join", venueId, tableId });
+          }}
+          onBrowse={() => {
+            dismissToday();
+            window.location.href = "/?when=today";
+          }}
+        />
+      )}
+      {bb.flow?.type === "invite" && flowVenue && <OpenTableWizard venue={flowVenue} onClose={() => bb.setFlow(null)} />}
+      {bb.flow?.type === "join" && flowVenue && (
+        <JoinWizard venue={flowVenue} tableId={bb.flow.tableId} onClose={() => bb.setFlow(null)} />
+      )}
+      {bb.flow?.type === "private-create" && <PrivateWizard onClose={() => bb.setFlow(null)} />}
     </div>
   );
 }
