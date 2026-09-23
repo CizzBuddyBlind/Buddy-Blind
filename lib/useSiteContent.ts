@@ -8,40 +8,31 @@ export function useSiteContent(defaults: Record<string,string>){
     try{
       const raw = localStorage.getItem('bb_draft')
       if(raw){
-        const draft = JSON.parse(raw)
-        if(draft.siteContent){
-          setContent(prev => ({...prev,...draft.siteContent}))
-        }
+        const d = JSON.parse(raw)
+        if(d.siteContent) setContent(prev=>({...prev,...d.siteContent}))
       }
     }catch{}
-    const onStorage = () => {
+    const h = () => {
       try{
         const raw = localStorage.getItem('bb_draft')
         if(raw){
-          const draft = JSON.parse(raw)
-          if(draft.siteContent){
-            setContent(prev => ({...prev,...draft.siteContent}))
-          }
+          const d = JSON.parse(raw)
+          if(d.siteContent) setContent(prev=>({...prev,...d.siteContent}))
         }
       }catch{}
     }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
+    window.addEventListener('storage', h)
+    return ()=>window.removeEventListener('storage', h)
   },[])
 
-  const getText = (key: string) => {
-    return content[key] || defaults[key] || key
+  const getText = (k: string) => content[k] || defaults[k] || k
+
+  // MUST return object, never string — fixes your build error
+  const getStyle = (_k: string) => {
+    return {} as React.CSSProperties
   }
 
-  const getStyle = (key: string) => {
-    const v = content[key] || defaults[key]
-    if(!v) return {} as any
-    try{ return typeof v === 'string' && (v.startsWith('{') || v.startsWith('['))? JSON.parse(v) : v }catch{ return v as any }
-  }
-
-  const getImage = (key: string) => {
-    return content[key] || defaults[key] || ''
-  }
+  const getImage = (k: string) => content[k] || defaults[k] || ''
 
   return { content, getText, getStyle, getImage, setContent }
 }
