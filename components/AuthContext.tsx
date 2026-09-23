@@ -45,7 +45,29 @@ export function AuthProvider({children}:{children:React.ReactNode}){
         setUserName(p.userName||'CJ')
       }catch{}
     } else {
-      setIsLoggedIn(true)
+      // New user No register before - can browse website without login
+      // Do not auto login - let them browse as guest
+      setIsLoggedIn(false)
+    }
+    // Also check buddy_user for full name
+    const buddyUser = localStorage.getItem('buddy_user')
+    if(buddyUser){
+      try{
+        const u = JSON.parse(buddyUser)
+        if(u.firstName){
+          const full = (u.firstName + ' ' + (u.lastName||'')).trim()
+          setUserName(full)
+          setIsLoggedIn(true)
+        }
+      }catch{}
+    }
+    const registered = localStorage.getItem('buddy_registered')
+    if(registered==='1'){
+      const saved2 = localStorage.getItem('bb_auth')
+      if(!saved2){
+        // If registered but no auth, keep logged in
+        setIsLoggedIn(true)
+      }
     }
   },[])
 
@@ -54,10 +76,12 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   }
 
   const loginUser = (name:string) => {
+    const finalName = name||'CJ'
     setIsLoggedIn(true)
     setIsAdmin(false)
-    setUserName(name||'CJ')
-    saveAuth(true,false,name||'CJ')
+    setUserName(finalName)
+    saveAuth(true,false,finalName)
+    localStorage.setItem('buddy_registered','1')
   }
 
   const loginAdmin = (password:string) => {
@@ -74,20 +98,21 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   const logout = () => {
     setIsLoggedIn(false)
     setIsAdmin(false)
-    setUserName('CJ')
+    // Keep userName for initials display? No, reset to CJ for demo
+    // But keep buddy_user for re-login? Clear auth only, keep user data for browsing
     localStorage.removeItem('bb_auth')
+    // Do not remove buddy_registered and buddy_user - so they can login again or browse
+    // New logic: after logout, they can browse without login
   }
 
   // DRAFT / PUBLISH SYSTEM
   const saveDraft = (data:any) => {
-    // data can be {venues, privateEvents, siteContent}
     const existing = JSON.parse(localStorage.getItem('bb_draft') || '{}')
     const merged = {...existing, ...data, savedAt: new Date().toISOString()}
     localStorage.setItem('bb_draft', JSON.stringify(merged))
     localStorage.setItem('bb_draft_status', 'DRAFT SAVED - Not published yet')
     setDraftStatus('DRAFT SAVED - Website unchanged, draft saved')
     setTimeout(()=>setDraftStatus(''),3000)
-    // Also try save to Supabase drafts table
     try{
       supabase.from('site_content_drafts').upsert(Object.entries(merged.siteContent||{}).map(([k,v]:any)=>({key:k, value:v, draft:true})), {onConflict:'key'} as any)
     }catch{}
@@ -103,32 +128,27 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     const draft = JSON.parse(draftStr)
     setDraftStatus('PUBLISHING...')
     try{
-      // Publish siteContent to live table
       if(draft.siteContent){
         for(const [k,v] of Object.entries(draft.siteContent)){
           await supabase.from('site_content').upsert({key:k, value:v as string},{onConflict:'key'})
         }
       }
-      // Publish venues
       if(draft.venues){
         for(const venue of draft.venues){
           await supabase.from('venues').upsert(venue,{onConflict:'id'})
         }
       }
-      // Publish private events to featured or venues
       if(draft.privateEvents){
         for(const ev of draft.privateEvents){
           await supabase.from('featured_events').upsert({id:ev.id, title:ev.title, image_url:ev.image, area:ev.tag, time:'PRIVATE', spots_left:6, host_label:ev.host, price_label:ev.subtitle, vibe_label:ev.tag, invite_text:ev.attraction, description_long:ev.subtitle},{onConflict:'id'})
         }
       }
-      // Mark as published
       localStorage.setItem('bb_draft_status', 'PUBLISHED')
       setDraftStatus('PUBLISHED - Website updated live!')
       setTimeout(()=>setDraftStatus(''),3000)
       localStorage.removeItem('bb_draft')
       alert('Published! Website now shows your edited version.')
     }catch(e:any){
-      // Fallback: save to local published store
       localStorage.setItem('bb_published', draftStr)
       setDraftStatus('PUBLISHED LOCALLY (Supabase not configured) - Website updated')
       setTimeout(()=>setDraftStatus(''),3000)
