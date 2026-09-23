@@ -1,11 +1,5 @@
-'use client'
-import { EditableText } from '@/components/EditableText'
-export default function FounderPage(){
-  return (
-    <div className="min-h-screen bg-black text-white pt-24 px-6 pb-20">
-      <div className="max-w-5xl mx-auto">
-        <EditableText textKey="founder_title" defaultValue="Founder Dashboard" as="h1" className="text-5xl font-serif block" />
-      </div>
-    </div>
-  )
+'use client';
+import EditableText from '@/components/EditableText';
+export default function FounderPage() {
+  return <main className="p-10"><h1 className="text-3xl"><EditableText field="profileName" as="span" /> — <EditableText field="profileRole" as="span" /></h1><p className="mt-4 opacity-70">Founder edit mode works here too.</p></main>
 }

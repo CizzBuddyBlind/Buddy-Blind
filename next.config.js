@@ -5,5 +5,4 @@ const nextConfig = {
     domains: ['images.unsplash.com'],
   },
 };
-
 module.exports = nextConfig;
