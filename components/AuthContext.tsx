@@ -3,12 +3,15 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
+type UserRole = 'guest' | 'user' | 'admin' | 'superadmin';
 type AuthState = {
   isLoggedIn:boolean,
   isAdmin:boolean,
+  userRole: UserRole,
   userName:string,
+  userEmail:string,
   draftStatus:string,
-  loginUser:(name:string)=>void,
+  loginUser:(name:string, email?:string, password?:string)=>boolean,
   loginAdmin:(password:string)=>boolean,
   logout:()=>void,
   saveDraft:(data:any)=>void,
@@ -18,9 +21,11 @@ type AuthState = {
 const AuthContext = createContext<AuthState>({
   isLoggedIn:false,
   isAdmin:false,
-  userName:'CJ',
+  userRole:'guest',
+  userName:'Guest',
+  userEmail:'',
   draftStatus:'',
-  loginUser:()=>{},
+  loginUser:()=>false,
   loginAdmin:()=>false,
   logout:()=>{},
   saveDraft:()=>{},
@@ -29,10 +34,20 @@ const AuthContext = createContext<AuthState>({
 
 export const useAuth = () => useContext(AuthContext)
 
+// Admin accounts - in production these would be in database with permission field
+const ADMIN_ACCOUNTS: Record<string, {password:string, role: UserRole, name:string}> = {
+  'admin@buddyblind.com': { password: 'buddyadmin2025', role: 'admin', name: 'ADMIN' },
+  'admin': { password: 'buddyadmin2025', role: 'admin', name: 'ADMIN' },
+  'admin@buddyblind': { password: 'admin123', role: 'admin', name: 'ADMIN' },
+  'cizz@buddyblind.com': { password: 'buddyadmin2025', role: 'superadmin', name: 'Cizz J Choi' },
+};
+
 export function AuthProvider({children}:{children:React.ReactNode}){
   const [isLoggedIn,setIsLoggedIn]=useState(false)
   const [isAdmin,setIsAdmin]=useState(false)
-  const [userName,setUserName]=useState('CJ')
+  const [userRole,setUserRole]=useState<UserRole>('guest')
+  const [userName,setUserName]=useState('Guest')
+  const [userEmail,setUserEmail]=useState('')
   const [draftStatus,setDraftStatus]=useState('')
 
   useEffect(()=>{
@@ -42,54 +57,100 @@ export function AuthProvider({children}:{children:React.ReactNode}){
         const p = JSON.parse(saved)
         setIsLoggedIn(p.isLoggedIn||false)
         setIsAdmin(p.isAdmin||false)
-        setUserName(p.userName||'CJ')
+        setUserRole(p.userRole||'guest')
+        setUserName(p.userName||'Guest')
+        setUserEmail(p.userEmail||'')
       }catch{}
-    } else {
-      // New user No register before - can browse website without login
-      // Do not auto login - let them browse as guest
-      setIsLoggedIn(false)
     }
-    // Also check buddy_user for full name
+    // Also check buddy_user
     const buddyUser = localStorage.getItem('buddy_user')
     if(buddyUser){
       try{
         const u = JSON.parse(buddyUser)
         if(u.firstName){
           const full = (u.firstName + ' ' + (u.lastName||'')).trim()
-          setUserName(full)
-          setIsLoggedIn(true)
+          if(!saved){
+            setUserName(full)
+            setIsLoggedIn(true)
+            setUserRole('user')
+          }
         }
       }catch{}
     }
-    const registered = localStorage.getItem('buddy_registered')
-    if(registered==='1'){
-      const saved2 = localStorage.getItem('bb_auth')
-      if(!saved2){
-        // If registered but no auth, keep logged in
-        setIsLoggedIn(true)
-      }
-    }
   },[])
 
-  const saveAuth = (logged:boolean, admin:boolean, name:string) => {
-    localStorage.setItem('bb_auth', JSON.stringify({isLoggedIn:logged, isAdmin:admin, userName:name}))
+  const saveAuth = (logged:boolean, admin:boolean, role:UserRole, name:string, email:string) => {
+    localStorage.setItem('bb_auth', JSON.stringify({isLoggedIn:logged, isAdmin:admin, userRole:role, userName:name, userEmail:email}))
   }
 
-  const loginUser = (name:string) => {
-    const finalName = name||'CJ'
+  const loginUser = (nameOrEmail:string, emailOrPass?:string, password?:string):boolean => {
+    // Same login button for normal user and admin - auto recognition based on account credentials and permissions
+    let identifier = nameOrEmail.trim()
+    let pass = ''
+    let email = ''
+
+    // Determine if first param is email
+    if(identifier.includes('@')){
+      email = identifier
+      pass = emailOrPass || ''
+    } else {
+      // Could be username + password in second param
+      email = emailOrPass || ''
+      pass = password || ''
+      if(!email.includes('@') && email){
+        pass = email
+        email = ''
+      }
+    }
+
+    // Check if admin account - automatic recognition from credentials and permissions
+    const checkKey = email || identifier.toLowerCase()
+    const adminAccount = ADMIN_ACCOUNTS[checkKey] || ADMIN_ACCOUNTS[checkKey.toLowerCase()] || ADMIN_ACCOUNTS[identifier.toLowerCase()]
+
+    if(adminAccount && (adminAccount.password===pass || pass==='buddyadmin2025' || pass==='admin123')){
+      // Admin Account → Admin Edit Mode - System recognises admin permission
+      setIsLoggedIn(true)
+      setIsAdmin(true)
+      setUserRole(adminAccount.role)
+      setUserName(adminAccount.name)
+      setUserEmail(email || identifier)
+      saveAuth(true, true, adminAccount.role, adminAccount.name, email || identifier)
+      localStorage.setItem('buddy_registered','1')
+      return true
+    }
+
+    // Check buddy admin password standalone - for demo allow buddyadmin2025 as admin password via same login
+    if(pass==='buddyadmin2025' || pass==='BB2025' || pass==='admin123'){
+      setIsLoggedIn(true)
+      setIsAdmin(true)
+      setUserRole('admin')
+      setUserName(identifier || 'ADMIN')
+      setUserEmail(email || identifier)
+      saveAuth(true, true, 'admin', identifier || 'ADMIN', email || identifier)
+      localStorage.setItem('buddy_registered','1')
+      return true
+    }
+
+    // Normal User → Normal Website Mode
+    const finalName = identifier || 'CJ'
     setIsLoggedIn(true)
     setIsAdmin(false)
+    setUserRole('user')
     setUserName(finalName)
-    saveAuth(true,false,finalName)
+    setUserEmail(email)
+    saveAuth(true,false,'user',finalName,email)
     localStorage.setItem('buddy_registered','1')
+    return true
   }
 
   const loginAdmin = (password:string) => {
+    // Legacy - kept for compatibility but new system uses same login button
     if(password==='buddyadmin2025' || password==='admin123' || password==='BB2025'){
       setIsLoggedIn(true)
       setIsAdmin(true)
+      setUserRole('admin')
       setUserName('ADMIN')
-      saveAuth(true,true,'ADMIN')
+      saveAuth(true,true,'admin','ADMIN','admin@buddyblind.com')
       return true
     }
     return false
@@ -98,14 +159,14 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   const logout = () => {
     setIsLoggedIn(false)
     setIsAdmin(false)
-    // Keep userName for initials display? No, reset to CJ for demo
-    // But keep buddy_user for re-login? Clear auth only, keep user data for browsing
+    setUserRole('guest')
+    setUserName('Guest')
+    setUserEmail('')
     localStorage.removeItem('bb_auth')
-    // Do not remove buddy_registered and buddy_user - so they can login again or browse
-    // New logic: after logout, they can browse without login
+    // Admin Edit Mode immediately disappears when admin logs out
+    // Website returns to normal user-facing version
   }
 
-  // DRAFT / PUBLISH SYSTEM
   const saveDraft = (data:any) => {
     const existing = JSON.parse(localStorage.getItem('bb_draft') || '{}')
     const merged = {...existing, ...data, savedAt: new Date().toISOString()}
@@ -147,7 +208,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
       setDraftStatus('PUBLISHED - Website updated live!')
       setTimeout(()=>setDraftStatus(''),3000)
       localStorage.removeItem('bb_draft')
-      alert('Published! Website now shows your edited version.')
+      alert('Published! Website now shows your edited version to normal users.');
     }catch(e:any){
       localStorage.setItem('bb_published', draftStr)
       setDraftStatus('PUBLISHED LOCALLY (Supabase not configured) - Website updated')
@@ -157,7 +218,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   }
 
   return(
-    <AuthContext.Provider value={{isLoggedIn,isAdmin,userName,draftStatus,loginUser,loginAdmin,logout,saveDraft,publishDraft}}>
+    <AuthContext.Provider value={{isLoggedIn,isAdmin,userRole,userName,userEmail,draftStatus,loginUser,loginAdmin,logout,saveDraft,publishDraft}}>
       {children}
     </AuthContext.Provider>
   )
