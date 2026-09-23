@@ -1,0 +1,1 @@
+import './globals.css'; import { SiteContentProvider } from '@/components/useSiteContent'; export const metadata = { title: 'Buddy Blind V9 Heart' }; export default function RootLayout({ children }) { return (<html lang='en'><body><SiteContentProvider>{children}</SiteContentProvider></body></html>) }
