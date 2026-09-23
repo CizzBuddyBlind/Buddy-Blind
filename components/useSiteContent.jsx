@@ -1,1 +1,70 @@
-'use client'; import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'; const defaultContent={landing:{line1:"You don't know who you'll meet.",line2:"That's the point.",stats:[{k:"2,400+",v:"Buddies"},{k:"120",v:"Tables / mo"},{k:"6",v:"Venues"}],cta:"Join a Table",cta2:"How it works"},venues:[{id:"kissa",name:"Kissa Tanaka, Soho",area:"Soho",mood:"Dark kissaten",host:"CJ",tagline:"Vinyl, whisky, low lights.",img:"https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800",color:"#1a1a1a"},{id:"yardbird",name:"Yardbird, Central",area:"Central",mood:"Yakitori",host:"Aki",tagline:"Counter seats",img:"https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800",color:"#2b2118"},{id:"lacabane",name:"La Cabane, CWB",area:"CWB",mood:"Natural wine",host:"Mira",tagline:"Heartful pours",img:"https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=800",color:"#3a2a2a"},{id:"lockcha",name:"LockCha Tea House",area:"TST",mood:"Tea",host:"Lok",tagline:"Afternoon tea",img:"https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=800",color:"#3e3528"},{id:"privatekitchen",name:"Private Kitchen",area:"Central",mood:"Chef's table",host:"Nat",tagline:"Plating together",img:"https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800",color:"#222"},{id:"saikung",name:"Sai Kung Hike & Eat",area:"Sai Kung",mood:"Golden hour",host:"Sam",tagline:"Walk first",img:"https://images.unsplash.com/photo-1551632811-561732d1e306?w=800",color:"#2f3a2a"}],privateEvents:[{id:"comedian",title:"Comedian Speakeasy",host:"Jay",area:"Mong Kok",desc:"3 comics",img:"https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=800"},{id:"tattoo",title:"Tattoo Flash Art Night",host:"Ink",area:"SSP",desc:"Flash only",img:"https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?w=800"},{id:"chef",title:"Chef's Intimate Table",host:"Nat",area:"Central",desc:"Cook + talk",img:"https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800"},{id:"wine",title:"Wine Heartful Night",host:"Mira",area:"CWB",desc:"Natural wine",img:"https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=800"},{id:"mahjong",title:"Mahjong Tea 50+",host:"Lok",area:"TST",desc:"Learn, play",img:"https://images.unsplash.com/photo-1609766410364-830335dc7d4f?w=800"},{id:"hike",title:"Hiking Buddies",host:"Sam",area:"Sai Kung",desc:"Easy trail",img:"https://images.unsplash.com/photo-1682686580391-615b1f28e5d1?w=800"}],quickMeet:[{id:"qm1",label:"Lunch · Central · 1PM",spots:"3 places"},{id:"qm2",label:"Drinks · CWB · 6:30PM",spots:"2 places"},{id:"qm3",label:"Coffee · TST · Now",spots:"1 place left"}]}; const SiteContext=createContext(null); const STORAGE_KEY="buddy-blind-v9-founder-edits"; export function SiteContentProvider({children}){const [content,setContent]=useState(defaultContent);const [isFounder,setIsFounder]=useState(false);const [mounted,setMounted]=useState(false);useEffect(()=>{setMounted(true);try{const s=localStorage.getItem(STORAGE_KEY);if(s)setContent({...defaultContent,...JSON.parse(s)});const f=localStorage.getItem('buddy-founder-mode');if(f==='1')setIsFounder(true)}catch(e){}},[]);useEffect(()=>{if(!mounted)return;try{localStorage.setItem(STORAGE_KEY,JSON.stringify(content))}catch(e){}},[content,mounted]);const update=useCallback((path,value)=>{setContent(prev=>{const next=JSON.parse(JSON.stringify(prev));let cur=next;for(let i=0;i<path.length-1;i++)cur=cur[path[i]];cur[path[path.length-1]]=value;return next})},[]);const toggleFounder=useCallback(()=>{setIsFounder(v=>{const nv=!v;try{localStorage.setItem('buddy-founder-mode',nv?'1':'0')}catch(e){}return nv})},[]);const resetContent=useCallback(()=>{setContent(defaultContent);try{localStorage.removeItem(STORAGE_KEY)}catch(e){}},[]);const value=React.useMemo(()=>({content,update,isFounder,toggleFounder,resetContent,mounted}),[content,update,isFounder,toggleFounder,resetContent,mounted]);return React.createElement(SiteContext.Provider,{value},children)}; export function useSiteContent(){const ctx=useContext(SiteContext);if(!ctx)throw new Error('useSiteContent must be used inside SiteContentProvider - FIXED');return ctx}
+'use client';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+
+const defaultContent = {
+  heroLeft: "That's the point.",
+  heroRightTitle: "The Buddy Blind",
+  heroRightDesc: "You don't pick who you sit with. You just show up.",
+  heroRightEvent: "Next — Sat, Sep 28 · 7PM · Ponsonby",
+  privateTitle: "Private",
+  privateDesc: "For teams, birthdays, and brands who want a real conversation.",
+  venuesTitle: "Where we've been",
+  profileName: "Cizz",
+  profileRole: "Founder",
+  quickTitle: "Quick",
+  quickLinks: ["How it works", "FAQ", "Contact"]
+};
+
+const SiteContentContext = createContext(null);
+const LS_KEY = "buddy-blind-v9-content";
+
+export function SiteContentProvider({ children }) {
+  const [mounted, setMounted] = useState(false);
+  const [content, setContent] = useState(defaultContent);
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) setContent({ ...defaultContent, ...JSON.parse(raw) });
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    try { localStorage.setItem(LS_KEY, JSON.stringify(content)); } catch {}
+  }, [content, mounted]);
+
+  const updateField = useCallback((key, value) => {
+    setContent(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const resetContent = useCallback(() => {
+    setContent(defaultContent);
+    try { localStorage.removeItem(LS_KEY); } catch {}
+  }, []);
+
+  // FIXED: stable value with useMemo to prevent infinite re-render
+  const value = useMemo(() => ({
+    content,
+    mounted,
+    isEditMode,
+    setIsEditMode,
+    updateField,
+    resetContent,
+    setContent
+  }), [content, mounted, isEditMode, updateField, resetContent]);
+
+  return (
+    <SiteContentContext.Provider value={value}>
+      {children}
+    </SiteContentContext.Provider>
+  );
+}
+
+export function useSiteContent() {
+  const ctx = useContext(SiteContentContext);
+  if (!ctx) throw new Error("useSiteContent must be used within SiteContentProvider");
+  return ctx;
+}

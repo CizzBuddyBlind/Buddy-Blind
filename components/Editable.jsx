@@ -1,1 +1,25 @@
-'use client'; import { useSiteContent } from './useSiteContent'; export default function Editable({path,as='span',className='',children}){const {content,update,isFounder}=useSiteContent();let value=content;try{for(const p of path)value=value[p]}catch(e){value=children}if(!isFounder)return <span className={className}>{value??children}</span>;const Comp=as;return <Comp contentEditable suppressContentEditableWarning onBlur={(e)=>update(path,e.currentTarget.textContent)} className={`${className} outline-none ring-1 ring-[#C45A3C]/40 rounded px-1 hover:ring-[#C45A3C] focus:ring-2 bg-[#C45A3C]/5`}>{value}</Comp>}
+'use client';
+import { useSiteContent } from './useSiteContent';
+
+export default function Editable({ field, as: Tag = 'span', className = '', children, ...props }) {
+  const { content, isEditMode, updateField, mounted } = useSiteContent();
+  const value = content[field] ?? children;
+
+  if (!mounted) return <Tag className={className} {...props}>{value}</Tag>;
+
+  if (!isEditMode) {
+    return <Tag className={className} {...props}>{value}</Tag>;
+  }
+
+  return (
+    <Tag
+      className={`${className} outline outline-1 outline-orange-300 bg-orange-50/50 rounded px-1`}
+      contentEditable
+      suppressContentEditableWarning
+      onBlur={(e) => updateField(field, e.currentTarget.textContent)}
+      {...props}
+    >
+      {value}
+    </Tag>
+  );
+}

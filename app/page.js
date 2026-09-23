@@ -1,1 +1,96 @@
-'use client';import {useState} from 'react';import {useSiteContent} from '@/components/useSiteContent';import FounderBar from '@/components/FounderBar';import Editable from '@/components/Editable';export default function Page(){const {content}=useSiteContent();const [tab,setTab]=useState('events');const [selectedVenue,setSelectedVenue]=useState(null);return(<main className="min-h-screen"><FounderBar/><nav className="flex items-center justify-between px-8 md:px-16 py-6 border-b border-black/5"><div className="serif text-2xl tracking-tight">Buddy Blind</div><div className="flex gap-6 text-sm"><button onClick={()=>{setTab('events');setSelectedVenue(null)}} className={tab==='events'?'font-semibold underline':''}>Events</button><button onClick={()=>setTab('private')} className={tab==='private'?'font-semibold underline':''}>Private</button><button onClick={()=>setTab('quick')} className={tab==='quick'?'font-semibold underline':''}>Quick Meet</button><button onClick={()=>setTab('profile')} className={tab==='profile'?'font-semibold underline':''}>Profile</button></div></nav>{tab==='events'&&!selectedVenue&&(<><section className="grid md:grid-cols-2 gap-8 px-8 md:px-16 py-16 md:py-24 items-center"><div><h1 className="serif text-[42px] md:text-[64px] leading-[0.95] tracking-tight"><Editable path={['landing','line1']} as="div" className="block"/> <span className="block text-[#C45A3C]"><Editable path={['landing','line2']} as="span"/></span></h1><div className="mt-10 flex gap-8 text-sm">{content.landing.stats.map((s,i)=>(<div key={i}><div className="text-2xl serif">{s.k}</div><div className="opacity-60">{s.v}</div></div>))}</div><div className="mt-8 flex gap-3"><button className="bg-black text-white px-6 py-3 rounded-full text-sm">Join a Table</button><button className="border border-black/20 px-6 py-3 rounded-full text-sm">How it works</button></div></div><div className="relative"><div className="aspect-[4/3] overflow-hidden rounded-[24px] bg-black"><img src={content.venues[0].img} className="w-full h-full object-cover object-center" alt="featured"/></div><div className="absolute bottom-4 left-4 right-4 bg-[#F5F3EF]/90 backdrop-blur rounded-2xl p-5"><div className="text-xs opacity-60">{content.venues[0].area} · {content.venues[0].mood}</div><div className="serif text-xl mt-1">{content.venues[0].name}</div><div className="text-sm mt-2 leading-relaxed">CJ invites you to join a dinner and meet new friends. No profiles, just presence.</div></div></div></section><section className="px-8 md:px-16 pb-24"><div className="grid md:grid-cols-3 gap-8">{content.venues.map(v=>(<div key={v.id} onClick={()=>setSelectedVenue(v)} className="group cursor-pointer"><div className="aspect-[4/3] overflow-hidden rounded-2xl bg-neutral-200"><img src={v.img} alt={v.name} className="w-full h-full object-cover object-center group-hover:scale-[1.02] transition duration-300"/></div><div className="p-5"><div className="flex items-center gap-3 flex-wrap"><div className="w-6 h-6 rounded-full bg-black text-white grid place-items-center text-[10px]">{v.host[0]}</div><span className="text-xs opacity-70">{v.host} invites you to join</span><span className="text-[10px] border px-2 py-0.5 rounded-full">{v.area}</span></div><div className="serif text-[20px] mt-3 leading-tight">{v.name}</div><div className="text-sm mt-2 leading-[1.4] opacity-70 whitespace-normal overflow-visible">{v.tagline}</div></div></div>))}</div></section></>)}{selectedVenue&&(<section className="px-8 md:px-16 py-12"><button onClick={()=>setSelectedVenue(null)} className="text-sm opacity-60 mb-6">← Back to venues</button><div className="grid md:grid-cols-2 gap-12"><div className="aspect-[4/3] rounded-2xl overflow-hidden bg-neutral-200"><img src={selectedVenue.img} className="w-full h-full object-cover"/></div><div><div className="text-xs opacity-60">{selectedVenue.area}</div><h2 className="serif text-4xl mt-2">{selectedVenue.name}</h2><p className="mt-4 opacity-70 leading-relaxed">{selectedVenue.tagline}</p><button className="mt-8 bg-black text-white px-8 py-3 rounded-full w-full md:w-auto">INVITE · Join this table</button></div></div></section>)}{tab==='private'&&(<section className="px-8 md:px-16 py-16"><h2 className="serif text-4xl">Private Events</h2><p className="opacity-60 mt-2">Hosted by buddies, not venues. Different photos, no repeat.</p><div className="mt-10 grid md:grid-cols-3 gap-8">{content.privateEvents.map(ev=>(<div key={ev.id} className="group cursor-pointer"><div className="aspect-[4/3] rounded-2xl overflow-hidden"><img src={ev.img} className="w-full h-full object-cover" alt={ev.title}/></div><div className="mt-4"><div className="serif text-xl group-hover:text-[#C45A3C] transition-colors duration-150">{ev.title}</div><div className="text-xs opacity-60 mt-1 group-hover:text-[#C45A3C] transition-colors">{ev.host} · {ev.area}</div><div className="text-sm opacity-70 mt-2 leading-relaxed group-hover:text-[#C45A3C] transition-colors">{ev.desc}</div></div></div>))}</div></section>)}{tab==='quick'&&(<section className="max-w-[720px] mx-auto px-8 py-20 text-center"><h2 className="serif text-5xl">Quick Meet</h2><p className="opacity-60 mt-3">I'm free now. Who wants to join?</p><input placeholder="Enter area... Central, CWB, TST" className="mt-8 w-full border border-black/10 rounded-full px-6 py-3 text-sm outline-none focus:border-[#C45A3C]"/><div className="mt-10 flex flex-wrap justify-center gap-3">{content.quickMeet.map(qm=>(<div key={qm.id} className="border border-black/10 rounded-full px-5 py-2.5 text-sm flex items-center gap-2 hover:border-[#C45A3C] hover:text-[#C45A3C] cursor-pointer transition">{qm.label} <span className="opacity-50 text-xs">{qm.spots}</span></div>))}</div><div className="text-xs opacity-50 mt-12">Today nearby · 2-4 people · Low-stakes</div></section>)}{tab==='profile'&&(<section className="max-w-[720px] mx-auto px-8 py-16"><div className="rounded-[32px] border border-black/5 p-8 bg-white/60"><div className="flex items-start gap-5"><div className="relative"><div className="w-16 h-16 rounded-full bg-neutral-300 overflow-hidden"><img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200" className="w-full h-full object-cover"/></div><div className="absolute -top-1 -right-1 bg-[#D4AF37] text-[10px] px-1.5 py-0.5 rounded-full">Gold</div></div><div><div className="flex items-center gap-2"><div className="serif text-2xl">Cizz</div><span className="text-xs border px-2 py-0.5 rounded-full">24 Buddies</span><span className="text-xs border px-2 py-0.5 rounded-full">30-40</span></div><div className="text-xs opacity-60 mt-1">2 pts invite · 1 pt join · 5 pts create · 100 pts → 5% off whole table</div><div className="mt-3 flex items-center gap-2 text-sm"><span>⭐ 4.5</span><span className="opacity-60">· Easy to talk to</span></div></div></div></div></section>)}</main>)}
+'use client';
+import { useSiteContent } from '../components/useSiteContent';
+import Editable from '../components/Editable';
+
+const venues = [
+  { name: "Cafe 001 — Grey Lynn", img: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800" },
+  { name: "Wine Bar — Ponsonby", img: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800" },
+  { name: "Rooftop — CBD", img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800" },
+  { name: "Bakery — Mt Eden", img: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800" },
+  { name: "Studio — K Road", img: "https://images.unsplash.com/photo-1497366811353-26cc3f4fa5fa?w=800" },
+  { name: "House — Herne Bay", img: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800" },
+];
+
+export default function Page() {
+  const { mounted } = useSiteContent();
+  
+  return (
+    <main className="min-h-screen bg-[#FFFEF9]">
+      {/* HEADER */}
+      <header className="flex justify-between items-center px-6 md:px-10 py-6 text-[11px] tracking-[0.2em] uppercase">
+        <div className="font-medium">Buddy Blind</div>
+        <div className="opacity-60">Auckland — Est 2024</div>
+      </header>
+
+      {/* V9 HEART - SPLIT NO BOTTOM */}
+      <section className="grid grid-cols-1 md:grid-cols-2 min-h-[72vh] border-y border-black/10">
+        {/* LEFT - THAT'S THE POINT */}
+        <div className="flex items-center justify-center p-10 md:p-16 bg-[#FFFEF9] border-b md:border-b-0 md:border-r border-black/10">
+          <h1 className="text-[12vw] md:text-[8vw] leading-[0.9] tracking-tight">
+            <Editable field="heroLeft" as="span" className="text-[#C45A3C] font-[700] block" />
+          </h1>
+        </div>
+
+        {/* RIGHT - SINGLE EVENT ONLY */}
+        <div className="flex flex-col justify-center p-10 md:p-16 gap-8">
+          <div>
+            <Editable field="heroRightTitle" as="h2" className="text-3xl font-medium tracking-tight" />
+            <Editable field="heroRightDesc" as="p" className="mt-3 text-[15px] leading-6 opacity-70 max-w-[32ch]" />
+          </div>
+          
+          <div className="pt-8 border-t border-black/10">
+            <div className="text-[10px] tracking-[0.2em] uppercase opacity-40 mb-3">Next Gathering</div>
+            <Editable field="heroRightEvent" as="div" className="inline-block border border-black px-4 py-2 rounded-full text-sm" />
+          </div>
+        </div>
+      </section>
+
+      {/* VENUES - 6 DIFFERENT PHOTOS, NO CHOPPING FIX */}
+      <section className="px-6 md:px-10 py-16">
+        <div className="flex justify-between items-end mb-8">
+          <Editable field="venuesTitle" as="h3" className="text-[11px] tracking-[0.2em] uppercase opacity-60" />
+          <span className="text-[11px] opacity-40">6 places, 6 nights</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-[1px] bg-black/10 border border-black/10">
+          {venues.map((v, i) => (
+            <div key={i} className="bg-[#FFFEF9] group">
+              <div className="aspect-[4/3] overflow-hidden bg-neutral-100">
+                {/* object-cover with no chopping - use center and fixed height */}
+                <img src={v.img} alt={v.name} className="w-full h-full object-cover group-hover:scale-[1.02] transition duration-700" />
+              </div>
+              <div className="p-4 text-[12px] tracking-wide">{v.name}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* PRIVATE - COLORED HOVER TEXT ORANGE */}
+      <section className="grid grid-cols-1 md:grid-cols-2 border-y border-black/10">
+        <div className="p-10 md:p-16">
+          <Editable field="privateTitle" as="h3" className="text-[11px] tracking-[0.2em] uppercase opacity-60 mb-6" />
+          <div className="group cursor-pointer">
+            <Editable field="privateDesc" as="p" className="text-[5vw] md:text-[3.5vw] leading-[0.95] tracking-tight group-hover:text-[#C45A3C] transition-colors duration-300" />
+            <div className="mt-6 text-[11px] tracking-[0.2em] uppercase underline underline-offset-4 group-hover:text-[#C45A3C] transition-colors">Enquire →</div>
+          </div>
+        </div>
+        <div className="p-10 md:p-16 bg-black text-white flex flex-col justify-between">
+          <div>
+            <Editable field="quickTitle" as="h4" className="text-[11px] tracking-[0.2em] uppercase opacity-50 mb-6" />
+            <ul className="space-y-3">
+              {['How it works', 'FAQ', 'Contact'].map((link) => (
+                <li key={link} className="text-2xl hover:text-[#C45A3C] transition-colors cursor-pointer">{link}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="mt-16 flex gap-4 text-[11px] opacity-50">
+            <span>© {new Date().getFullYear()} Buddy Blind</span>
+            <span>·</span>
+            <Editable field="profileName" as="span" /> <span className="opacity-40">—</span> <Editable field="profileRole" as="span" className="opacity-40" />
+          </div>
+        </div>
+      </section>
+
+      <div className="h-24" />
+    </main>
+  );
+}

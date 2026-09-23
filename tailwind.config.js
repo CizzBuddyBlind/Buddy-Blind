@@ -1,1 +1,6 @@
-module.exports = { content: ["./app/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"], theme: { extend: { colors: { paper: "#F5F3EF", ink: "#141414", clay: "#C45A3C", stone: "#8A847E" }, fontFamily: { serif: ["Instrument Serif", "serif"], sans: ["Inter", "sans-serif"] } } }, plugins: [] }
+ /** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ["./app/**/*.{js,jsx}", "./components/**/*.{js,jsx}"],
+  theme: { extend: {} },
+  plugins: [],
+}
