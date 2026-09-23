@@ -5,9 +5,7 @@ export default function EnableEdit(){
     localStorage.setItem('bb_force_edit','1')
     localStorage.setItem('buddy_is_founder','1')
     localStorage.setItem('buddy_email','founder@buddyblind.com')
-    localStorage.setItem('buddy_user', JSON.stringify({email:'founder@buddyblind.com'}))
-    localStorage.setItem('buddy_registered','1')
     setTimeout(()=>{ window.location.href='/' }, 500)
   },[])
-  return <div style={{background:'black',color:'white',padding:40}}>Enabling edit mode... redirecting to home...</div>
+  return <div style={{background:'black',color:'white',padding:40}}>Enabling edit mode...</div>
 }
