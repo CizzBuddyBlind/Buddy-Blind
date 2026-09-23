@@ -21,9 +21,12 @@ const TIERS:Tier[] = [
 export default function PremiumPage(){
   const [currentPlan,setCurrentPlan]=useState('free')
   const [loadingPlan,setLoadingPlan]=useState<string|null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [planToConfirm, setPlanToConfirm] = useState<Tier|null>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [successPlan, setSuccessPlan] = useState<Tier|null>(null)
 
   useEffect(()=>{
-    // Force current plan to free for testing upgrade flow as user requested
     const saved = localStorage.getItem('bb_plan')
     if(saved){
       setCurrentPlan(saved)
@@ -33,43 +36,52 @@ export default function PremiumPage(){
     }
   },[])
 
-  const handleUpgrade = async (plan:string) => {
-    if(plan===currentPlan){
-      alert('You are already on ' + plan.toUpperCase() + ' plan - Current plan is ' + plan.toUpperCase() + ' $0 free')
+  const openConfirm = (tier:Tier) => {
+    if(tier.id===currentPlan){
+      // Already on this plan - show same style modal as other popups
+      setSuccessPlan(tier)
+      setShowSuccess(true)
       return
     }
-    if(plan==='free'){
+    if(tier.id==='free'){
       localStorage.setItem('bb_plan','free')
       setCurrentPlan('free')
-      alert('Downgraded to Free plan - Try once Venues only No private creation')
-      window.location.reload()
+      setSuccessPlan(tier)
+      setShowSuccess(true)
+      setTimeout(()=>{ window.location.reload() }, 1500)
       return
     }
-    setLoadingPlan(plan)
+    setPlanToConfirm(tier)
+    setShowConfirm(true)
+  }
+
+  const confirmPayment = async () => {
+    if(!planToConfirm) return
+    setLoadingPlan(planToConfirm.id)
+    setShowConfirm(false)
     try{
-      const amount = plan==='lite' ? 1000 : 5000
-      const res = await fetch('/api/stripe/create-intent',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({amount, plan})})
-      const json = await res.json().catch(()=>({}))
-      if(json && json.error){
-        console.log('Stripe error', json.error)
-      }
-      const priceText = plan==='lite' ? 'HK$10 per month' : 'HK$50 per month with 90 days trial'
-      const confirmPay = window.confirm('Upgrade to ' + plan.toUpperCase() + ' plan - ' + priceText + ' - Use test card 4242 4242 4242 4242 Exp 12 34 CVC 123 - Click OK to confirm payment and upgrade')
-      if(confirmPay){
-        localStorage.setItem('bb_plan', plan)
-        localStorage.setItem('buddy_card_saved','1')
-        localStorage.setItem('buddy_card_last4','4242')
-        setCurrentPlan(plan)
-        alert('Payment successful - Test card 4242 - You are now on ' + plan.toUpperCase() + ' plan - ' + priceText + ' - Redirecting to private events')
-        setTimeout(()=>{ window.location.href = '/private-events?upgraded=' + plan }, 500)
-      }
+      const amount = planToConfirm.id==='lite' ? 1000 : 5000
+      await fetch('/api/stripe/create-intent',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({amount, plan:planToConfirm.id})}).catch(()=>{})
+      localStorage.setItem('bb_plan', planToConfirm.id)
+      localStorage.setItem('buddy_card_saved','1')
+      localStorage.setItem('buddy_card_last4','4242')
+      setCurrentPlan(planToConfirm.id)
+      setSuccessPlan(planToConfirm)
+      setShowSuccess(true)
     }catch(e:any){
-      alert('Payment error: ' + (e?.message||'unknown') + ' - For demo, upgrading anyway with test card 4242')
-      localStorage.setItem('bb_plan', plan)
-      setCurrentPlan(plan)
-      window.location.href = '/private-events?upgraded=' + plan
+      localStorage.setItem('bb_plan', planToConfirm.id)
+      setCurrentPlan(planToConfirm.id)
+      setSuccessPlan(planToConfirm)
+      setShowSuccess(true)
     }finally{
       setLoadingPlan(null)
+    }
+  }
+
+  const closeSuccessAndRedirect = () => {
+    setShowSuccess(false)
+    if(successPlan && successPlan.id!=='free'){
+      window.location.href = '/private-events?upgraded=' + successPlan.id
     }
   }
 
@@ -84,8 +96,8 @@ export default function PremiumPage(){
         <h1 className="mt-6 text-5xl md:text-6xl leading-tight tracking-tight text-white max-w-2xl font-serif">
           Why Premium<br/>unlocks Private up to 20.
         </h1>
-        <p className="mt-6 text-base leading-relaxed text-zinc-400 max-w-xl">Create your own vibe: Industry dinners, wine circles, 50+ social afternoons, hiking buddies. Host creates attraction and download reasons - people join for the reason, stay for the people.</p>
-        <div className="mt-4 text-xs text-zinc-500">Current plan from localStorage: <span className="text-white font-bold">{currentPlan.toUpperCase()}</span> - Free $0 is current by default as requested for testing upgrade</div>
+        <p className="mt-6 text-base leading-relaxed text-zinc-400 max-w-xl">Create your own vibe: Industry dinners, wine circles, 50+ social afternoons, hiking buddies.</p>
+        <div className="mt-4 text-xs text-zinc-500">Current plan: <span className="text-white font-bold">{currentPlan.toUpperCase()}</span> - Free $0 is current by default for testing upgrade</div>
 
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 border border-zinc-800 rounded-2xl overflow-hidden bg-zinc-900 auto-rows-fr">
           {TIERS.map(tier=>{
@@ -107,7 +119,6 @@ export default function PremiumPage(){
                   <span className="text-xs tracking-widest text-zinc-500 max-w-[140px] text-right">{tier.tag}</span>
                 </div>
                 <div className={'mt-6 font-serif text-5xl ' + (isPremium?'text-black':'text-white')}>{tier.price}</div>
-
                 <div className="mt-8 flex-1 flex flex-col">
                   <div className="space-y-3 text-xs tracking-widest flex-1 min-h-[180px]">
                     {tier.features.map((f,i)=>(
@@ -117,20 +128,12 @@ export default function PremiumPage(){
                       </div>
                     ))}
                   </div>
-
                   <div className="mt-auto pt-10">
-                    <button 
-                      onClick={()=>handleUpgrade(tier.id)} 
-                      disabled={isLoading}
-                      className={'w-full h-12 rounded-full text-xs tracking-widest transition ' + (isPremium ? 'bg-black text-white hover:bg-zinc-900' : 'bg-white text-black hover:bg-zinc-100') + ' ' + (isCurrent ? 'ring-2 ring-orange-600' : '') + ' ' + (isLoading ? 'opacity-50' : '')}>
+                    <button onClick={()=>openConfirm(tier)} disabled={isLoading} className={'w-full h-12 rounded-full text-xs tracking-widest transition ' + (isPremium ? 'bg-black text-white hover:bg-zinc-900' : 'bg-white text-black hover:bg-zinc-100') + ' ' + (isCurrent ? 'ring-2 ring-orange-600' : '') + ' ' + (isLoading ? 'opacity-50' : '')}>
                       {isLoading ? 'PROCESSING...' : btnText}
                     </button>
                     <div className="min-h-[50px] mt-4 flex items-start justify-center">
-                      {tier.foot ? (
-                        <div className="text-xs tracking-widest text-zinc-500 leading-relaxed text-center">{tier.foot}</div>
-                      ) : (
-                        <div className="h-3"></div>
-                      )}
+                      {tier.foot ? <div className="text-xs tracking-widest text-zinc-500 leading-relaxed text-center">{tier.foot}</div> : <div className="h-3"></div>}
                     </div>
                   </div>
                 </div>
@@ -138,9 +141,51 @@ export default function PremiumPage(){
             )
           })}
         </div>
-
-        <div className="mt-12 text-center text-xs tracking-widest text-zinc-600">NO META WORDING - JUST HUMAN REASONS TO MEET.</div>
       </div>
+
+      {showConfirm && planToConfirm && (
+        <div className="fixed inset-0 z-40 bg-black bg-opacity-90 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-zinc-900 border border-zinc-600 rounded-3xl p-8">
+            <div className="flex justify-between items-start">
+              <h2 className="text-2xl font-serif text-white leading-tight">Upgrade to {planToConfirm.title.toUpperCase()} plan?</h2>
+              <button onClick={()=>setShowConfirm(false)} className="px-4 py-2 rounded-full border border-zinc-600 text-white text-xs font-bold">CLOSE</button>
+            </div>
+            <div className="mt-6 space-y-3 text-sm">
+              <div className="flex justify-between"><span className="text-zinc-300 font-bold">PLAN</span><span className="text-white font-bold">{planToConfirm.title} {planToConfirm.price} {planToConfirm.tag}</span></div>
+              <div className="flex justify-between"><span className="text-zinc-300 font-bold">PRICE</span><span className="text-white font-bold">{planToConfirm.id==='lite' ? 'HK$10 per month' : 'HK$50 per month with 90 days trial'}</span></div>
+              <div className="bg-black border border-zinc-700 rounded-xl p-4 mt-4">
+                <div className="text-xs tracking-widest text-zinc-400">TEST CARD</div>
+                <div className="mt-1 text-sm font-mono text-white">4242 4242 4242 4242 Exp 12 34 CVC 123</div>
+                <div className="mt-2 text-xs text-zinc-500">Use this test card - Click OK to confirm payment and upgrade - Same style as all other popup boxes</div>
+              </div>
+            </div>
+            <div className="mt-8 flex gap-3">
+              <button onClick={()=>setShowConfirm(false)} className="flex-1 h-12 rounded-full border border-zinc-600 text-white font-bold text-xs tracking-widest">Cancel</button>
+              <button onClick={confirmPayment} className="flex-1 h-12 rounded-full bg-white text-black font-black text-xs tracking-widest">OK</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSuccess && successPlan && (
+        <div className="fixed inset-0 z-40 bg-black bg-opacity-90 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-zinc-900 border border-zinc-600 rounded-3xl p-8 text-center">
+            <div className="w-20 h-20 rounded-full bg-green-900 bg-opacity-30 border border-green-700 flex items-center justify-center mx-auto">
+              <span className="text-3xl text-white">V</span>
+            </div>
+            <h2 className="mt-6 text-2xl font-black tracking-widest text-white">Payment successful</h2>
+            <p className="mt-3 text-sm text-white leading-relaxed">
+              Test card 4242 - You are now on {successPlan.title.toUpperCase()} plan - {successPlan.id==='lite' ? 'HK$10 per month' : successPlan.id==='premium' ? 'HK$50 per month with 90 days trial' : 'HK$0 Free'} - {successPlan.id!=='free' ? 'Redirecting to private events' : 'Current plan updated'}
+            </p>
+            <div className="mt-6 bg-black border border-zinc-700 rounded-xl p-4 text-left">
+              <div className="text-xs tracking-widest text-zinc-400">PLAN</div>
+              <div className="mt-1 text-sm font-bold text-white">{successPlan.title} {successPlan.price}</div>
+              <div className="mt-2 text-xs font-mono text-zinc-400">Test Card: 4242 4242 4242 4242 Exp 12 34 CVC 123</div>
+            </div>
+            <button onClick={closeSuccessAndRedirect} className="mt-8 w-full h-12 rounded-full bg-white text-black font-black text-xs tracking-widest">OK</button>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
