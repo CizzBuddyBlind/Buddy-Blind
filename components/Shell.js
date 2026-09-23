@@ -63,6 +63,9 @@ export function Shell({ children }) {
           <div className="flex items-center gap-2 overflow-x-auto px-3 py-2">
             <span className="shrink-0 font-serif text-sm">Edit</span>
             <span className="shrink-0 text-[10px] uppercase tracking-widest text-mute">{bb.session.role}</span>
+            <span className="shrink-0 text-[10px] uppercase tracking-widest text-ember">
+              {bb.remote === "live" ? "Supabase" : bb.remote === "error" ? "Supabase error" : "Supabase off"}
+            </span>
             <button type="button" className="chip" disabled={!bb.canUndo} onClick={bb.undo}>Undo</button>
             <button type="button" className="chip" disabled={!bb.canRedo} onClick={bb.redo}>Redo</button>
             {["desktop", "tablet", "mobile"].map((d) => (

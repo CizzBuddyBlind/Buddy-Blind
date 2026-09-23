@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { SEED, SEED_ACCOUNTS } from "@/lib/defaults";
+import { loadSharedContent, saveSharedContent, supabaseReady } from "@/lib/supabase";
 
 const Ctx = createContext(null);
 export function useBB() {
@@ -72,6 +73,7 @@ export function BuddyProvider({ children }) {
   const [canRedo, setCanRedo] = useState(false);
   const [modal, setModal] = useState(null);
   const [ready, setReady] = useState(false);
+  const [remote, setRemote] = useState(supabaseReady ? "checking" : "off");
 
   const publishedRef = useRef(published);
   const draftRef = useRef(draft);
@@ -87,21 +89,47 @@ export function BuddyProvider({ children }) {
   }, [draft]);
 
   useEffect(() => {
-    const pub = read(PUB, SEED);
-    const dr = read(DRAFT, null);
-    const ses = read(SES, null);
-    setPublished(pub);
-    setDraft(dr);
-    setSession(ses);
-    setUsers(read(USERS, []));
-    setRevoked(read(REVOKED, []));
-    setInvites(read(INVITES, []));
-    setVersions(read(VERSIONS, []));
-    setActivity(read(ACTIVITY, []));
-    const start = dr || clone(pub);
-    hist.current = [clone(start)];
-    histI.current = 0;
-    setReady(true);
+    let cancel = false;
+    (async () => {
+      const local = read(PUB, SEED);
+      const dr = read(DRAFT, null);
+      const ses = read(SES, null);
+      setSession(ses);
+      setUsers(read(USERS, []));
+      setRevoked(read(REVOKED, []));
+      setInvites(read(INVITES, []));
+      setVersions(read(VERSIONS, []));
+      setActivity(read(ACTIVITY, []));
+
+      let pub = local?.venues && local?.copy ? local : clone(SEED);
+      const res = await loadSharedContent();
+      if (cancel) return;
+      if (!res.ok) {
+        setRemote(res.reason === "missing-env" ? "off" : "error");
+      } else if (res.content) {
+        pub = res.content;
+        setRemote("live");
+      } else {
+        try {
+          await saveSharedContent(pub);
+          setRemote("live");
+        } catch {
+          setRemote("error");
+        }
+      }
+
+      publishedRef.current = pub;
+      setPublished(pub);
+      write(PUB, pub);
+      setDraft(dr);
+      const start = dr || clone(pub);
+      hist.current = [clone(start)];
+      histI.current = 0;
+      setReady(true);
+    })();
+    return () => {
+      cancel = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -180,19 +208,33 @@ export function BuddyProvider({ children }) {
     notify("Draft saved. Not live until you publish.");
   }, [log, notify]);
 
-  const publish = useCallback(() => {
-    const next = clone(draftRef.current || publishedRef.current);
+  const pushLive = useCallback(async (next) => {
+    publishedRef.current = next;
     setPublished(next);
-    setDraft(next);
     write(PUB, next);
+    if (!supabaseReady) return { ok: false };
+    try {
+      await saveSharedContent(next);
+      setRemote("live");
+      return { ok: true };
+    } catch (err) {
+      setRemote("error");
+      return { ok: false, error: err instanceof Error ? err.message : "Supabase save failed" };
+    }
+  }, []);
+
+  const publish = useCallback(async () => {
+    const next = clone(draftRef.current || publishedRef.current);
+    setDraft(next);
     write(DRAFT, next);
     const history = [{ at: new Date().toISOString(), content: next }, ...read(VERSIONS, [])].slice(0, 8);
     write(VERSIONS, history);
     setVersions(history);
     setDirty(false);
+    const saved = await pushLive(next);
     log("Published");
-    notify("Published on this browser.");
-  }, [log, notify]);
+    notify(saved.ok ? "Published. Everyone sees this now." : saved.error || "Saved on this browser only.");
+  }, [log, notify, pushLive]);
 
   const restoreVersion = useCallback(
     (index) => {
@@ -358,7 +400,7 @@ export function BuddyProvider({ children }) {
   );
 
   const act = useCallback(
-    (kind, id, mode) => {
+    async (kind, id, mode) => {
       if (!session) return { needLogin: true };
       const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
       const list = kind === "venue" ? base.venues : base.events;
@@ -369,8 +411,8 @@ export function BuddyProvider({ children }) {
       item.spots -= 1;
       if (editing) commit(base);
       else {
-        setPublished(base);
-        write(PUB, base);
+        const saved = await pushLive(base);
+        if (!saved.ok && saved.error) notify(saved.error);
       }
       const gain = mode === "invite" ? 2 : mode === "create" ? 5 : 1;
       const points = (session.points || 0) + gain;
@@ -384,7 +426,7 @@ export function BuddyProvider({ children }) {
       persistSession({ ...session, points, bookings: books[session.email] });
       return { ok: true, name: item.name };
     },
-    [session, editing, commit],
+    [session, editing, commit, pushLive, notify],
   );
 
   const removeBlock = useCallback(
@@ -429,7 +471,7 @@ export function BuddyProvider({ children }) {
   );
 
   const insertEvent = useCallback(
-    (item, pointsGain = 5) => {
+    async (item, pointsGain = 5) => {
       if (!session) return { needLogin: true };
       if (editing) {
         update((draftContent) => {
@@ -438,9 +480,8 @@ export function BuddyProvider({ children }) {
       } else {
         const base = clone(publishedRef.current);
         base.events.unshift(item);
-        publishedRef.current = base;
-        setPublished(base);
-        write(PUB, base);
+        const saved = await pushLive(base);
+        if (!saved.ok && saved.error) notify(saved.error);
       }
       const points = (session.points || 0) + pointsGain;
       const pointsMap = read(POINTS, {});
@@ -454,7 +495,7 @@ export function BuddyProvider({ children }) {
       log(`Created ${item.name}`);
       return { ok: true };
     },
-    [session, editing, update, log],
+    [session, editing, update, log, pushLive, notify],
   );
 
   const addBlock = useCallback(
@@ -541,6 +582,7 @@ export function BuddyProvider({ children }) {
   const value = useMemo(
     () => ({
       ready,
+      remote,
       content,
       session,
       staff,
@@ -586,7 +628,7 @@ export function BuddyProvider({ children }) {
       confirm,
     }),
     [
-      ready, content, session, staff, editing, preview, device, panel, dirty, toast, notify,
+      ready, remote, content, session, staff, editing, preview, device, panel, dirty, toast, notify,
       selectedId, canUndo, canRedo, undo, redo, update, saveDraft, publish, login, logout,
       register, createInvite, activate, revokeAdmin, invites, revoked, users, activity,
       versions, restoreVersion, act, insertEvent, removeBlock, duplicateBlock, addBlock, toggleLock,

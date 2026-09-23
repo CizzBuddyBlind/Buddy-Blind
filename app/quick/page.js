@@ -70,7 +70,7 @@ export default function QuickPage() {
         onClose={() => setSheet(null)}
         onConfirm={async () => {
           if (sheet?.mode === "create-new") {
-            const res = insertEvent({
+            const res = await insertEvent({
               id: `quick-${Date.now().toString(36)}`,
               kind: "quick",
               name: "My table",
