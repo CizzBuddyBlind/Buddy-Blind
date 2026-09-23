@@ -1,38 +1,18 @@
 'use client'
 import { useEffect, useState } from 'react'
-
 export function useSiteContent(defaults: Record<string,string>){
-  const [content, setContent] = useState<Record<string,string>>(defaults)
-
+  const [content, setContent] = useState(defaults)
   useEffect(()=>{
     try{
-      const raw = localStorage.getItem('bb_draft')
-      if(raw){
-        const d = JSON.parse(raw)
-        if(d.siteContent) setContent(prev=>({...prev,...d.siteContent}))
-      }
+      const d=JSON.parse(localStorage.getItem('bb_draft')||'{}')
+      if(d.siteContent) setContent(p=>({...p,...d.siteContent}))
     }catch{}
-    const h = () => {
-      try{
-        const raw = localStorage.getItem('bb_draft')
-        if(raw){
-          const d = JSON.parse(raw)
-          if(d.siteContent) setContent(prev=>({...prev,...d.siteContent}))
-        }
-      }catch{}
-    }
-    window.addEventListener('storage', h)
-    return ()=>window.removeEventListener('storage', h)
+    const h=()=>{try{const d=JSON.parse(localStorage.getItem('bb_draft')||'{}');if(d.siteContent)setContent(p=>({...p,...d.siteContent}))}catch{}}
+    window.addEventListener('storage',h)
+    return()=>window.removeEventListener('storage',h)
   },[])
-
-  const getText = (k: string) => content[k] || defaults[k] || k
-
-  // MUST return object, never string — fixes your build error
-  const getStyle = (_k: string) => {
-    return {} as React.CSSProperties
-  }
-
-  const getImage = (k: string) => content[k] || defaults[k] || ''
-
-  return { content, getText, getStyle, getImage, setContent }
+  const getText=(k:string)=>content[k]||defaults[k]||k
+  const getStyle=(_k:string)=>({} as React.CSSProperties)
+  const getImage=(k:string)=>content[k]||defaults[k]||''
+  return {content,getText,getStyle,getImage,setContent}
 }
