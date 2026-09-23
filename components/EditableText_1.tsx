@@ -1,9 +1,7 @@
 'use client';
 import { useSiteContent } from '@/lib/useSiteContent';
 
-type Props = any;
-
-export function EditableText({ field, as: Tag = 'span', className = '', children, ...props }: Props) {
+export default function EditableText({ field, as: Tag = 'span', className = '', children, ...props }: any) {
   const { content, isEditMode, updateField, mounted } = useSiteContent();
   const value = content[field] ?? children;
   if (!mounted) return <Tag className={className} {...props}>{value}</Tag>;
@@ -20,7 +18,5 @@ export function EditableText({ field, as: Tag = 'span', className = '', children
     </Tag>
   );
 }
-
-// Support every import style: default, named, { Editable }
+// compat export as Editable too
 export const Editable = EditableText;
-export default EditableText;
