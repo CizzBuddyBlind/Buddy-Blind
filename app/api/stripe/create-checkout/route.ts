@@ -1,1 +1,23 @@
-import Stripe from 'stripe';import { NextResponse } from 'next/server';const stripe=new Stripe(process.env.STRIPE_SECRET_KEY!);export async function POST(req:Request){try{const {type,venue_id,ref}=await req.json();const baseUrl=process.env.NEXT_PUBLIC_BASE_URL||'https://buddy-blind.vercel.app';let priceId='';let mode:'subscription'|'payment'='subscription' as any;let trial:number|undefined;if(type==='lite') priceId=process.env.STRIPE_LITE_PRICE_ID!;else if(type==='premium'){priceId=process.env.STRIPE_PREMIUM_PRICE_ID!;trial=90;}else if(type==='admin'){priceId=process.env.STRIPE_ADMIN_FEE_PRICE_ID!;mode='payment';}else return NextResponse.json({error:'Invalid type'},{status:400});const p:any={mode,line_items:[{price:priceId,quantity:1}],success_url:`${baseUrl}/premium?paid=true&type=${type}`,cancel_url:`${baseUrl}/cancel`,allow_promotion_codes:true,metadata:{type,venue_id:venue_id||'',ref:ref||''}};if(type==='admin'){p.success_url=venue_id?`${baseUrl}/join?paid=true&venue_id=${venue_id}&ref=${ref||'cizz-HEART'}`:`${baseUrl}/invite?paid=true&ref=${ref||'cizz-HEART'}`;}if(mode==='subscription'){p.subscription_data={metadata:{type}};if(trial) p.subscription_data.trial_period_days=trial;}const s=await stripe.checkout.sessions.create(p);return NextResponse.json({url:s.url});}catch(e:any){return NextResponse.json({error:e.message},{status:500});}}
+import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
+
+export async function POST(req: NextRequest) {
+  try {
+    const secret = process.env.STRIPE_SECRET_KEY;
+    if (!secret) return NextResponse.json({ error: 'Missing STRIPE_SECRET_KEY' }, { status: 500 });
+    const stripe = new Stripe(secret, { apiVersion: '2024-06-20' as any });
+    const body = await req.json().catch(() => ({}));
+    // Example checkout - adapt price
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: body.line_items || [{ price_data: { currency: 'nzd', product_data: { name: 'Buddy Blind Ticket' }, unit_amount: 4500 }, quantity: 1 }],
+      mode: 'payment',
+      success_url: body.success_url || `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/success`,
+      cancel_url: body.cancel_url || `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/cancel`,
+    });
+    return NextResponse.json({ url: session.url, id: session.id });
+  } catch (e: any) {
+    console.error(e);
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}

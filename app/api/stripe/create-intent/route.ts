@@ -1,1 +1,20 @@
-import Stripe from 'stripe';import { NextResponse } from 'next/server';const stripe=new Stripe(process.env.STRIPE_SECRET_KEY!);export async function POST(req:Request){try{const {amount,venue_id}=await req.json();const i=await stripe.paymentIntents.create({amount:amount||500,currency:'hkd',metadata:{venue_id:venue_id||''},automatic_payment_methods:{enabled:true}});return NextResponse.json({clientSecret:i.client_secret});}catch(e:any){return NextResponse.json({error:e.message},{status:500});}}
+import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
+
+export async function POST(req: NextRequest) {
+  try {
+    const secret = process.env.STRIPE_SECRET_KEY;
+    if (!secret) return NextResponse.json({ error: 'Missing STRIPE_SECRET_KEY' }, { status: 500 });
+    const stripe = new Stripe(secret, { apiVersion: '2024-06-20' as any });
+    const body = await req.json().catch(() => ({}));
+    const intent = await stripe.paymentIntents.create({
+      amount: body.amount || 4500,
+      currency: body.currency || 'nzd',
+      automatic_payment_methods: { enabled: true },
+    });
+    return NextResponse.json({ clientSecret: intent.client_secret });
+  } catch (e: any) {
+    console.error(e);
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
