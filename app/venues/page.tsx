@@ -4,6 +4,8 @@ import { useState } from 'react';
 import JoinBlindBoxModal from '@/components/JoinBlindBoxModal';
 import AuthGateModal from '@/components/AuthGateModal';
 import InviteBlindBoxModal from '@/components/InviteBlindBoxModal';
+import { EditableText } from '@/components/EditableText';
+import { EditableImage } from '@/components/EditableImage';
 
 const VENUE_DATA = [
   { id:'kissa-tanaka', name:'Kissa Tanaka', area:'SOHO', locations:['SOHO'], time:'TONIGHT 7:30PM', spots:'3 SPOTS LEFT', host:'COMEDIAN GOLD', badge:'BLIND BOX', img:'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800' },
@@ -33,33 +35,33 @@ export default function VenuesPage(){
       <div className="max-w-7xl mx-auto px-6 py-12">
         <div className="flex items-center gap-4">
           <button onClick={()=>window.history.back()} className="w-10 h-10 rounded-full border border-zinc-600 flex items-center justify-center text-white text-sm">{"<"}</button>
-          <h1 className="text-5xl font-serif">Where it happens</h1>
+          <EditableText textKey="venues_title" defaultValue="Where it happens" as="h1" className="text-5xl font-serif" />
         </div>
-        <p className="mt-4 text-sm text-zinc-400 max-w-xl">Restaurants provide the scene Private events create the reason You bring curiosity Six cards six photos different per event coloured more heart no repeats Share only after completed invite or join</p>
+        <EditableText textKey="venues_sub" defaultValue="Restaurants provide the scene Private events create the reason You bring curiosity Six cards six photos different per event coloured more heart no repeats Share only after completed invite or join" as="p" className="mt-4 text-sm text-zinc-400 max-w-xl" />
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
           {VENUE_DATA.map(v=>(
-            <div key={v.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-3 group hover:border-zinc-600 hover:-translate-y-2 hover:scale-[1.02] hover:shadow-2xl hover:shadow-orange-900/20 transition-all duration-300 cursor-pointer">
+            <div key={v.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-3 group hover:border-zinc-600 hover:-translate-y-2 hover:scale-[1.02] hover:shadow-2xl hover:shadow-orange-900/20 transition-all duration-300 cursor-pointer" data-bb-editable="true" data-bb-type="section">
               <div className="relative overflow-hidden rounded-2xl h-80">
-                <img src={v.img} alt={v.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
-                <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black bg-opacity-70 text-xs text-white">{v.badge}</div>
+                <EditableImage imageKey={`venue_${v.id}_img`} defaultSrc={v.img} alt={v.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black bg-opacity-70 text-xs text-white"><EditableText textKey={`venue_${v.id}_badge`} defaultValue={v.badge} as="span" /></div>
                 <div className="absolute bottom-3 left-3 right-3 flex justify-between text-xs">
-                  <span className="px-2 py-1 rounded-full bg-black bg-opacity-70 text-white">{v.area}</span>
-                  <span className="px-2 py-1 rounded-full bg-black bg-opacity-70 text-white">{v.spots}</span>
+                  <span className="px-2 py-1 rounded-full bg-black bg-opacity-70 text-white"><EditableText textKey={`venue_${v.id}_area`} defaultValue={v.area} as="span" /></span>
+                  <span className="px-2 py-1 rounded-full bg-black bg-opacity-70 text-white"><EditableText textKey={`venue_${v.id}_spots`} defaultValue={v.spots} as="span" /></span>
                 </div>
               </div>
               <div className="p-3">
-                <h3 className="text-xl font-serif text-white">{v.name}</h3>
-                <div className="mt-1 text-xs text-zinc-400">{v.time} {v.host}</div>
-                <div className="mt-1 text-xs text-zinc-500">Locations {v.locations.join(', ')} {v.locations.length===1 ? 'auto skip' : 'choose location'}</div>
+                <EditableText textKey={`venue_${v.id}_name`} defaultValue={v.name} as="h3" className="text-xl font-serif text-white" />
+                <div className="mt-1 text-xs text-zinc-400"><EditableText textKey={`venue_${v.id}_time`} defaultValue={`${v.time} ${v.host}`} as="span" /></div>
+                <div className="mt-1 text-xs text-zinc-500">Locations <EditableText textKey={`venue_${v.id}_loc`} defaultValue={v.locations.join(', ')} as="span" /> {v.locations.length===1 ? 'auto skip' : 'choose location'}</div>
                 <div className="mt-4 flex gap-2">
-                  <button onClick={()=>openJoin(v)} className="flex-1 h-10 rounded-full bg-white text-black text-xs font-medium">JOIN</button>
+                  <button onClick={()=>openJoin(v)} className="flex-1 h-10 rounded-full bg-white text-black text-xs font-medium hover:bg-zinc-200 transition" data-bb-editable="true" data-bb-type="button">JOIN</button>
                   <button onClick={()=>{
                     if(typeof window!=='undefined'){
                       const isRegistered = localStorage.getItem('buddy_registered')==='1';
                       if(!isRegistered){ window.location.href='/auth?redirect=/venues&action=invite&venue=' + v.id; return; }
                     }
                     setSelected(v); setShowInvite(true);
-                  }} className="px-6 h-10 rounded-full border border-zinc-700 text-xs text-white">INVITE</button>
+                  }} className="px-6 h-10 rounded-full border border-zinc-700 text-xs text-white hover:border-zinc-500 transition" data-bb-editable="true" data-bb-type="button">INVITE</button>
                 </div>
               </div>
             </div>

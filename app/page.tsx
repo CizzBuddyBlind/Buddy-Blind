@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useSiteContent } from '@/lib/useSiteContent'
 import { EditableText } from '@/components/EditableText'
+import { EditableImage } from '@/components/EditableImage'
 import Link from 'next/link'
 
 type Featured = { id:string, title:string, area:string, time:string, spots_left:number, host_label:string, price_label:string, vibe_label:string, invite_text:string, description_long:string, image_url:string }
@@ -84,7 +85,7 @@ export default function HomePage(){
               {featured.host_label}
             </div>
             <div className="relative h-[520px] bg-zinc-900 rounded-t-[24px] overflow-hidden">
-              <img src={featured.image_url} alt={featured.title} className="w-full h-full object-cover" />
+              <EditableImage imageKey="featured_image" defaultSrc={featured.image_url} alt={featured.title} className="w-full h-full object-cover" />
             </div>
             <div className="p-7">
               <EditableText textKey="featured_title" defaultValue={featured.title} as="h2" className="serif text-[28px] text-white" />
