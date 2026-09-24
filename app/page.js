@@ -142,7 +142,7 @@ function Home() {
         </div>
       )}
 
-      <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mb-8 grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((venue) => {
           const rows = soonestTable(venue);
           const preview = rows[0];
@@ -155,9 +155,9 @@ function Home() {
                 if (editing) setSelectedId(venue.id);
                 router.push(`/venues/${venue.id}`);
               }}
-              className={`bb-card cursor-pointer transition ${venue.hidden ? "opacity-40" : ""} ${selectedId === venue.id ? "ring-2 ring-ember" : ""} ${venue.locked ? "ring-1 ring-white/20" : ""}`}
+              className={`bb-card flex h-full cursor-pointer flex-col transition ${venue.hidden ? "opacity-40" : ""} ${selectedId === venue.id ? "ring-2 ring-ember" : ""} ${venue.locked ? "ring-1 ring-white/20" : ""}`}
             >
-              <Link href={`/venues/${venue.id}`} className="block" onClick={() => editing && setSelectedId(venue.id)}>
+              <Link href={`/venues/${venue.id}`} className="block flex-1" onClick={() => editing && setSelectedId(venue.id)}>
                 <div className="bb-img">
                   <Photo
                     src={venue.imageUrl}
@@ -192,7 +192,7 @@ function Home() {
                   )}
                 </div>
               </Link>
-              <div className="flex gap-2.5 px-4 pb-[18px]">
+              <div className="mt-auto flex gap-2.5 px-4 pb-[18px] pt-2">
                 <button type="button" className="flex-1 rounded-full border border-white/15 py-2.5 text-[0.8rem] font-semibold" onClick={(e) => { e.stopPropagation(); setFlow({ type: "invite", venueId: venue.id }); }}>{t("btn.invite")}</button>
                 <button type="button" className="flex-1 rounded-full bg-fg py-2.5 text-[0.8rem] font-semibold text-ink" onClick={(e) => { e.stopPropagation(); setFlow({ type: "join", venueId: venue.id }); }}>{t("btn.join")}</button>
               </div>

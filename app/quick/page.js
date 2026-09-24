@@ -32,14 +32,20 @@ export default function QuickPage() {
 
   return (
     <main className="bb-frame pb-28 pt-8 md:pb-16">
-      <div className="grid items-start gap-8 md:grid-cols-2">
-        <section className="text-left">
-          <h1 className="font-serif text-5xl leading-[0.95] text-char md:text-7xl">
+      <div className="grid items-stretch gap-10 md:grid-cols-2">
+        <section className="flex flex-col justify-center py-8">
+          <p className="text-xs uppercase tracking-[0.22em] text-mute">Quick meet</p>
+          <h1 className="mt-4 font-serif text-5xl leading-[0.95] text-char md:text-6xl">
             <Copy k="quick.title" legacy={copy.title} onEnglish={(d, next) => { d.copy.quick.title = next; }} />
             <br />
             <Copy k="quick.accent" legacy={copy.accent} className="italic text-ember" onEnglish={(d, next) => { d.copy.quick.accent = next; }} />
           </h1>
-          <Copy as="p" k="quick.sub" legacy={copy.sub} className="mt-4 text-sm tracking-[0.08em] text-mute" onEnglish={(d, next) => { d.copy.quick.sub = next; }} />
+          <p className="mt-5 max-w-sm text-sm leading-relaxed text-mute">A seat nearby. A time. No bio, no swipe. If you're free, sit down.</p>
+          <ul className="mt-6 space-y-2 text-sm">
+            <li>Nearby, today</li>
+            <li>Coffee, lunch, or a drink</li>
+            <li>Join a seat, or open one</li>
+          </ul>
         </section>
         <section>
           <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Tonight, Central, 中環, café…" className="w-full rounded-full border border-black/10 bg-white px-4 py-3 text-sm outline-none transition focus:border-ember" />
