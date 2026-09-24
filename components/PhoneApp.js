@@ -92,19 +92,18 @@ function HomeTab() {
           Hong Kong ×
         </button>
       )}
-      <div className="grid grid-cols-2 rounded-full bg-neutral-200 p-1 text-sm">
+      <div className="flex gap-2 text-sm">
         {[["events", "Events"], ["private", "Private events"]].map(([id, label]) => (
-          <button key={id} type="button" onClick={() => setMode(id)} className={`rounded-full py-2 ${mode === id ? "bg-white font-medium" : "text-neutral-500"}`}>{label}</button>
+          <button key={id} type="button" onClick={() => setMode(id)} className={`flex-1 rounded-full py-2.5 ${mode === id ? "bg-black text-white" : "border border-black/15 bg-white"}`}>{label}</button>
         ))}
       </div>
       {mode === "events" && (
         <>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm" />
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm" />
           <Chips
             value={meal}
-            onChange={setMeal}
+            onChange={(id) => setMeal(meal === id ? "" : id)}
             options={[
-              { id: "", label: "Any time" },
               { id: "lunch", label: "Lunch" },
               { id: "happy", label: "Happy hour" },
               { id: "dinner", label: "Dinner" },
@@ -135,8 +134,8 @@ function HomeTab() {
               <p className="text-xs text-neutral-500">{venue.cuisine} · {venue.locationLabel || venue.area}</p>
               <p className="line-clamp-2 text-sm text-neutral-600">{venue.about}</p>
               <div className="grid grid-cols-2 gap-2">
-                <button type="button" className="rounded-full border border-black py-2 text-sm" onClick={() => bb.setFlow({ type: "invite", venueId: venue.id })}>Invite</button>
-                <button type="button" className="rounded-full bg-black py-2 text-sm text-white" onClick={() => bb.setFlow({ type: "join", venueId: venue.id })}>Join</button>
+                <button type="button" className="rounded-full border border-black/20 py-2 text-sm" onClick={() => bb.setFlow({ type: "invite", venueId: venue.id })}>Invite</button>
+                <button type="button" className="rounded-full border border-black/20 py-2 text-sm" onClick={() => bb.setFlow({ type: "join", venueId: venue.id })}>Join</button>
               </div>
             </div>
           </article>
@@ -357,7 +356,8 @@ function ChatTab() {
   const [open, setOpen] = useState(null);
   const [choice, setChoice] = useState("see-ya");
   const [note, setNote] = useState("");
-  const notes = (bb.social?.notes || []).filter((item) => item.ping || item.title === "Sent" || item.title === "You're booked" || item.title === "Table opened" || item.title === "2-hour reminder" || item.title === "Private event");
+  const [query, setQuery] = useState("");
+  const notes = (bb.social?.notes || []).filter((item) => item.ping || item.title === "Sent" || item.title === "You're booked" || item.title === "Table opened" || item.title === "2-hour reminder" || item.title === "Private event").filter((item) => queryHits(`${item.title} ${item.body}`, query));
   const current = notes.find((item) => item.id === open);
   if (current) {
     const canReply = current.ping && !current.ping.replyOnly && !current.replied;
@@ -406,9 +406,15 @@ function ChatTab() {
       {!bb.session && <p className="text-sm text-neutral-500">Log in to see notifications.</p>}
       {bb.session && !notes.length && <p className="py-8 text-center text-sm text-neutral-500">No notifications yet.</p>}
       {notes.map((item) => (
-        <button key={item.id} type="button" onClick={() => setOpen(item.id)} className="block w-full rounded-2xl bg-white p-3 text-left shadow-sm">
-          <span className="block text-sm font-medium">{item.title}</span>
-          <span className="mt-1 block text-sm text-neutral-600">{item.body}</span>
+        <button key={item.id} type="button" onClick={() => setOpen(item.id)} className="flex w-full gap-3 rounded-2xl bg-white p-3 text-left shadow-sm">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-neutral-200 text-sm font-semibold">{(item.body || "B").slice(0, 1).toUpperCase()}</span>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-baseline justify-between gap-2">
+              <span className="truncate font-medium">{item.body?.split(" · ")[0] || item.title}</span>
+              <span className="shrink-0 text-[10px] text-neutral-400">{item.at ? prettyDate(String(item.at).slice(0, 10)) : ""}</span>
+            </span>
+            <span className="mt-0.5 block truncate text-sm text-neutral-500">{item.body}</span>
+          </span>
         </button>
       ))}
     </div>
@@ -517,10 +523,8 @@ function ProfileTab() {
 }
 
 export function PhoneScreen({ tab }) {
-  const title = { home: "Home", venues: "Venues", events: "Events", chat: "Notifications", profile: "Profile" }[tab] || "";
   return (
-    <main className="min-h-dvh bg-[#f3f3f3] px-4 pb-28 pt-4 text-[#171717]">
-      <h1 className="mb-3 text-lg font-semibold">{title}</h1>
+    <main className="min-h-dvh bg-[#f4f4f5] px-4 pb-28 pt-4 text-[#171717]">
       {tab === "home" && <HomeTab />}
       {tab === "venues" && <VenuesTab />}
       {tab === "events" && <EventsTab />}

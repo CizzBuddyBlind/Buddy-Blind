@@ -30,7 +30,7 @@ const BOTTOM = [
   { href: "/", label: "Home", icon: "M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z" },
   { href: "/venues", label: "Venues", icon: "M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11zM12 10.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" },
   { href: "/events", label: "Events", icon: "M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" },
-  { href: "/chat", label: "Notifications", icon: "M5 6h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H9l-4 3v-3H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z" },
+  { href: "/chat", label: "Chat", icon: "M5 6h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H9l-4 3v-3H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z" },
   { href: "/profile", label: "Profile", icon: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0" },
 ];
 
@@ -53,6 +53,8 @@ export function Shell({ children }) {
         : "min-h-dvh";
 
   const phoneTab = path === "/" || path === "/venues" || path === "/events" || path === "/chat" || path === "/profile";
+  const showApp = phoneTab && !bb.editing;
+  const appTab = path === "/" ? "home" : path === "/venues" ? "venues" : path === "/events" ? "events" : path === "/chat" ? "chat" : "profile";
   const selected =
     bb.content.venues.find((v) => v.id === bb.selectedId) ||
     bb.content.events.find((v) => v.id === bb.selectedId);
@@ -71,7 +73,7 @@ export function Shell({ children }) {
   }
 
   return (
-    <div className={light ? "min-h-dvh bg-paper text-char" : "min-h-dvh bg-ink text-fg"}>
+    <div className={showApp ? "min-h-dvh bg-[#f4f4f5] text-[#171717]" : light ? "min-h-dvh bg-paper text-char" : "min-h-dvh bg-ink text-fg"}>
       {bb.staff && bb.preview && (
         <div className="sticky top-0 z-[60] flex items-center justify-between gap-3 bg-ember px-4 py-2 text-xs font-semibold text-white">
           <span>Preview — this is what visitors see. Draft is not live.</span>
@@ -106,7 +108,7 @@ export function Shell({ children }) {
       )}
       <div className={bb.editing && bb.device !== "desktop" ? "bg-[#050505] py-6" : ""}>
         <div className={frame}>
-          <header className={`sticky z-40 border-b backdrop-blur-xl ${phoneTab ? "max-md:hidden" : ""} ${bb.editing ? "top-[46px]" : "top-0"} ${light ? "border-black/10 bg-paper/95" : "border-white/10 bg-ink/90"}`}>
+          <header className={`sticky z-40 border-b backdrop-blur-xl ${showApp ? "hidden" : ""} ${bb.editing ? "top-[46px]" : "top-0"} ${light ? "border-black/10 bg-paper/95" : "border-white/10 bg-ink/90"}`}>
             <div className="bb-frame flex h-14 items-center justify-between gap-4">
               <Link href="/" className="font-serif text-[1.05rem] tracking-wide">BUDDY BLIND</Link>
               <nav className="hidden items-center gap-6 md:flex">
@@ -160,11 +162,9 @@ export function Shell({ children }) {
             </div>
           </header>
 
-          <div className={path === "/" ? "max-md:hidden" : path === "/profile" ? "max-md:hidden" : ""}>{children}</div>
-          {path === "/" && <div className="md:hidden"><PhoneScreen tab="home" /></div>}
-          {path === "/profile" && <div className="md:hidden"><PhoneScreen tab="profile" /></div>}
+          {showApp ? <PhoneScreen tab={appTab} /> : <div className={bb.editing ? "md:pl-16" : ""}>{children}</div>}
 
-          <nav className="fixed inset-x-0 bottom-0 z-40 bg-black text-white md:hidden">
+          <nav className={`fixed bottom-0 z-40 bg-black text-white ${showApp ? "inset-x-0" : "inset-x-0 md:hidden"}`}>
             <div className="grid grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)]">
               {BOTTOM.map((item) => {
                 const active = item.href === "/" ? path === "/" : path.startsWith(item.href);
