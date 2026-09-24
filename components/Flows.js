@@ -548,60 +548,66 @@ export function PrivateWizard({ venueId = "", onClose }) {
   async function publish() {
     if (!venue) return;
     setBusy(true);
-    const res = await bb.createPrivate({
-      ...form,
-      name: form.name.trim() || venue.name,
-      venueName: venue.name,
-      venueId: venue.id,
-      branchId: branch?.id || "",
-      location,
-      forWhom: [form.orientation, form.gender, form.ageRange].filter(Boolean).join(" · ") || "Anyone",
-      capacity: Math.min(20, Math.max(2, Number(form.capacity) || 2)),
-      imageUrl: photos.includes(form.imageUrl) ? form.imageUrl : (photos[0] || ""),
-      gallery: photos,
-    });
-    setBusy(false);
-    if (res.needLogin) {
-      rememberReturn();
-      window.location.href = "/login";
-      return;
+    try {
+      const res = await bb.createPrivate({
+        ...form,
+        name: form.name.trim() || venue.name,
+        venueName: venue.name,
+        venueId: venue.id,
+        branchId: branch?.id || "",
+        location,
+        forWhom: [form.orientation, form.gender, form.ageRange].filter(Boolean).join(" · ") || "Anyone",
+        capacity: Math.min(20, Math.max(2, Number(form.capacity) || 2)),
+        imageUrl: photos.includes(form.imageUrl) ? form.imageUrl : (photos[0] || ""),
+        gallery: photos,
+      });
+      if (res.needLogin) {
+        rememberReturn();
+        window.location.href = "/login";
+        return;
+      }
+      if (res.error) {
+        bb.notify(res.error);
+        return;
+      }
+      setPublishedId(res.id);
+      setPhase("share");
+      bb.notify("It's live.");
+    } catch {
+      bb.notify("That didn't save. Try a smaller video.");
+    } finally {
+      setBusy(false);
     }
-    if (res.error) {
-      bb.notify(res.error);
-      return;
-    }
-    setPublishedId(res.id);
-    setPhase("share");
-    bb.notify("It's live.");
   }
 
   async function shareLive() {
     const path = `/share/private/${publishedId}`;
-    const lines = [form.name || venue?.name, location, `${form.dateISO} · ${form.time}`, form.description];
-    const text = shareText({ path, joined: false, lines });
+    const lines = [form.name || venue?.name, location, `${form.dateISO} · ${form.time} · ${form.capacity} seats`, form.description];
+    const text = shareText({ path, lines });
     try {
-      if (navigator.share) await navigator.share({ title: form.name || "Buddy Blind", text, url: `${window.location.origin}${path}` });
-      else await navigator.clipboard.writeText(text);
-      bb.notify("Copied. Come join me via the link.");
+      await navigator.clipboard.writeText(text);
+      bb.notify("Copied.");
     } catch {
-      window.prompt("Copy this", text);
+      bb.notify("Select the summary and copy it.");
     }
   }
 
   const found = venues.filter((item) => queryHits(`${item.name} ${item.cuisine || ""} ${item.locationLabel || ""} ${item.area || ""}`, query)).slice(0, 8);
 
   if (phase === "share") {
+    const path = `/share/private/${publishedId}`;
+    const lines = [form.name || venue?.name, location, `${form.dateISO} · ${form.time} · ${form.capacity} seats`, form.description];
+    const text = shareText({ path, lines });
     return (
       <Frame title="It's live." step={3} total={3} onBack={onClose} onClose={onClose}>
         <p className="font-serif text-2xl">{form.name || venue?.name}</p>
-        <p className="mt-2 text-sm text-mute">{location}</p>
-        <p className="mt-1 text-sm text-mute">{form.dateISO} · {form.time} · {form.capacity} seats</p>
+        <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-mute">{text}</p>
         <div className="mt-6 flex gap-2">
           <button type="button" className="flex-1 rounded-full border border-white/15 py-3 text-sm" onClick={onClose}>Done</button>
-          <button type="button" className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={shareLive}>Share</button>
+          <button type="button" className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={shareLive}>Copy</button>
         </div>
         <BuddyAsk
-          invite={{ name: form.name || venue?.name, eventId: publishedId, path: `/share/private/${publishedId}` }}
+          invite={{ name: form.name || venue?.name, eventId: publishedId, path }}
         />
       </Frame>
     );
@@ -771,10 +777,10 @@ export function rememberReturn() {
   }
 }
 
-export function shareText({ path, joined, lines }) {
+export function shareText({ path, lines }) {
   const url = `${window.location.origin}${path}`;
-  const lead = joined ? `I joined. Come join me via ${url}` : `Come join me via ${url}`;
-  return `${lead}\n\n${lines.filter(Boolean).join("\n")}`;
+  const summary = (lines || []).filter(Boolean).join("\n");
+  return `${summary}\n\nJoin me here via ${url}`;
 }
 
 function BuddyAsk({ invite }) {
@@ -812,22 +818,19 @@ function BuddyAsk({ invite }) {
 
 export function DoneShare({ title, lines, path, invite, onClose }) {
   const [note, setNote] = useState("");
+  const text = shareText({ path, lines });
   async function share() {
-    const text = shareText({ path, joined: true, lines });
     try {
-      if (navigator.share) await navigator.share({ title: title || "Buddy Blind", text, url: `${window.location.origin}${path}` });
-      else await navigator.clipboard.writeText(text);
-      setNote("Link ready.");
+      await navigator.clipboard.writeText(text);
+      setNote("Copied.");
     } catch {
-      window.prompt("Copy this", text);
+      setNote("Select the summary and copy it.");
     }
   }
   return (
     <Frame title="You're in." step={1} total={1} onBack={onClose} onClose={onClose}>
       <p className="font-serif text-2xl">{title}</p>
-      <ul className="mt-3 space-y-1 text-sm text-mute">
-        {lines.filter(Boolean).map((line) => <li key={line}>{line}</li>)}
-      </ul>
+      <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-mute">{text}</p>
       <div className="mt-6 flex gap-2">
         <button type="button" className="flex-1 rounded-full border border-white/15 py-3 text-sm" onClick={onClose}>Done</button>
         <button type="button" className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={share}>Share</button>
@@ -851,9 +854,9 @@ export function ShareSheet({ open, onClose, joined, lines, path }) {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      bb.notify("Copied. Post it as: I joined, or come join me, via the link.");
+      bb.notify("Copied.");
     } catch {
-      window.prompt("Copy this", text);
+      bb.notify("Select the summary and copy it.");
     }
   }
   async function native() {
@@ -899,7 +902,7 @@ export async function shareLink(path, title) {
   try {
     await navigator.clipboard.writeText(text);
   } catch {
-    window.prompt("Copy this event", text);
+    /* the summary stays on the page */
   }
 }
 

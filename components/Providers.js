@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { SEED, SEED_ACCOUNTS } from "@/lib/defaults";
 import { loadSharedContent, saveSharedContent, supabaseReady } from "@/lib/supabase";
 import { bookingHold, iso, logEntry, normalizeContent, tableStart, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
-import { channelNote, notifyRestaurant } from "@/lib/notify";
+import { putMedia } from "@/lib/media";
 
 const Ctx = createContext(null);
 export function useBB() {
@@ -46,7 +46,11 @@ function read(key, fallback) {
   }
 }
 function write(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* the browser storage is full */
+  }
 }
 
 function blankProfile(partial) {
@@ -257,12 +261,30 @@ export function BuddyProvider({ children }) {
   }, [log, notify]);
 
   const pushLive = useCallback(async (next) => {
-    publishedRef.current = next;
-    setPublished(next);
-    write(PUB, next);
+    const slim = clone(next);
+    for (const event of slim.events || []) {
+      if (typeof event.videoUrl === "string" && event.videoUrl.startsWith("data:") && event.videoUrl.length > 120000) {
+        await putMedia(`${event.id}:video`, event.videoUrl);
+        event.videoUrl = `idb:${event.id}:video`;
+      }
+      if (Array.isArray(event.gallery)) {
+        event.gallery = await Promise.all(event.gallery.map(async (src, index) => {
+          if (typeof src === "string" && src.startsWith("data:") && src.length > 120000) {
+            const key = `${event.id}:p${index}`;
+            await putMedia(key, src);
+            if (event.imageUrl === src) event.imageUrl = `idb:${key}`;
+            return `idb:${key}`;
+          }
+          return src;
+        }));
+      }
+    }
+    publishedRef.current = slim;
+    setPublished(slim);
+    write(PUB, slim);
     if (!supabaseReady) return { ok: false };
     try {
-      await saveSharedContent(next);
+      await saveSharedContent(slim);
       setRemote("live");
       return { ok: true };
     } catch (err) {
@@ -918,8 +940,33 @@ export function BuddyProvider({ children }) {
   const createPrivate = useCallback(async (input) => {
     if (!session) return { needLogin: true };
     const capacity = Math.min(20, Math.max(2, Number(input.capacity) || 8));
+    const id = `priv-${Date.now().toString(36)}`;
+    let imageUrl = input.imageUrl || "";
+    let gallery = Array.isArray(input.gallery) ? [...input.gallery] : [];
+    let videoUrl = input.videoUrl || "";
+    try {
+      if (videoUrl.startsWith("data:")) {
+        await putMedia(`${id}:video`, videoUrl);
+        videoUrl = `idb:${id}:video`;
+      }
+      gallery = await Promise.all(gallery.map(async (src, index) => {
+        if (typeof src === "string" && src.startsWith("data:") && src.length > 120000) {
+          const key = `${id}:p${index}`;
+          await putMedia(key, src);
+          if (src === imageUrl) imageUrl = `idb:${key}`;
+          return `idb:${key}`;
+        }
+        return src;
+      }));
+      if (imageUrl.startsWith("data:") && imageUrl.length > 120000) {
+        await putMedia(`${id}:cover`, imageUrl);
+        imageUrl = `idb:${id}:cover`;
+      }
+    } catch {
+      return { error: "That photo or video didn't save. Try a smaller one." };
+    }
     const item = {
-      id: `priv-${Date.now().toString(36)}`,
+      id,
       kind: "private",
       name: (input.name || input.venueName || "Private table").trim(),
       typeLabel: input.forWhom || input.orientation || "Private",
@@ -951,10 +998,10 @@ export function BuddyProvider({ children }) {
       orientation: input.orientation || "",
       gender: input.gender || "",
       ageRange: input.ageRange || "",
-      videoUrl: input.videoUrl || "",
+      videoUrl,
       showHostPhoto: !!input.showHostPhoto,
-      imageUrl: input.imageUrl || "",
-      gallery: input.gallery || [],
+      imageUrl,
+      gallery,
       participants: [{ handle: session.handle, role: "host" }],
       pings: [],
     };
