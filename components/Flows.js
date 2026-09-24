@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fileToCover } from "./Bits";
 import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
@@ -64,6 +64,81 @@ function Choice({ on, children, onClick }) {
   );
 }
 
+function useFeeCheckout(onPaid) {
+  const bb = useBB();
+  const paid = useRef(onPaid);
+  paid.current = onPaid;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [sheet, setSheet] = useState(null);
+
+  useEffect(() => {
+    if (!sheet?.clientSecret || !sheet.publishableKey) return undefined;
+    let checkout;
+    let gone = false;
+    (async () => {
+      const { loadStripe } = await import("@stripe/stripe-js");
+      const stripe = await loadStripe(sheet.publishableKey);
+      if (!stripe || gone) return;
+      checkout = await stripe.createEmbeddedCheckoutPage({
+        clientSecret: sheet.clientSecret,
+        onComplete: () => {
+          fetch(`/api/checkout?session_id=${encodeURIComponent(sheet.sessionId)}`)
+            .then((res) => res.json())
+            .then(async (data) => {
+              if (!data?.ok) {
+                setError(data?.reason || "Payment did not finish.");
+                return;
+              }
+              await paid.current();
+            })
+            .catch(() => setError("Payment did not finish."));
+        },
+      });
+      if (gone) {
+        checkout.destroy();
+        return;
+      }
+      checkout.mount("#bb-fee");
+    })().catch((err) => {
+      if (!gone) setError(err instanceof Error ? err.message : "Card form did not open.");
+    });
+    return () => {
+      gone = true;
+      checkout?.destroy();
+    };
+  }, [sheet]);
+
+  async function start() {
+    if (!bb.session) {
+      rememberReturn();
+      window.location.href = "/login";
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "fee", email: bb.session.email || "" }),
+      });
+      const data = await res.json();
+      if (!data?.clientSecret || !data.publishableKey) {
+        setError(data?.reason || "Stripe is not linked yet. The HK$5 card form has no key.");
+        return;
+      }
+      setSheet({ clientSecret: data.clientSecret, publishableKey: data.publishableKey, sessionId: data.sessionId });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Stripe is not linked yet.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return { busy, error, sheet, start };
+}
+
 function PayStep({ fee, checked, setChecked, onConfirm, busy, error }) {
   const { lang } = useBB();
   const t = (key) => translate(lang, key);
@@ -101,12 +176,12 @@ export function OpenTableWizard({ venue, onClose }) {
   const [orientation, setOrientation] = useState("");
   const [ageRange, setAgeRange] = useState("");
   const [checked, setChecked] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [payError, setPayError] = useState("");
   const [done, setDone] = useState(null);
   const branch = (venue.branches || []).find((b) => b.id === branchId) || venue.branches?.[0];
   const fee = { base: 5, total: 5 };
   const titles = [t("step.location"), t("step.date"), t("step.time"), t("step.type"), t("step.people"), t("step.prefs"), t("step.summary"), t("step.pay")];
+  const pay = useFeeCheckout(finish);
+  const [bookError, setBookError] = useState("");
 
   async function close() {
     if (step > 0) {
@@ -116,9 +191,8 @@ export function OpenTableWizard({ venue, onClose }) {
     onClose();
   }
 
-  async function confirmPay() {
-    setBusy(true);
-    setPayError("");
+  async function finish() {
+    setBookError("");
     try {
       const res = await bb.openTable({
         venueId: venue.id,
@@ -137,7 +211,7 @@ export function OpenTableWizard({ venue, onClose }) {
         return;
       }
       if (!res?.ok) {
-        setPayError(res?.error || "That didn't go through. Try again.");
+        setBookError(res?.error || "That didn't go through. Try again.");
         return;
       }
       setDone({
@@ -147,9 +221,7 @@ export function OpenTableWizard({ venue, onClose }) {
         invite: { name: venue.name, venueId: venue.id, tableId: res.tableId },
       });
     } catch (err) {
-      setPayError(err instanceof Error ? err.message : "That didn't go through. Try again.");
-    } finally {
-      setBusy(false);
+      setBookError(err instanceof Error ? err.message : "That didn't go through. Try again.");
     }
   }
 
@@ -243,7 +315,7 @@ export function OpenTableWizard({ venue, onClose }) {
           <button type="button" className="mt-3 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(7)}>{t("btn.next")}</button>
         </div>
       )}
-      {step === 7 && <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={confirmPay} busy={busy} error={payError} />}
+      {step === 7 && (pay.sheet ? <div id="bb-fee" className="min-h-[420px] overflow-hidden rounded-2xl bg-white" /> : <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={pay.start} busy={pay.busy} error={bookError || pay.error} />)}
     </Frame>
   );
 }
@@ -261,13 +333,13 @@ export function JoinWizard({ venue, tableId, onClose }) {
   const [picked, setPicked] = useState(tableId || openId);
   const [step, setStep] = useState(tableId || openId ? 1 : 0);
   const [checked, setChecked] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [payError, setPayError] = useState("");
   const [done, setDone] = useState(null);
+  const [bookError, setBookError] = useState("");
   const row = tables.find((item) => item.table.id === picked) || tables.find((item) => item.table.id === tableId);
-  const bookable = tables.filter((row) => !row.hold.closed && row.hold.places > 0);
+  const bookable = tables.filter((item) => !item.hold.closed && item.hold.places > 0);
   const none = !tableId && bookable.length === 0;
   const fee = adminFee();
+  const pay = useFeeCheckout(finish);
 
   async function close() {
     if (step > 0) {
@@ -277,9 +349,8 @@ export function JoinWizard({ venue, tableId, onClose }) {
     onClose();
   }
 
-  async function confirmPay() {
-    setBusy(true);
-    setPayError("");
+  async function finish() {
+    setBookError("");
     try {
       const res = await bb.joinTable({ venueId: venue.id, tableId: picked || tableId });
       if (res?.needLogin) {
@@ -288,7 +359,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
         return;
       }
       if (!res?.ok) {
-        setPayError(res?.error || "That didn't go through. Try again.");
+        setBookError(res?.error || "That didn't go through. Try again.");
         return;
       }
       const table = row?.table;
@@ -299,9 +370,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
         invite: { name: venue.name, venueId: venue.id, tableId: table?.id || picked || tableId },
       });
     } catch (err) {
-      setPayError(err instanceof Error ? err.message : "That didn't go through. Try again.");
-    } finally {
-      setBusy(false);
+      setBookError(err instanceof Error ? err.message : "That didn't go through. Try again.");
     }
   }
 
@@ -354,7 +423,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
             <p>{tablePrefs(row.table) || "Meet friends"}</p>
             <p>{row.hold.places} places left</p>
           </div>
-          <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={confirmPay} busy={busy} error={payError} />
+          {pay.sheet ? <div id="bb-fee" className="min-h-[420px] overflow-hidden rounded-2xl bg-white" /> : <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={pay.start} busy={pay.busy} error={bookError || pay.error} />}
         </div>
       )}
       {step === 1 && !row && <p className="text-sm text-mute">That table is gone. Go back and pick another.</p>}

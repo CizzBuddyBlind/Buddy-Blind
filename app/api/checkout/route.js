@@ -13,13 +13,6 @@ function baseUrl(request) {
   return process.env.NEXT_PUBLIC_BASE_URL || "https://buddyblind.com";
 }
 
-function safeReturn(value) {
-  if (typeof value !== "string") return "/";
-  const path = value.split("#")[0];
-  if (!path.startsWith("/") || path.startsWith("//") || path.includes("://")) return "/";
-  return path.slice(0, 300);
-}
-
 async function stripe(secret, path, { method = "GET", params } = {}) {
   const res = await fetch(`https://api.stripe.com${path}`, {
     method,
@@ -94,16 +87,16 @@ export async function GET(request) {
   if (!ok) {
     return Response.json({ ok: false, reason: data.error?.message || "Stripe did not confirm this checkout." });
   }
-  const metaKind = data.metadata?.kind || "";
-  const kind = metaKind === "lite" || metaKind === "premium" || metaKind === "fee" ? metaKind : "";
-  const done = kind === "fee"
-    ? data.status === "complete" && data.payment_status === "paid"
-    : data.status === "complete";
+  const kind = data.metadata?.kind || "";
+  const done = data.status === "complete" || data.payment_status === "paid";
+  if (kind === "fee") {
+    return Response.json({ ok: done, kind: "fee", status: data.status });
+  }
+  const plan = kind === "lite" || kind === "premium" ? kind : "";
   return Response.json({
-    ok: done && !!kind,
-    kind,
+    ok: done && !!plan,
+    kind: plan,
     status: data.status,
-    paymentStatus: data.payment_status || "",
     subscriptionId: idOf(data.subscription),
     customerId: idOf(data.customer),
   });
@@ -115,29 +108,24 @@ export async function POST(request) {
   if (!secret) return Response.json({ ok: false, reason: "Card checkout is not ready yet." });
   if (body.action === "switch") return switchPlan(secret, body);
 
-  const kind = body.kind === "lite" || body.kind === "premium" ? body.kind : "fee";
+  const kind = body.kind === "lite" || body.kind === "premium" || body.kind === "fee" ? body.kind : "fee";
   const price = PRICES[kind];
   const base = baseUrl(request);
   if (!price) return Response.json({ ok: false, reason: "Card checkout is not ready yet." });
 
-  const embedded = kind !== "fee";
+  const embedded = true;
   const params = new URLSearchParams({
-    mode: embedded ? "subscription" : "payment",
+    mode: kind === "fee" ? "payment" : "subscription",
+    ui_mode: "embedded_page",
+    redirect_on_completion: "if_required",
+    return_url: `${base}${kind === "fee" ? "/" : "/subscribe"}?session_id={CHECKOUT_SESSION_ID}`,
     "line_items[0][price]": price,
     "line_items[0][quantity]": "1",
     "metadata[kind]": kind,
   });
-  if (embedded) {
-    params.set("ui_mode", "embedded_page");
-    params.set("redirect_on_completion", "if_required");
-    params.set("return_url", `${base}/subscribe?session_id={CHECKOUT_SESSION_ID}`);
+  if (kind !== "fee") {
     params.set("subscription_data[metadata][kind]", kind);
     if (kind === "premium") params.set("subscription_data[trial_period_days]", "90");
-  } else {
-    const back = safeReturn(body.returnPath);
-    const join = back.includes("?") ? "&" : "?";
-    params.set("success_url", `${base}${back}${join}paid=1&session_id={CHECKOUT_SESSION_ID}`);
-    params.set("cancel_url", `${base}${back}${join}pay=cancel`);
   }
   if (typeof body.email === "string" && body.email.includes("@")) params.set("customer_email", body.email);
 
