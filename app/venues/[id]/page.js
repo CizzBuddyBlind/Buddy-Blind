@@ -50,19 +50,30 @@ export default function VenuePage() {
       <Link href="/" className="text-xs uppercase tracking-[0.16em] text-mute hover:text-ember">{t("btn.back")}</Link>
       <div className="mt-4 grid items-start gap-8 md:grid-cols-2">
         <div>
-          <div className="bb-zoom-wrap relative aspect-[4/5] overflow-hidden rounded-[1.4rem] bg-card">
-            <Photo src={gallery[shot] || venue.imageUrl} alt={venue.imageAlt} className="bb-zoom" onChange={(imageUrl) => update((d) => {
-              const v = d.venues.find((x) => x.id === venue.id);
-              if (!v) return;
-              const next = [...(v.gallery?.length ? v.gallery : [v.imageUrl])];
-              next[shot] = imageUrl;
-              v.gallery = next;
-              v.galleryVersion = 2;
-              if (shot === 0) v.imageUrl = imageUrl;
-            })} />
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[1.4rem] bg-card">
+            <div className="absolute inset-0">
+              <Photo src={gallery[shot] || venue.imageUrl} alt={venue.imageAlt} className="bb-zoom" onChange={(imageUrl) => update((d) => {
+                const v = d.venues.find((x) => x.id === venue.id);
+                if (!v) return;
+                const next = [...(v.gallery?.length ? v.gallery : [v.imageUrl])];
+                next[shot] = imageUrl;
+                v.gallery = next;
+                v.galleryVersion = 2;
+                if (shot === 0) v.imageUrl = imageUrl;
+              })} />
+            </div>
             {gallery.length > 1 && (
-              <button type="button" aria-label="Next photo" onClick={nextPhoto} className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/55 text-3xl leading-none text-white backdrop-blur hover:bg-ember">
-                ›
+              <button
+                type="button"
+                aria-label="Next photo"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  nextPhoto();
+                }}
+                className="absolute right-3 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/55 text-white backdrop-blur hover:bg-ember"
+              >
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
               </button>
             )}
           </div>

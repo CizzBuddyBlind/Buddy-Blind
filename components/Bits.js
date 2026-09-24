@@ -103,7 +103,7 @@ export function Photo({ src, alt, onChange, className = "" }) {
         take(e.dataTransfer.files?.[0]);
       }}
     >
-      {src ? <img src={src} alt={alt || ""} className="h-full w-full object-cover" /> : null}
+      {src ? <img src={src} alt={alt || ""} className="absolute inset-0 h-full w-full object-cover" /> : null}
       {editing && onChange && (
         <label
           className="absolute bottom-3 right-3 z-10 rounded-full bg-black/75 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white"

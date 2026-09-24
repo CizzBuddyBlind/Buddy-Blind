@@ -69,14 +69,25 @@ export default function PrivateDetailPage() {
       <div className="mt-4 grid items-start gap-8 md:grid-cols-2">
         <div>
           <div className="relative aspect-[4/5] overflow-hidden rounded-[1.4rem] bg-black/5">
-            {slide?.type === "video" ? (
-              <video key={slide.src} src={slide.src.startsWith("idb:") ? media[slide.src] || "" : slide.src} className="h-full w-full object-cover" autoPlay muted loop playsInline />
-            ) : (
-              <Photo src={slide?.src?.startsWith("idb:") ? media[slide.src] || "" : slide?.src || ""} alt={event.name} />
-            )}
+            <div className="absolute inset-0">
+              {slide?.type === "video" ? (
+                <video key={slide.src} src={slide.src.startsWith("idb:") ? media[slide.src] || "" : slide.src} className="absolute inset-0 h-full w-full object-cover" autoPlay muted loop playsInline />
+              ) : (
+                <Photo src={slide?.src?.startsWith("idb:") ? media[slide.src] || "" : slide?.src || ""} alt={event.name} />
+              )}
+            </div>
             {slides.length > 1 && (
-              <button type="button" aria-label="Next" onClick={() => setShot((n) => (n + 1) % slides.length)} className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/55 text-3xl leading-none text-white">
-                ›
+              <button
+                type="button"
+                aria-label="Next"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShot((n) => (n + 1) % slides.length);
+                }}
+                className="absolute right-3 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/55 text-white"
+              >
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
               </button>
             )}
           </div>
