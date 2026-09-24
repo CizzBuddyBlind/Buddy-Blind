@@ -14,6 +14,7 @@ const NAV = [
   { href: "/quick", key: "nav.quick" },
   { href: "/private", key: "nav.private" },
   { href: "/how", key: "nav.how" },
+  { href: "/subscribe", key: "nav.premium" },
 ];
 
 function Icon({ d }) {
@@ -217,7 +218,7 @@ export function Shell({ children }) {
           {bb.panel === "pages" && (
             <div className="space-y-2">
               <p className="bb-kicker text-mute">Pages</p>
-              {[...NAV, { href: "/profile", key: "nav.profile" }, { href: "/subscribe", key: "nav.subscribe" }, { href: "/login", key: "nav.login" }].map((item) => (
+              {[...NAV, { href: "/profile", key: "nav.profile" }, { href: "/login", key: "nav.login" }].map((item) => (
                 <Link key={item.href} href={item.href} className="block rounded-lg px-2 py-2 hover:bg-white/5" onClick={() => bb.setPanel(null)}>
                   {t(item.key)}
                 </Link>

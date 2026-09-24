@@ -101,7 +101,7 @@ export default function ProfilePage() {
             <button type="submit" className="rounded-full bg-fg px-4 py-2 text-sm font-semibold text-ink">Save profile</button>
           </form>
           <div className="rounded-2xl border border-white/10 bg-card p-[18px] text-sm text-mute">
-            <p>Plan · {bb.premium ? "Premium trial" : "Free"}</p>
+            <p>Plan · {bb.plan === "premium" || bb.premium ? "Premium" : bb.plan === "lite" ? "Lite" : "Free"}</p>
             <p className="mt-2">Email · {session.email}</p>
             <Link href="/subscribe" className="mt-2 inline-block text-ember">Subscription</Link>
           </div>

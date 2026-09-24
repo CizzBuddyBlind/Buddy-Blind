@@ -24,6 +24,7 @@ const BOOKS = "bb_books_v1";
 const VERSIONS = "bb_versions_v1";
 const ACTIVITY = "bb_activity_v1";
 const TRIAL = "bb_trial_v1";
+const PLAN = "bb_plan_v1";
 const SOCIAL = "bb_social_v1";
 const PROFILES = "bb_profile_v1";
 const LANG = "bb_lang_v1";
@@ -88,6 +89,7 @@ export function BuddyProvider({ children }) {
   const [remote, setRemote] = useState(supabaseReady ? "checking" : "off");
   const [lang, setLangState] = useState("en");
   const [trial, setTrial] = useState(null);
+  const [plan, setPlanState] = useState("free");
   const [social, setSocial] = useState(emptySocial);
   const [flow, setFlow] = useState(null);
 
@@ -118,6 +120,8 @@ export function BuddyProvider({ children }) {
       setActivity(read(ACTIVITY, []));
       setLangState(read(LANG, "en") || "en");
       setTrial(read(TRIAL, null));
+      const savedPlan = read(PLAN, null);
+      setPlanState(savedPlan?.id === "lite" || savedPlan?.id === "premium" ? savedPlan.id : "free");
       setSocial({ ...emptySocial(), ...read(SOCIAL, {}) });
 
       let pub = local?.venues && local?.copy ? local : clone(SEED);
@@ -621,7 +625,18 @@ export function BuddyProvider({ children }) {
   }, []);
 
   const trialOk = !!(trial?.at && !trial.cancelled && Date.now() - trial.at < (trial.days || TRIAL_DAYS) * 86400000);
-  const premium = trialOk || staff;
+  const premium = plan === "premium" || trialOk || staff;
+
+  const setPlan = useCallback((id) => {
+    const next = id === "lite" || id === "premium" ? id : "free";
+    write(PLAN, { id: next, at: Date.now() });
+    setPlanState(next);
+    if (next === "premium") {
+      const opened = { at: Date.now(), days: TRIAL_DAYS, cancelled: false, source: "stripe" };
+      write(TRIAL, opened);
+      setTrial(opened);
+    }
+  }, []);
 
   const acceptTrial = useCallback(() => {
     const next = { at: Date.now(), days: TRIAL_DAYS, cancelled: false };
@@ -1051,7 +1066,9 @@ export function BuddyProvider({ children }) {
       lang,
       setLang,
       trial,
+      plan,
       premium,
+      setPlan,
       acceptTrial,
       cancelTrial,
       updateProfile,
@@ -1076,7 +1093,7 @@ export function BuddyProvider({ children }) {
       selectedId, canUndo, canRedo, undo, redo, update, saveDraft, publish, login, logout,
       register, createInvite, activate, revokeAdmin, invites, revoked, users, activity,
       versions, restoreVersion, act, insertEvent, removeBlock, duplicateBlock, addBlock, toggleLock,
-      toggleHide, resetDraft, confirm, lang, setLang, trial, premium, acceptTrial, cancelTrial,
+      toggleHide, resetDraft, confirm, lang, setLang, trial, plan, premium, setPlan, acceptTrial, cancelTrial,
       updateProfile, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
       addReview, flow, openTable, joinTable, createPrivate, joinPrivate, sendPing, replyPing,
     ],
