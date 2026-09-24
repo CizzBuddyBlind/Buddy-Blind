@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useBB } from "@/components/Providers";
+import { AGE_RANGES } from "@/lib/bible";
 import { translate } from "@/lib/i18n";
 import { LangSwitch } from "@/components/Flows";
 
@@ -15,6 +16,9 @@ export default function RegisterPage() {
   const [handle, setHandle] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [gender, setGender] = useState("");
+  const [ageRange, setAgeRange] = useState("");
+  const [orientation, setOrientation] = useState("");
   const [otp, setOtp] = useState("");
   const [sent, setSent] = useState("");
   const [test, setTest] = useState(false);
@@ -70,7 +74,7 @@ export default function RegisterPage() {
         setError(data.reason || t("reg.bad"));
         return;
       }
-      const message = bb.register({ email, username, password, handle, phone: data.phone || phone, verified: true });
+      const message = bb.register({ email, username, password, handle, phone: data.phone || phone, gender, ageRange, orientation, verified: true });
       if (message) {
         setError(message);
         return;
@@ -97,6 +101,18 @@ export default function RegisterPage() {
           <input required value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
           <input required value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
           <input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder={t("reg.name")} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
+          <select required value={gender} onChange={(e) => setGender(e.target.value)} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none">
+            <option value="">Gender</option>
+            {["Woman", "Man", "Non-binary"].map((item) => <option key={item}>{item}</option>)}
+          </select>
+          <select required value={ageRange} onChange={(e) => setAgeRange(e.target.value)} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none">
+            <option value="">Age range</option>
+            {AGE_RANGES.map((item) => <option key={item}>{item}</option>)}
+          </select>
+          <select required value={orientation} onChange={(e) => setOrientation(e.target.value)} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none">
+            <option value="">Orientation</option>
+            {["Straight", "Gay", "Lesbian", "Bi", "Trans"].map((item) => <option key={item}>{item}</option>)}
+          </select>
           <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+852 9123 4567" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
           <input required value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
           <button type="button" disabled={busy} className="text-xs text-ember disabled:opacity-40" onClick={() => void sendCode()}>{t("reg.send")}</button>

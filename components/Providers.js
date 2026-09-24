@@ -118,6 +118,9 @@ function blankProfile(partial) {
     ageRange: "30-40",
     occupation: "Guest",
     gender: "",
+    orientation: "",
+    showIdentity: true,
+    showPlace: true,
     phone: "",
     verified: false,
     ...partial,
@@ -436,6 +439,7 @@ export function BuddyProvider({ children }) {
     }
     const phone = String(input.phone || "").trim();
     if (phone.replace(/\D/g, "").length < 8) return "Enter a phone number with at least 8 digits.";
+    if (!input.gender || !input.ageRange || !input.orientation) return "Add your gender, age range, and orientation.";
     const all = [...SEED_ACCOUNTS, ...read(USERS, [])];
     if (all.some((a) => a.email === email || a.username === username)) return "That email or username is already taken.";
     const nextUser = blankProfile({
@@ -445,7 +449,11 @@ export function BuddyProvider({ children }) {
       handle: input.handle?.trim() || username,
       role: "user",
       phone,
-      gender: input.gender || "",
+      gender: input.gender,
+      ageRange: input.ageRange,
+      orientation: input.orientation,
+      showIdentity: true,
+      showPlace: true,
       verified: !!input.verified,
     });
     const next = [...read(USERS, []), nextUser];
@@ -767,7 +775,7 @@ export function BuddyProvider({ children }) {
 
   const updateProfile = useCallback((partial) => {
     if (!session) return;
-    const allowed = ["handle", "gender", "orientation", "occupation", "neighborhood", "ageRange", "phone", "verified"];
+    const allowed = ["handle", "gender", "orientation", "occupation", "neighborhood", "ageRange", "phone", "verified", "showIdentity", "showPlace"];
     const extra = { ...(read(PROFILES, {})[session.email] || {}) };
     allowed.forEach((key) => {
       if (partial[key] !== undefined) extra[key] = partial[key];
