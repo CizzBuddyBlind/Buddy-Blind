@@ -178,7 +178,7 @@ export default function SubscribePage() {
   }
 
   return (
-    <main className="bb-frame mx-auto pb-28 pt-8 md:pb-20 md:pt-12">
+    <main className="bb-frame mx-auto pb-28 pt-16 md:pb-20 md:pt-20">
       <div className="mx-auto w-full max-w-5xl">
         <h1 className="font-serif leading-[1.05]">
           <span className="block text-base text-white/85 sm:text-lg">Host the vibe you care about — or join one. Guests stay blind.</span>
@@ -188,10 +188,10 @@ export default function SubscribePage() {
           Wine, work, a hike. Or whatever you care about.
         </p>
 
-        <div className="mt-24 grid items-stretch gap-4 md:mt-36 lg:grid-cols-[1fr_1fr_1fr]">
-          <div className="grid h-full rounded-[28px] bg-[#111] md:grid-cols-2 lg:col-span-2">
+        <div className="mt-10 grid items-stretch gap-3 lg:grid-cols-3">
+          <div className="grid h-full overflow-hidden rounded-[28px] bg-[#111] md:grid-cols-2 lg:col-span-2">
             {CARDS.filter((card) => card.id !== "premium").map((card) => (
-              <PlanCard key={card.id} card={card} plan={plan} busy={busy} onPay={pay} />
+              <PlanCard key={card.id} card={card} plan={plan} busy={busy} onPay={pay} split />
             ))}
           </div>
           <PlanCard card={CARDS[2]} plan={plan} busy={busy} onPay={pay} light />
@@ -215,7 +215,7 @@ export default function SubscribePage() {
   );
 }
 
-function PlanCard({ card, plan, busy, onPay, light }) {
+function PlanCard({ card, plan, busy, onPay, light, split }) {
   const current = plan === card.id;
   const up = RANK[card.id] > RANK[plan];
   const label = current
@@ -226,15 +226,15 @@ function PlanCard({ card, plan, busy, onPay, light }) {
         ? card.id === "lite" ? "Upgrade to Lite" : "Go Premium"
         : "Downgrade to Lite";
   return (
-    <article className={`flex h-full flex-col px-5 py-7 md:px-6 md:py-8 ${light ? "rounded-[28px] bg-[#f6f3ee] text-ink" : "bg-transparent"}`}>
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="font-serif text-[1.7rem] leading-none">{card.name}</h2>
-        <p className={`max-w-[6.5rem] text-right text-[9px] font-semibold uppercase leading-tight tracking-[0.14em] ${light ? "text-ink/50" : "text-mute"}`}>
+    <article className={`flex h-full flex-col px-6 py-8 md:px-7 md:py-9 ${light ? "rounded-[28px] bg-[#f6f3ee] text-ink" : "bg-transparent"} ${split && card.id === "free" ? "md:border-r md:border-white/10" : ""}`}>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-serif text-4xl leading-none">{card.name}</h2>
+        <p className={`max-w-[7.5rem] text-right text-[10px] font-semibold uppercase leading-tight tracking-[0.14em] ${light ? "text-ink/45" : "text-white/40"}`}>
           {card.cadence}
         </p>
       </div>
-      <p className="mt-6 font-serif text-5xl tracking-normal">{card.price}</p>
-      <ul className={`mt-6 space-y-2 text-[11px] font-medium uppercase leading-relaxed tracking-[0.04em] ${light ? "text-ink/75" : "text-mute"}`}>
+      <p className="mt-8 font-serif text-5xl tracking-tight md:text-6xl">{card.price}</p>
+      <ul className={`mt-8 space-y-3 text-[11px] font-medium uppercase leading-relaxed tracking-[0.08em] ${light ? "text-ink/70" : "text-white/55"}`}>
         {card.perks.map((perk) => (
           <li key={perk}>— {perk}</li>
         ))}
@@ -250,7 +250,7 @@ function PlanCard({ card, plan, busy, onPay, light }) {
         >
           {busy === card.id ? "One moment…" : label}
         </button>
-        <p className={`mt-3 text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.12em] ${light ? "text-ink/45" : "invisible"}`}>
+        <p className={`mt-4 min-h-[2.4rem] text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.12em] ${light ? "text-ink/40" : "invisible"}`}>
           90 days trial · Cancel anytime · HK$5 admin fee per confirmed join
         </p>
       </div>

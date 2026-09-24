@@ -41,6 +41,7 @@ const STEPS = [
 export default function HowPage() {
   return (
     <main className="bb-frame bg-ink pb-28 pt-16 text-fg md:pb-20">
+      <div className="mx-auto w-full max-w-5xl">
       <p className="text-[0.72rem] uppercase tracking-[0.2em] text-ember">How it works · No meta wording</p>
       <h1 className="mt-5 max-w-4xl font-serif text-[3.4rem] leading-[0.95] text-white sm:text-6xl md:text-7xl">
         See venue,
@@ -58,6 +59,7 @@ export default function HowPage() {
           </li>
         ))}
       </ol>
+      </div>
     </main>
   );
 }
