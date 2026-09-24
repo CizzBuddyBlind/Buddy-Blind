@@ -1,5 +1,7 @@
 "use client";
 
+import { MoveBox } from "@/components/MoveBox";
+
 const STEPS = [
   {
     n: "01",
@@ -41,20 +43,26 @@ const STEPS = [
 export default function HowPage() {
   return (
     <main className="bb-frame bg-ink pb-28 pt-16 text-fg md:pb-20">
-      <p className="text-[0.72rem] uppercase tracking-[0.2em] text-ember">How it works · No meta wording</p>
-      <h1 className="mt-5 max-w-4xl font-serif text-[3.4rem] leading-[0.95] text-white sm:text-6xl md:text-7xl">
-        See venue,
-        <br />
-        see vibe, join.
-      </h1>
-      <ol className="mt-14 overflow-hidden rounded-[1.7rem] border border-white/15">
+      <MoveBox id="how-kicker">
+        <p className="text-[0.72rem] uppercase tracking-[0.2em] text-ember">How it works · No meta wording</p>
+      </MoveBox>
+      <MoveBox id="how-title" className="mt-5">
+        <h1 className="max-w-4xl font-serif text-[3.4rem] leading-[0.95] text-white sm:text-6xl md:text-7xl">
+          See venue,
+          <br />
+          see vibe, join.
+        </h1>
+      </MoveBox>
+      <ol className="mt-14 overflow-visible rounded-[1.7rem] border border-white/15">
         {STEPS.map((step) => (
           <li key={step.n} className="grid grid-cols-[3.2rem_1fr] gap-2 border-t border-white/10 px-6 py-7 first:border-t-0 sm:px-10">
             <span className="pt-2 text-xs tracking-[0.12em] text-white/40">{step.n}</span>
-            <div>
-              <h2 className="font-serif text-[1.65rem] leading-tight text-white md:text-[1.85rem]">{step.title}</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/55">{step.body}</p>
-            </div>
+            <MoveBox id={`how-${step.n}`}>
+              <div>
+                <h2 className="font-serif text-[1.65rem] leading-tight text-white md:text-[1.85rem]">{step.title}</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/55">{step.body}</p>
+              </div>
+            </MoveBox>
           </li>
         ))}
       </ol>
