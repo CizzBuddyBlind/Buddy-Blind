@@ -66,10 +66,12 @@ export default function VenuePage() {
               <button
                 type="button"
                 aria-label="Next photo"
-                onMouseDown={(e) => e.preventDefault()}
+                onPointerDown={(e) => e.preventDefault()}
                 onClick={(e) => {
                   e.preventDefault();
+                  const y = window.scrollY;
                   nextPhoto();
+                  requestAnimationFrame(() => window.scrollTo(0, y));
                 }}
                 className="absolute right-3 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/55 text-white backdrop-blur hover:bg-ember"
               >

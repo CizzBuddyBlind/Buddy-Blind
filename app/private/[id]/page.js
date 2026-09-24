@@ -51,16 +51,21 @@ export default function PrivateDetailPage() {
 
   async function join() {
     setBusy(true);
-    const res = await bb.joinPrivate(event.id);
-    setBusy(false);
-    if (res.needLogin) {
-      rememberReturn();
-      window.location.href = "/login";
-      return;
+    try {
+      const res = await bb.joinPrivate(event.id);
+      if (res.needLogin) {
+        rememberReturn();
+        window.location.href = "/login";
+        return;
+      }
+      if (res.error) bb.notify(res.error === "FULL" ? "FULL. No more places." : res.error);
+      else setDone(true);
+      setPay(false);
+    } catch {
+      bb.notify("That didn't go through. Try again.");
+    } finally {
+      setBusy(false);
     }
-    if (res.error) bb.notify(res.error === "FULL" ? "FULL. No more places." : res.error);
-    else setDone(true);
-    setPay(false);
   }
 
   return (
@@ -80,10 +85,12 @@ export default function PrivateDetailPage() {
               <button
                 type="button"
                 aria-label="Next"
-                onMouseDown={(e) => e.preventDefault()}
+                onPointerDown={(e) => e.preventDefault()}
                 onClick={(e) => {
                   e.preventDefault();
+                  const y = window.scrollY;
                   setShot((n) => (n + 1) % slides.length);
+                  requestAnimationFrame(() => window.scrollTo(0, y));
                 }}
                 className="absolute right-3 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/55 text-white"
               >

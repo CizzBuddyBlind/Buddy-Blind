@@ -117,34 +117,39 @@ export function OpenTableWizard({ venue, onClose }) {
 
   async function confirmPay() {
     setBusy(true);
-    const res = await bb.openTable({
-      venueId: venue.id,
-      branchId: branch?.id,
-      dateISO,
-      time,
-      tableType,
-      participants,
-      gender,
-      orientation,
-      ageRange,
-    });
-    setBusy(false);
-    if (res.needLogin) {
-      rememberReturn();
-      window.location.href = "/login";
-      return;
+    try {
+      const res = await bb.openTable({
+        venueId: venue.id,
+        branchId: branch?.id,
+        dateISO,
+        time,
+        tableType,
+        participants,
+        gender,
+        orientation,
+        ageRange,
+      });
+      if (res.needLogin) {
+        rememberReturn();
+        window.location.href = "/login";
+        return;
+      }
+      if (res.error) {
+        bb.notify(res.error);
+        return;
+      }
+      bb.notify("Table opened · +2 pts");
+      setDone({
+        title: venue.name,
+        lines: [branch?.label, `${dateISO} · ${time}`],
+        path: `/share/table/${venue.id}/${res.tableId}`,
+        invite: { name: venue.name, venueId: venue.id, tableId: res.tableId },
+      });
+    } catch {
+      bb.notify("That didn't go through. Try again.");
+    } finally {
+      setBusy(false);
     }
-    if (res.error) {
-      bb.notify(res.error);
-      return;
-    }
-    bb.notify("Table opened · +2 pts");
-    setDone({
-      title: venue.name,
-      lines: [branch?.label, `${dateISO} · ${time}`],
-      path: `/share/table/${venue.id}/${res.tableId}`,
-      invite: { name: venue.name, venueId: venue.id, tableId: res.tableId },
-    });
   }
 
   if (done) {
@@ -272,25 +277,30 @@ export function JoinWizard({ venue, tableId, onClose }) {
 
   async function confirmPay() {
     setBusy(true);
-    const res = await bb.joinTable({ venueId: venue.id, tableId: picked || tableId });
-    setBusy(false);
-    if (res.needLogin) {
-      rememberReturn();
-      window.location.href = "/login";
-      return;
+    try {
+      const res = await bb.joinTable({ venueId: venue.id, tableId: picked || tableId });
+      if (res.needLogin) {
+        rememberReturn();
+        window.location.href = "/login";
+        return;
+      }
+      if (res.error) {
+        bb.notify(res.error);
+        return;
+      }
+      bb.notify("You're in.");
+      const table = row?.table;
+      setDone({
+        title: venue.name,
+        lines: [table?.address || venue.locationLabel, `${table?.dateISO || ""} · ${table?.time || ""}`],
+        path: `/share/table/${venue.id}/${table?.id || picked || tableId}`,
+        invite: { name: venue.name, venueId: venue.id, tableId: table?.id || picked || tableId },
+      });
+    } catch {
+      bb.notify("That didn't go through. Try again.");
+    } finally {
+      setBusy(false);
     }
-    if (res.error) {
-      bb.notify(res.error);
-      return;
-    }
-    bb.notify("You're in.");
-    const table = row?.table;
-    setDone({
-      title: venue.name,
-      lines: [table ? `${table.dateISO} · ${table.time}` : "", venue.locationLabel],
-      path: `/share/table/${venue.id}/${picked || tableId}`,
-      invite: { name: venue.name, venueId: venue.id, tableId: picked || tableId },
-    });
   }
 
   if (done) {
