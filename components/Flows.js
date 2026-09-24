@@ -465,6 +465,7 @@ export function PrivateWizard({ venueId = "", onClose }) {
   const [form, setForm] = useState({
     name: "",
     description: "",
+    aboutHost: "",
     dateISO: nextDays(7)[1],
     time: "7:00 PM",
     capacity: 8,
@@ -661,7 +662,8 @@ export function PrivateWizard({ venueId = "", onClose }) {
             </div>
           )}
           <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Name the night" className="w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
-          <textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="What's the night about?" className="h-24 w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
+          <textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="The night" className="h-24 w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
+          <textarea value={form.aboutHost} onChange={(e) => set("aboutHost", e.target.value)} placeholder="About me" className="h-24 w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
           <p className="text-xs uppercase tracking-[0.16em] text-mute">Photos</p>
           <button
             type="button"

@@ -15,6 +15,7 @@ export default function PrivateDetailPage() {
   const [pay, setPay] = useState(false);
   const [share, setShare] = useState(false);
   const [done, setDone] = useState(false);
+  const [shot, setShot] = useState(0);
   if (!event) {
     return (
       <main className="bb-frame py-20">
@@ -22,6 +23,15 @@ export default function PrivateDetailPage() {
       </main>
     );
   }
+  const photos = event.gallery?.length ? event.gallery : event.imageUrl ? [event.imageUrl] : [];
+  const slides = [
+    ...photos.map((src) => ({ type: "photo", src })),
+    ...(event.videoUrl ? [{ type: "video", src: event.videoUrl }] : []),
+  ];
+  const slide = slides[shot] || slides[0];
+  const host = event.hostProfile || { handle: event.hostName || "Host" };
+  const initial = String(host.handle || "H").trim().slice(0, 1).toUpperCase();
+  const buddyLabel = Number(host.buddies) >= 15 ? "15+" : host.buddies != null ? String(host.buddies) : "";
   const full = (event.spots || 0) <= 0;
 
   async function join() {
@@ -42,29 +52,57 @@ export default function PrivateDetailPage() {
     <main className="bb-private bb-frame pb-28 pt-6 md:pb-16">
       <Link href="/private" className="text-xs uppercase tracking-[0.16em] text-mute">Go back</Link>
       <div className="mt-4 grid items-start gap-8 md:grid-cols-2">
-        <div className="overflow-hidden rounded-[1.4rem] bg-black/5">
-          <div className="relative aspect-[4/5]">
-            <Photo src={event.imageUrl} alt={event.name} onChange={(imageUrl) => bb.update((d) => {
-              const item = d.events.find((x) => x.id === event.id);
-              if (item) item.imageUrl = imageUrl;
-            })} />
+        <div>
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[1.4rem] bg-black/5">
+            {slide?.type === "video" ? (
+              <video src={slide.src} className="h-full w-full object-cover" controls playsInline />
+            ) : (
+              <Photo src={slide?.src || ""} alt={event.name} />
+            )}
+            {slides.length > 1 && (
+              <button type="button" aria-label="Next" onClick={() => setShot((n) => (n + 1) % slides.length)} className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/55 text-3xl leading-none text-white">
+                ›
+              </button>
+            )}
           </div>
+          {slides.length > 1 && (
+            <div className="mt-3 flex gap-2 overflow-x-auto">
+              {slides.map((item, index) => (
+                <button key={index} type="button" onClick={() => setShot(index)} className={`h-16 w-20 shrink-0 overflow-hidden rounded-xl border ${shot === index ? "border-ember" : "border-black/10"}`}>
+                  {item.type === "video" ? <span className="grid h-full w-full place-items-center bg-char text-xs text-paper">Video</span> : <img src={item.src} alt="" className="h-full w-full object-cover" />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-ember">{event.forWhom || event.typeLabel}</p>
           <h1 className="mt-2 font-serif text-4xl leading-tight md:text-5xl">
             <Editable value={event.name} onChange={(name) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.name = name; })} />
           </h1>
-          <p className="mt-3 text-sm text-mute">Host · {event.hostName || event.hostLabel}</p>
-          {event.showHostPhoto && event.hostPhoto && (
-            <img src={event.hostPhoto} alt="" className="mt-3 h-16 w-16 rounded-full object-cover" />
-          )}
           <p className="mt-3 text-sm">{event.location} · {event.dateISO} · {event.timeLabel}</p>
-          <p className="mt-1 text-sm text-mute">{full ? "Full" : `${event.spots} seats left`}{event.ageRange ? ` · ${event.ageRange}` : ""}</p>
+          <p className="mt-1 text-sm text-mute">{full ? "Full" : `${event.spots} seats left`}</p>
           <Editable as="p" className="mt-6 text-base leading-relaxed" value={event.description || ""} onChange={(description) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.description = description; })} />
-          {event.videoUrl && (
-            <p className="mt-4 text-sm"><a className="underline" href={event.videoUrl} target="_blank" rel="noreferrer">Host video</a></p>
-          )}
+          <div className="mt-8 border-t border-black/10 pt-6">
+            <div className="flex items-center gap-3">
+              <div className="grid h-14 w-14 place-items-center rounded-full bg-char font-serif text-xl text-paper">{initial}</div>
+              <div>
+                <p className="font-serif text-xl">{host.handle}</p>
+                <p className="text-xs uppercase tracking-[0.14em] text-mute">Host</p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-1 text-sm text-mute">
+              {host.ageRange && <p>Age · {host.ageRange}</p>}
+              {host.gender && <p>Gender · {host.gender}</p>}
+              {host.orientation && <p>Orientation · {host.orientation}</p>}
+              {host.neighborhood && <p>Lives in · {host.neighborhood}</p>}
+              {host.occupation && <p>Work · {host.occupation}</p>}
+              {buddyLabel !== "" && <p className="text-char">Buddies {buddyLabel}</p>}
+            </div>
+            {(event.aboutHost || bb.editing) && (
+              <Editable as="p" className="mt-4 text-sm leading-relaxed" value={event.aboutHost || ""} onChange={(aboutHost) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.aboutHost = aboutHost; })} />
+            )}
+          </div>
           <div className="mt-6 flex flex-wrap gap-2">
             <button type="button" disabled={busy || full} onClick={() => setPay(true)} className="rounded-full bg-char px-5 py-3 text-sm font-semibold text-paper disabled:opacity-40">
               {full ? "Full" : "Join"}
