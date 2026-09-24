@@ -4,8 +4,13 @@ const PRICES = {
   fee: process.env.STRIPE_ADMIN_FEE_PRICE_ID || "price_1UISZsPmyR3fIMKFcpj7cNdy",
 };
 
-function baseUrl() {
-  return process.env.NEXT_PUBLIC_BASE_URL || "https://buddy-blind.vercel.app";
+function baseUrl(request) {
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+  if (host && !host.includes("localhost")) {
+    const proto = request.headers.get("x-forwarded-proto") || "https";
+    return `${proto}://${host.split(",")[0].trim()}`;
+  }
+  return process.env.NEXT_PUBLIC_BASE_URL || "https://buddyblind.com";
 }
 
 export async function GET(request) {
@@ -32,7 +37,7 @@ export async function POST(request) {
   const kind = body.kind === "lite" || body.kind === "premium" ? body.kind : "fee";
   const secret = process.env.STRIPE_SECRET_KEY;
   const price = PRICES[kind];
-  const base = baseUrl();
+  const base = baseUrl(request);
   if (!secret || !price) {
     return Response.json({
       ok: false,

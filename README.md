@@ -2,7 +2,7 @@
 
 Hong Kong blind social dining. Next.js app for Vercel.
 
-Production: https://buddy-blind.vercel.app
+Production: https://buddyblind.com
 
 ```bash
 npm install
