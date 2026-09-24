@@ -33,13 +33,29 @@ function emptySocial() {
   return { buddies: [], reviews: [], notes: [], notesOn: true };
 }
 
+function stripHeavy(node, seen = new Set()) {
+  if (!node || typeof node !== "object" || seen.has(node)) return;
+  seen.add(node);
+  if (Array.isArray(node)) {
+    for (let i = 0; i < node.length; i += 1) {
+      const value = node[i];
+      if (typeof value === "string") {
+        if (value.startsWith("data:") && value.length > 20000) node[i] = "";
+      } else stripHeavy(value, seen);
+    }
+    return;
+  }
+  for (const key of Object.keys(node)) {
+    const value = node[key];
+    if (typeof value === "string") {
+      if (value.startsWith("data:") && value.length > 20000) node[key] = "";
+    } else stripHeavy(value, seen);
+  }
+}
+
 function clone(value) {
-  if (typeof value === "string") return value.startsWith("data:") && value.length > 40000 ? "" : value;
-  if (Array.isArray(value)) return value.map(clone);
-  if (!value || typeof value !== "object") return value;
-  const out = {};
-  for (const key of Object.keys(value)) out[key] = clone(value[key]);
-  return out;
+  stripHeavy(value);
+  return JSON.parse(JSON.stringify(value));
 }
 function read(key, fallback) {
   if (typeof window === "undefined") return fallback;

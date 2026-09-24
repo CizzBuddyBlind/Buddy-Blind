@@ -31,7 +31,7 @@ export default function VenuePage() {
   const gallery = venue.gallery?.length ? venue.gallery : [venue.imageUrl];
   const tables = (venue.tables || [])
     .map((table) => ({ table, hold: bookingHold(table) }))
-    .filter(({ hold }) => !hold.closed && hold.places > 0);
+    .filter(({ table, hold }) => table.dateISO >= new Date().toISOString().slice(0, 10) || !hold.closed);
   const shot = Math.min(photo, Math.max(0, gallery.length - 1));
 
   function patch(partial) {
@@ -165,7 +165,14 @@ export default function VenuePage() {
                           <p className="text-sm">{prettyDate(table.dateISO, lang)} · {table.time}</p>
                           <p className="text-xs text-mute">{tablePrefs(table) || "Meet friends"} · {hold.places} left</p>
                         </div>
-                        <button type="button" className="rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>{t("btn.join")}</button>
+                        <button
+                          type="button"
+                          disabled={hold.closed || joined}
+                          className="rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink disabled:opacity-40"
+                          onClick={() => setFlow({ type: "join", venueId: venue.id, tableId: table.id })}
+                        >
+                          {joined ? "You're in" : hold.closed ? "Full" : t("btn.join")}
+                        </button>
                         <button type="button" className="rounded-full border border-white/15 px-4 py-2 text-xs" onClick={() => setShare({ joined, lines, path: `/share/table/${venue.id}/${table.id}` })}>{t("btn.share")}</button>
                       </div>
                     </article>
