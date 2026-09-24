@@ -90,6 +90,7 @@ export function BuddyProvider({ children }) {
   const [lang, setLangState] = useState("en");
   const [trial, setTrial] = useState(null);
   const [plan, setPlanState] = useState("free");
+  const [planMeta, setPlanMeta] = useState({ subscriptionId: "", customerId: "" });
   const [social, setSocial] = useState(emptySocial);
   const [flow, setFlow] = useState(null);
 
@@ -122,6 +123,10 @@ export function BuddyProvider({ children }) {
       setTrial(read(TRIAL, null));
       const savedPlan = read(PLAN, null);
       setPlanState(savedPlan?.id === "lite" || savedPlan?.id === "premium" ? savedPlan.id : "free");
+      setPlanMeta({
+        subscriptionId: savedPlan?.subscriptionId || "",
+        customerId: savedPlan?.customerId || "",
+      });
       setSocial({ ...emptySocial(), ...read(SOCIAL, {}) });
 
       let pub = local?.venues && local?.copy ? local : clone(SEED);
@@ -627,14 +632,29 @@ export function BuddyProvider({ children }) {
   const trialOk = !!(trial?.at && !trial.cancelled && Date.now() - trial.at < (trial.days || TRIAL_DAYS) * 86400000);
   const premium = plan === "premium" || trialOk || staff;
 
-  const setPlan = useCallback((id) => {
+  const setPlan = useCallback((id, extra = {}) => {
     const next = id === "lite" || id === "premium" ? id : "free";
-    write(PLAN, { id: next, at: Date.now() });
+    const prev = read(PLAN, {}) || {};
+    const meta = {
+      id: next,
+      at: Date.now(),
+      subscriptionId: next === "free" ? "" : extra.subscriptionId ?? prev.subscriptionId ?? "",
+      customerId: next === "free" ? "" : extra.customerId ?? prev.customerId ?? "",
+    };
+    write(PLAN, meta);
     setPlanState(next);
+    setPlanMeta({ subscriptionId: meta.subscriptionId, customerId: meta.customerId });
     if (next === "premium") {
       const opened = { at: Date.now(), days: TRIAL_DAYS, cancelled: false, source: "stripe" };
       write(TRIAL, opened);
       setTrial(opened);
+    } else {
+      setTrial((current) => {
+        if (!current?.at || current.cancelled) return current;
+        const closed = { ...current, cancelled: true };
+        write(TRIAL, closed);
+        return closed;
+      });
     }
   }, []);
 
@@ -1067,6 +1087,7 @@ export function BuddyProvider({ children }) {
       setLang,
       trial,
       plan,
+      planMeta,
       premium,
       setPlan,
       acceptTrial,
@@ -1093,7 +1114,7 @@ export function BuddyProvider({ children }) {
       selectedId, canUndo, canRedo, undo, redo, update, saveDraft, publish, login, logout,
       register, createInvite, activate, revokeAdmin, invites, revoked, users, activity,
       versions, restoreVersion, act, insertEvent, removeBlock, duplicateBlock, addBlock, toggleLock,
-      toggleHide, resetDraft, confirm, lang, setLang, trial, plan, premium, setPlan, acceptTrial, cancelTrial,
+      toggleHide, resetDraft, confirm, lang, setLang, trial, plan, planMeta, premium, setPlan, acceptTrial, cancelTrial,
       updateProfile, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
       addReview, flow, openTable, joinTable, createPrivate, joinPrivate, sendPing, replyPing,
     ],
