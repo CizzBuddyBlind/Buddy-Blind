@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useBB } from "@/components/Providers";
 import { AGE_RANGES, tierFromPoints } from "@/lib/bible";
 import { translate } from "@/lib/i18n";
+import { JoinedEvents } from "@/components/PhoneApp";
 
 export default function ProfilePage() {
   const bb = useBB();
@@ -64,6 +65,9 @@ export default function ProfilePage() {
           {session.gender || "Gender private"} · {session.role} · {session.verified ? "Verified" : "Not verified yet"}
         </p>
         <p className="mb-5 text-xs text-mute">Photos stay off the public profile. The badge shows the level, not the point count.</p>
+        <div className="mx-auto mb-6 max-w-lg text-left">
+          <JoinedEvents />
+        </div>
         <div className="mb-6 flex flex-wrap justify-center gap-2">
           {["about", "buddies", "reviews", "alerts"].map((item) => (
             <button key={item} type="button" onClick={() => { setTab(item); if (item === "alerts") bb.markNotesRead(); }} className={`rounded-full border px-[18px] py-1.5 text-[0.75rem] uppercase tracking-wide ${tab === item ? "border-white bg-white text-char" : "border-white/15 text-mute"}`}>

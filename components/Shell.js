@@ -6,17 +6,24 @@ import { useEffect, useState } from "react";
 import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
 import { JoinWizard, LangSwitch, OpenTableWizard, PrivateWizard, TodayPopup, TrialGate } from "./Flows";
-import { PhoneScreen } from "./PhoneApp";
 import { RestaurantAdmin } from "./RestaurantAdmin";
 import { iso } from "@/lib/bible";
 
 const NAV = [
   { href: "/", key: "nav.venues" },
   { href: "/quick", key: "nav.quick" },
-  { href: "/private", key: "nav.private" },
   { href: "/how", key: "nav.how" },
-  { href: "/subscribe", key: "nav.premium" },
+  { href: "/private", key: "nav.private" },
+  { href: "/profile", key: "nav.profile" },
 ];
+
+function initials(session) {
+  const name = String(session?.handle || session?.username || "").trim();
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return "";
+}
 
 function Icon({ d }) {
   return (
@@ -27,11 +34,11 @@ function Icon({ d }) {
 }
 
 const BOTTOM = [
-  { href: "/", label: "Home", icon: "M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z" },
-  { href: "/venues", label: "Venues", icon: "M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11zM12 10.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" },
-  { href: "/events", label: "Events", icon: "M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" },
-  { href: "/chat", label: "Chat", icon: "M5 6h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H9l-4 3v-3H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z" },
-  { href: "/profile", label: "Profile", icon: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0" },
+  { href: "/", key: "nav.venues", icon: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" },
+  { href: "/quick", key: "nav.quick", icon: "M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" },
+  { href: "/how", key: "nav.how", center: true },
+  { href: "/private", key: "nav.private", icon: "M12 3l2.2 6.4H21l-5.4 3.9 2.1 6.4L12 16.8 6.3 19.7l2.1-6.4L3 9.4h6.8z" },
+  { href: "/profile", key: "nav.profile", icon: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0" },
 ];
 
 export function Shell({ children }) {
@@ -44,7 +51,6 @@ export function Shell({ children }) {
   const [inviteEmail, setInviteEmail] = useState("");
   const [showToday, setShowToday] = useState(false);
   const trialLive = !!(bb.trial?.at && !bb.trial.cancelled && Date.now() - bb.trial.at < 90 * 86400000);
-  const initial = (bb.session?.handle || "B").slice(0, 1).toUpperCase();
   const frame =
     bb.editing && bb.device === "mobile"
       ? "mx-auto min-h-dvh max-w-[390px] bg-inherit shadow-2xl ring-1 ring-white/10"
@@ -52,9 +58,7 @@ export function Shell({ children }) {
         ? "mx-auto min-h-dvh max-w-[768px] bg-inherit shadow-2xl ring-1 ring-white/10"
         : "min-h-dvh";
 
-  const phoneTab = path === "/" || path === "/venues" || path === "/events" || path === "/chat" || path === "/profile";
-  const showApp = phoneTab && !bb.editing;
-  const appTab = path === "/" ? "home" : path === "/venues" ? "venues" : path === "/events" ? "events" : path === "/chat" ? "chat" : "profile";
+  const mark = initials(bb.session);
   const selected =
     bb.content.venues.find((v) => v.id === bb.selectedId) ||
     bb.content.events.find((v) => v.id === bb.selectedId);
@@ -73,7 +77,7 @@ export function Shell({ children }) {
   }
 
   return (
-    <div className={showApp ? "min-h-dvh bg-[#f4f4f5] text-[#171717]" : light ? "min-h-dvh bg-paper text-char" : "min-h-dvh bg-ink text-fg"}>
+    <div className={light ? "min-h-dvh bg-paper text-char" : "min-h-dvh bg-ink text-fg"}>
       {bb.staff && bb.preview && (
         <div className="sticky top-0 z-[60] flex items-center justify-between gap-3 bg-ember px-4 py-2 text-xs font-semibold text-white">
           <span>Preview — this is what visitors see. Draft is not live.</span>
@@ -108,7 +112,7 @@ export function Shell({ children }) {
       )}
       <div className={bb.editing && bb.device !== "desktop" ? "bg-[#050505] py-6" : ""}>
         <div className={frame}>
-          <header className={`sticky z-40 border-b backdrop-blur-xl ${showApp ? "hidden" : ""} ${bb.editing ? "top-[46px]" : "top-0"} ${light ? "border-black/10 bg-paper/95" : "border-white/10 bg-ink/90"}`}>
+          <header className={`sticky z-40 border-b backdrop-blur-xl ${bb.editing ? "top-[46px]" : "top-0"} ${light ? "border-black/10 bg-paper/95" : "border-white/10 bg-ink/90"}`}>
             <div className="bb-frame flex h-14 items-center justify-between gap-4">
               <Link href="/" className="font-serif text-[1.05rem] tracking-wide">BUDDY BLIND</Link>
               <nav className="hidden items-center gap-6 md:flex">
@@ -123,55 +127,64 @@ export function Shell({ children }) {
               </nav>
               <div className="relative flex items-center gap-2">
                 <LangSwitch light={light} />
-                {!bb.session ? (
-                  <Link href="/login" className={`rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] ${light ? "bg-char text-paper" : "bg-fg text-ink"}`}>
-                    {t("nav.login")}
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    aria-label="Account"
-                    onClick={() => setMenu((v) => !v)}
-                    className="grid h-9 w-9 place-items-center rounded-full bg-ember text-sm font-semibold text-white"
-                  >
-                    {initial}
-                  </button>
-                )}
-                {menu && bb.session && (
+                <button
+                  type="button"
+                  aria-label="Account"
+                  onClick={() => setMenu((v) => !v)}
+                  className="grid h-9 w-9 place-items-center rounded-full bg-ember text-sm font-semibold text-white"
+                >
+                  {mark || (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                      <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0" strokeLinecap="round" />
+                    </svg>
+                  )}
+                </button>
+                {menu && (
                   <div className={`absolute right-0 top-12 z-50 w-56 overflow-hidden rounded-xl border shadow-2xl ${light ? "border-black/10 bg-white text-char" : "border-white/10 bg-card text-fg"}`}>
-                    <div className="border-b border-white/10 px-4 py-3">
-                      <div className="text-sm">{bb.session.handle}</div>
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ember">{bb.session.role}</div>
-                    </div>
-                    <Link href="/profile" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>{t("nav.profile")}</Link>
-                    <Link href="/subscribe" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>{t("nav.subscribe")}</Link>
-                    <Link href="/how#about" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>{t("nav.about")}</Link>
-                    <button
-                      type="button"
-                      className="block w-full px-4 py-2.5 text-left text-sm hover:bg-white/5"
-                      onClick={() => {
-                        setMenu(false);
-                        bb.logout();
-                      }}
-                    >
-                      {t("nav.logout")}
-                    </button>
+                    {bb.session && (
+                      <div className="border-b border-white/10 px-4 py-3">
+                        <div className="text-sm">{bb.session.handle || bb.session.username}</div>
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ember">{mark}</div>
+                      </div>
+                    )}
+                    <Link href="/subscribe" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>Upgrade plan</Link>
+                    {bb.session ? (
+                      <button
+                        type="button"
+                        className="block w-full px-4 py-2.5 text-left text-sm hover:bg-white/5"
+                        onClick={() => {
+                          setMenu(false);
+                          bb.logout();
+                        }}
+                      >
+                        {t("nav.logout")}
+                      </button>
+                    ) : (
+                      <Link href="/login" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>{t("nav.login")}</Link>
+                    )}
                   </div>
                 )}
               </div>
             </div>
           </header>
 
-          {showApp ? <PhoneScreen tab={appTab} /> : <div className={bb.editing ? "md:pl-16" : ""}>{children}</div>}
+          <div className={bb.editing ? "md:pl-16" : ""}>{children}</div>
 
-          <nav className={`fixed bottom-0 z-40 bg-black text-white ${showApp ? "inset-x-0" : "inset-x-0 md:hidden"}`}>
+          <nav className={`fixed inset-x-0 bottom-0 z-40 border-t md:hidden ${light ? "border-black/10 bg-paper/95" : "border-white/10 bg-ink/95"}`}>
             <div className="grid grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)]">
               {BOTTOM.map((item) => {
                 const active = item.href === "/" ? path === "/" : path.startsWith(item.href);
+                if (item.center) {
+                  return (
+                    <Link key={item.href} href={item.href} className="flex items-center justify-center py-2">
+                      <span className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg ${active ? "bg-ember text-white" : light ? "bg-char text-paper" : "bg-fg text-ink"}`}>?</span>
+                    </Link>
+                  );
+                }
                 return (
-                  <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-0.5 py-2.5 text-[0.62rem] ${active ? "text-white" : "text-white/45"}`}>
+                  <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-0.5 py-2.5 text-[0.62rem] font-medium tracking-[0.08em] ${active ? "" : "text-mute"}`}>
                     <Icon d={item.icon} />
-                    {item.label}
+                    {t(item.key)}
                   </Link>
                 );
               })}

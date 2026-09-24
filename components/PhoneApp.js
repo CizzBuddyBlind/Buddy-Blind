@@ -523,14 +523,54 @@ function ProfileTab() {
   );
 }
 
-export function PhoneScreen({ tab }) {
+export function JoinedEvents() {
+  const bb = useBB();
+  const [seat, setSeat] = useState(null);
+  const [sent, setSent] = useState("");
+  if (!bb.session) return null;
+  const today = iso(0);
+  const seats = mySeats(bb);
+  const now = seats.filter((item) => item.date === today);
+  const later = seats.filter((item) => item.date > today);
+  if (seat) {
+    return (
+      <div className="space-y-3 rounded-2xl border border-white/10 bg-card p-4 text-fg">
+        <button type="button" className="text-sm text-mute" onClick={() => { setSeat(null); setSent(""); }}>Back</button>
+        <h2 className="font-serif text-xl">{seat.name}</h2>
+        <p className="text-sm text-mute">{prettyDate(seat.date)} · {seat.time}</p>
+        {seat.place && <p className="text-sm text-mute">{seat.place}</p>}
+        <p className="text-sm">{seat.joined} joined</p>
+        {!!seat.people.length && <p className="text-xs text-mute">{seat.people.join(" · ")}</p>}
+        <NotifyBox
+          phase={phaseOf(seat.date, seat.time)}
+          onSend={async (choice) => {
+            const res = await bb.sendPing({ venueId: seat.venueId, tableId: seat.tableId, eventId: seat.eventId, choice });
+            setSent(res?.error || "");
+            return res;
+          }}
+        />
+        {sent && <p className="text-xs text-mute">{sent}</p>}
+      </div>
+    );
+  }
+  const block = (title, items) => (
+    <section>
+      <h2 className="mb-2 text-[0.7rem] uppercase tracking-[0.14em] text-mute">{title}</h2>
+      {!items.length && <p className="rounded-2xl border border-white/10 px-4 py-3 text-sm text-mute">None yet.</p>}
+      <div className="space-y-2">
+        {items.map((item) => (
+          <button key={`${item.venueId}-${item.tableId || item.eventId}`} type="button" onClick={() => setSeat(item)} className="block w-full rounded-2xl border border-white/10 bg-card px-4 py-3 text-left">
+            <span className="block text-sm">{item.name}</span>
+            <span className="block text-xs text-mute">{prettyDate(item.date)} · {item.time} · {item.joined} joined</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
   return (
-    <main className="min-h-dvh bg-[#f4f4f5] px-4 pb-28 pt-4 text-[#171717]">
-      {tab === "home" && <HomeTab />}
-      {tab === "venues" && <VenuesTab />}
-      {tab === "events" && <EventsTab />}
-      {tab === "chat" && <ChatTab />}
-      {tab === "profile" && <ProfileTab />}
-    </main>
+    <div className="space-y-4">
+      {block("Today", now)}
+      {block("Upcoming", later)}
+    </div>
   );
 }
