@@ -178,7 +178,7 @@ export default function SubscribePage() {
   }
 
   return (
-    <main className="bb-frame mx-auto pb-28 pt-16 md:pb-20 md:pt-20">
+    <main className="bb-frame mx-auto pb-28 pt-12 md:pb-20 md:pt-16">
       <div className="mx-auto w-full max-w-5xl">
         <h1 className="font-serif leading-[1.05]">
           <span className="block text-base text-white/85 sm:text-lg">Host the vibe you care about — or join one. Guests stay blind.</span>
