@@ -402,7 +402,8 @@ function ChatTab() {
     );
   }
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      <Search value={query} onChange={setQuery} placeholder="Search" />
       {!bb.session && <p className="text-sm text-neutral-500">Log in to see notifications.</p>}
       {bb.session && !notes.length && <p className="py-8 text-center text-sm text-neutral-500">No notifications yet.</p>}
       {notes.map((item) => (
