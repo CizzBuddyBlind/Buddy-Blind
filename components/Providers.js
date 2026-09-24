@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { SEED, SEED_ACCOUNTS } from "@/lib/defaults";
 import { loadSharedContent, saveSharedContent, supabaseReady } from "@/lib/supabase";
-import { bookingHold, iso, logEntry, normalizeContent, tableStart, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
+import { bookingHold, iso, logEntry, normalizeContent, privateEditOpen, tableStart, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
 import { notifyRestaurant } from "@/lib/notify";
 import { putMedia } from "@/lib/media";
 
@@ -1065,6 +1065,55 @@ export function BuddyProvider({ children }) {
     return { ok: true, id: item.id };
   }, [insertEvent, pushNote, session]);
 
+  const updatePrivate = useCallback(async (input) => {
+    if (!session) return { needLogin: true };
+    const src = publishedRef.current;
+    const current = (src?.events || []).find((event) => event.id === input.id && event.kind === "private");
+    if (!current) return { error: "That night is gone." };
+    const host = current.hostName || current.hostProfile?.handle;
+    if (host !== session.handle) return { error: "Only the host can edit this." };
+    if (!privateEditOpen(current.dateISO)) return { error: "Too close to the night. Nothing can change now." };
+    let gallery = (Array.isArray(input.gallery) ? input.gallery : current.gallery || []).filter(Boolean).slice(0, 6);
+    let videoUrl = input.videoUrl == null ? current.videoUrl || "" : input.videoUrl;
+    let imageUrl = gallery[0] || current.imageUrl || "";
+    try {
+      if (typeof videoUrl === "string" && videoUrl.startsWith("data:")) {
+        await putMedia(`${current.id}:video`, videoUrl);
+        videoUrl = `idb:${current.id}:video`;
+      }
+      gallery = await Promise.all(gallery.map(async (srcUrl, index) => {
+        if (typeof srcUrl === "string" && srcUrl.startsWith("data:") && srcUrl.length > 120000) {
+          const key = `${current.id}:e${index}`;
+          await putMedia(key, srcUrl);
+          return `idb:${key}`;
+        }
+        return srcUrl;
+      }));
+      imageUrl = gallery[0] || "";
+    } catch {
+      return { error: "That photo or video didn't save. Try a smaller one." };
+    }
+    const nextEvent = {
+      ...current,
+      description: String(input.description ?? current.description ?? "").trim(),
+      aboutHost: String(input.aboutHost ?? current.aboutHost ?? "").trim(),
+      gallery,
+      imageUrl,
+      videoUrl: videoUrl || "",
+    };
+    const next = { ...src, events: src.events.map((event) => (event.id === nextEvent.id ? nextEvent : event)) };
+    publishedRef.current = next;
+    setPublished(next);
+    setTimeout(() => {
+      try {
+        stripHeavy(next);
+        write(PUB, next);
+        if (supabaseReady) saveSharedContent(next).catch(() => setRemote("error"));
+      } catch { /* the edit stays on screen */ }
+    }, 0);
+    return { ok: true };
+  }, [session]);
+
   const joinPrivate = useCallback(async (id) => {
     if (!session) return { needLogin: true };
     const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
@@ -1307,6 +1356,7 @@ export function BuddyProvider({ children }) {
       openTable,
       joinTable,
       createPrivate,
+      updatePrivate,
       joinPrivate,
       sendPing,
       replyPing,
@@ -1318,7 +1368,7 @@ export function BuddyProvider({ children }) {
       versions, restoreVersion, act, insertEvent, removeBlock, duplicateBlock, addBlock, toggleLock,
       toggleHide, resetDraft, confirm, lang, setLang, trial, plan, planMeta, premium, setPlan, acceptTrial, cancelTrial,
       updateProfile, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
-      addReview, flow, openTable, joinTable, createPrivate, joinPrivate, sendPing, replyPing,
+      addReview, flow, openTable, joinTable, createPrivate, updatePrivate, joinPrivate, sendPing, replyPing,
     ],
   );
 

@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Editable, Photo } from "@/components/Bits";
+import { Editable, Photo, fileToCover } from "@/components/Bits";
 import { DoneShare, PayDialog, ShareSheet, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
+import { privateEditOpen, privateLockDate } from "@/lib/bible";
 import { getMedia } from "@/lib/media";
 
 export default function PrivateDetailPage() {
@@ -18,6 +19,9 @@ export default function PrivateDetailPage() {
   const [done, setDone] = useState(false);
   const [shot, setShot] = useState(0);
   const [media, setMedia] = useState({});
+  const [editingNight, setEditingNight] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const [saving, setSaving] = useState(false);
   useEffect(() => {
     if (!event) return undefined;
     const urls = [event.imageUrl, event.videoUrl, ...(event.gallery || [])].filter((src) => typeof src === "string" && src.startsWith("idb:"));
@@ -48,6 +52,68 @@ export default function PrivateDetailPage() {
   const initial = String(host.handle || "H").trim().slice(0, 1).toUpperCase();
   const buddyLabel = Number(host.buddies) >= 15 ? "15+" : host.buddies != null ? String(host.buddies) : "";
   const full = (event.spots || 0) <= 0;
+  const isHost = !!(bb.session && (bb.session.handle === event.hostName || bb.session.handle === host.handle));
+  const canEdit = privateEditOpen(event.dateISO);
+  const lockOn = privateLockDate(event.dateISO);
+  const lockLabel = lockOn
+    ? new Date(`${lockOn}T12:00:00`).toLocaleDateString("en-HK", { day: "numeric", month: "short" })
+    : "";
+
+  function openEdit() {
+    setDraft({
+      description: event.description || "",
+      aboutHost: event.aboutHost || "",
+      photos: photos.slice(0, 6),
+      videoUrl: event.videoUrl || "",
+    });
+    setEditingNight(true);
+  }
+
+  async function addEditPhoto(file) {
+    if (!file || !draft || draft.photos.length >= 6) return;
+    try {
+      const imageUrl = await fileToCover(file);
+      setDraft((current) => current ? { ...current, photos: [...current.photos, imageUrl].slice(0, 6) } : current);
+    } catch {
+      bb.notify("That photo didn't load. Try a JPG.");
+    }
+  }
+
+  function addEditVideo(file) {
+    if (!file || !draft) return;
+    if (file.size > 8_000_000) {
+      bb.notify("That video is too big. Keep it under 8 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setDraft((current) => current ? { ...current, videoUrl: String(reader.result || "") } : current);
+    reader.onerror = () => bb.notify("That video didn't load.");
+    reader.readAsDataURL(file);
+  }
+
+  async function saveEdit() {
+    if (!draft) return;
+    setSaving(true);
+    const res = await bb.updatePrivate({
+      id: event.id,
+      description: draft.description,
+      aboutHost: draft.aboutHost,
+      gallery: draft.photos,
+      videoUrl: draft.videoUrl,
+    });
+    setSaving(false);
+    if (res?.needLogin) {
+      rememberReturn();
+      window.location.href = "/login";
+      return;
+    }
+    if (!res?.ok) {
+      bb.notify(res?.error || "That didn't save.");
+      return;
+    }
+    setEditingNight(false);
+    bb.notify("Updated.");
+  }
 
   async function join() {
     setBusy(true);
@@ -141,7 +207,53 @@ export default function PrivateDetailPage() {
               {full ? "Full" : "Join"}
             </button>
             <button type="button" className="rounded-full border border-char/20 px-5 py-3 text-sm" onClick={() => setShare(true)}>Share</button>
+            {isHost && (
+              <button type="button" disabled={!canEdit} onClick={openEdit} className="rounded-full border border-char/20 px-5 py-3 text-sm disabled:opacity-40">
+                Edit
+              </button>
+            )}
           </div>
+          {isHost && (
+            <p className="mt-4 text-sm leading-relaxed text-mute">
+              {canEdit
+                ? `Notice: You can update About me, the description, photos (6 max) and one video before ${lockLabel}. Place, location, date and time stay.`
+                : `Notice: From ${lockLabel}, nothing can change.`}
+            </p>
+          )}
+          {editingNight && draft && (
+            <div className="mt-4 space-y-3 rounded-2xl border border-black/10 bg-white p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-mute">Locked</p>
+              <p className="text-sm">{event.location} · {event.dateISO} · {event.timeLabel}</p>
+              <textarea value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="The night" className="h-24 w-full rounded-xl border border-black/10 px-3 py-2 text-sm" />
+              <textarea value={draft.aboutHost} onChange={(e) => setDraft({ ...draft, aboutHost: e.target.value })} placeholder="About me" className="h-24 w-full rounded-xl border border-black/10 px-3 py-2 text-sm" />
+              <div className="flex gap-2 overflow-x-auto">
+                {draft.photos.map((src, index) => (
+                  <div key={`${index}-${String(src).slice(0, 16)}`} className="relative h-16 w-20 shrink-0">
+                    <img src={src.startsWith("idb:") ? media[src] || "" : src} alt="" className="h-full w-full rounded-xl object-cover" />
+                    <button type="button" aria-label="Remove photo" onClick={() => setDraft({ ...draft, photos: draft.photos.filter((_, i) => i !== index) })} className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/70 text-[10px] text-white">×</button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <label className={`rounded-full border border-black/15 px-4 py-2 text-sm ${draft.photos.length >= 6 ? "opacity-40" : ""}`}>
+                  Add photo
+                  <input type="file" accept="image/*" className="sr-only" disabled={draft.photos.length >= 6} onChange={(e) => { addEditPhoto(e.target.files?.[0]); e.target.value = ""; }} />
+                </label>
+                <label className="rounded-full border border-black/15 px-4 py-2 text-sm">
+                  {draft.videoUrl ? "Replace video" : "Add video"}
+                  <input type="file" accept="video/*" className="sr-only" onChange={(e) => { addEditVideo(e.target.files?.[0]); e.target.value = ""; }} />
+                </label>
+                {draft.videoUrl && (
+                  <button type="button" className="rounded-full border border-black/15 px-4 py-2 text-sm" onClick={() => setDraft({ ...draft, videoUrl: "" })}>Remove video</button>
+                )}
+              </div>
+              <p className="text-xs text-mute">{draft.photos.length}/6 photos · 1 video</p>
+              <div className="flex gap-2">
+                <button type="button" className="flex-1 rounded-full border border-black/15 py-2.5 text-sm" onClick={() => setEditingNight(false)}>Cancel</button>
+                <button type="button" disabled={saving} className="flex-1 rounded-full bg-char py-2.5 text-sm font-semibold text-paper disabled:opacity-40" onClick={saveEdit}>{saving ? "Saving" : "Save"}</button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <PayDialog
