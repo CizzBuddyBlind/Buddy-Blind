@@ -111,7 +111,7 @@ export function Shell({ children }) {
         </div>
       )}
       {bb.editing && (
-        <div className="sticky top-0 z-[60] border-b border-white/10 bg-[#0c0c0c] text-fg">
+        <div className="sticky top-0 z-[60] hidden border-b border-white/10 bg-[#0c0c0c] text-fg md:block">
           <div className="flex items-center gap-2 overflow-x-auto px-3 py-2">
             <span className="shrink-0 font-serif text-sm">Edit</span>
             <span className="shrink-0 text-[10px] uppercase tracking-widest text-mute">{bb.session.role}</span>
@@ -247,7 +247,7 @@ export function Shell({ children }) {
       </div>
 
       {bb.editing && (
-        <aside className="fixed bottom-24 left-3 z-50 flex flex-col gap-2 md:bottom-auto md:top-28">
+        <aside className="fixed bottom-24 left-3 z-50 hidden flex-col gap-2 md:bottom-auto md:top-28 md:flex">
           {[
             ["add", "+"],
             ["pages", "Pg"],
@@ -269,7 +269,7 @@ export function Shell({ children }) {
       )}
 
       {bb.editing && bb.panel && (
-        <div className="fixed bottom-24 left-16 z-50 max-h-[70vh] w-[min(100vw-5rem,320px)] overflow-auto rounded-2xl border border-white/10 bg-[#101010] p-4 text-sm text-fg shadow-2xl md:top-28 md:bottom-auto">
+        <div className="fixed bottom-24 left-16 z-50 hidden max-h-[70vh] w-[min(100vw-5rem,320px)] overflow-auto rounded-2xl border border-white/10 bg-[#101010] p-4 text-sm text-fg shadow-2xl md:top-28 md:bottom-auto md:block">
           {bb.panel === "add" && (
             <div className="space-y-2">
               <p className="bb-kicker text-mute">Add</p>

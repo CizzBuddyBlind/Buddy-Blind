@@ -225,8 +225,16 @@ export function BuddyProvider({ children }) {
     syncHistFlags();
   }, []);
 
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setNarrow(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
   const staff = !!(session && (session.role === "admin" || session.role === "founder"));
-  const editing = !!(staff && !preview && ready);
+  const editing = !!(staff && !preview && ready && !narrow);
   const content = editing ? draft || published : published;
 
   const saveDraft = useCallback(() => {
