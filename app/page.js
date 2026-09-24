@@ -2,217 +2,196 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
-import { Copy, Editable, Photo } from "@/components/Bits";
-import { HostBadge } from "@/components/Flows";
+import { DoneShare, PayDialog, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
-import { translate } from "@/lib/i18n";
-import { CUISINES, iso, prettyDate, queryHits, soonestTable, tablePrefs } from "@/lib/bible";
+import { bookingHold, iso, tableStart } from "@/lib/bible";
 
-const FILTERS = [
-  { id: "all", key: "filter.all" },
-  { id: "tst", key: "filter.tst" },
-  { id: "cwb", key: "filter.cwb" },
-  { id: "central", key: "filter.central" },
-  { id: "tonight", key: "filter.tonight" },
-];
-
-function Home() {
-  const bb = useBB();
-  const { content, editing, update, setSelectedId, selectedId, setFlow, lang } = bb;
-  const t = (key) => translate(lang, key);
-  const params = useSearchParams();
-  const router = useRouter();
-  const [filter, setFilter] = useState("all");
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(params.get("when") === "today");
-  const [extra, setExtra] = useState({
-    nearby: "",
-    cuisine: "",
-    when: params.get("when") || "",
-    purpose: "",
-  });
-  const venues = content.venues.filter((v) => editing || !v.hidden);
-  const shown = useMemo(() => {
-    const today = iso(0);
-    return venues.filter((venue) => {
-      const rows = soonestTable(venue);
-      const hasToday = rows.some((row) => row.table.dateISO === today) || /today|tonight/i.test(venue.timeLabel || "");
-      const hasTonight = venue.tonight || /today|tonight|now/i.test(venue.timeLabel || "") || rows.some((row) => row.table.dateISO === today);
-      if (filter === "tonight" && !hasTonight) return false;
-      if (!["all", "tonight"].includes(filter) && venue.area !== filter) return false;
-      if (extra.nearby && venue.area !== extra.nearby) return false;
-      if (extra.cuisine && venue.cuisine !== extra.cuisine) return false;
-      if (extra.when === "today" && !rows.some((row) => row.table.dateISO === today)) return false;
-      if (extra.when === "upcoming" && !rows.some((row) => row.table.dateISO > today)) return false;
-      if (extra.purpose === "dating" && !(venue.tables || []).some((table) => table.tableType === "blind-date" || table.orientation === "Dating")) return false;
-      if (extra.purpose === "gay" && !(venue.tables || []).some((table) => table.orientation === "Gay")) return false;
-      if (extra.purpose === "lesbian" && !(venue.tables || []).some((table) => table.orientation === "Lesbian")) return false;
-      const blob = [
-        venue.name,
-        venue.cuisine,
-        venue.typeLabel,
-        venue.locationLabel,
-        venue.about,
-        venue.area,
-        venue.goodFor,
-        venue.priceTier,
-        venue.timeLabel,
-        hasTonight ? "tonight 今晚 今夜" : "",
-        hasToday ? "today 今天 今日" : "",
-        ...(venue.tables || []).flatMap((table) => [table.time, table.tableType, table.orientation, table.gender, table.ageRange, table.address, tablePrefs(table)]),
-      ].join(" ");
-      if (!queryHits(blob, query)) return false;
-      return true;
+function upcoming(content) {
+  const today = iso(0);
+  const rows = [];
+  (content.venues || []).forEach((venue) => {
+    if (!venue || venue.hidden) return;
+    (venue.tables || []).forEach((table) => {
+      if (!table?.dateISO || table.dateISO < today) return;
+      const hold = bookingHold(table);
+      if (hold.status === "walk-in" || hold.closed) return;
+      rows.push({
+        kind: "table",
+        id: table.id,
+        venue,
+        table,
+        hold,
+        joined: hold.joined,
+        when: tableStart(table).getTime(),
+        name: venue.name,
+        image: venue.imageUrl,
+        area: (venue.area || venue.locationLabel || "").toString(),
+        meta: [venue.locationLabel, venue.cuisine || venue.typeLabel].filter(Boolean).join(" · "),
+        about: venue.about || "",
+        time: table.time || venue.timeLabel || "",
+        spots: hold.places,
+        href: `/venues/${venue.id}`,
+      });
     });
-  }, [venues, filter, extra, query]);
-  const copy = content.copy.venues;
-
-  return (
-    <main className="bb-frame pb-28 pt-10 md:pb-16">
-      <section className="mx-auto max-w-2xl py-8 text-center">
-        <div className="mb-7 flex justify-between gap-4 text-mute">
-          <Copy k="hero.left" legacy={copy.kickerLeft} className="bb-kicker" onEnglish={(d, next) => { d.copy.venues.kickerLeft = next; }} />
-          <Copy k="hero.right" legacy={copy.kickerRight} className="bb-kicker text-right" onEnglish={(d, next) => { d.copy.venues.kickerRight = next; }} />
-        </div>
-        <h1 className="font-serif leading-[1.02]">
-          <span className="block text-3xl sm:text-4xl md:text-5xl">
-            <Copy k="hero.title" legacy={copy.title} onEnglish={(d, next) => { d.copy.venues.title = next; }} />
-          </span>
-          <span className="mt-3 block text-5xl italic text-ember sm:text-6xl md:text-7xl">
-            <Copy k="hero.accent" legacy={copy.accent} onEnglish={(d, next) => { d.copy.venues.accent = next; }} />
-          </span>
-        </h1>
-        <p className="mx-auto mt-6 max-w-lg text-sm leading-relaxed text-mute">
-          No faces, just places.
-          <br />
-          Enough to WANT, enough uncertainty to be WORTH having.
-        </p>
-      </section>
-
-      <div className="mb-4">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search tonight, 中菜, Central, gay, wine…"
-          className="w-full rounded-full border border-white/15 bg-transparent px-5 py-3 text-sm outline-none placeholder:text-mute focus:border-ember"
-        />
-      </div>
-      <div className="flex gap-2 overflow-x-auto pb-4">
-        {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() => setFilter(f.id)}
-            className={`shrink-0 rounded-full border px-4 py-2 text-[0.75rem] font-medium tracking-[0.06em] ${filter === f.id ? "border-fg bg-fg text-ink" : "border-white/15 text-mute"}`}
-          >
-            {t(f.key)}
-          </button>
-        ))}
-        <button type="button" onClick={() => setOpen((v) => !v)} className={`shrink-0 rounded-full border px-4 py-2 text-[0.75rem] font-medium ${open ? "border-ember text-ember" : "border-white/15 text-mute"}`}>
-          {t("filter.more")}
-        </button>
-      </div>
-      {open && (
-        <div className="mb-5 grid gap-3 rounded-2xl border border-white/10 p-4 text-sm sm:grid-cols-2">
-          <label className="block text-mute">{t("filter.nearby")}
-            <select value={extra.nearby} onChange={(e) => setExtra({ ...extra, nearby: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2 text-fg">
-              <option value="">{t("filter.any")}</option>
-              <option value="central">{t("filter.central")}</option>
-              <option value="cwb">{t("filter.cwb")}</option>
-              <option value="tst">{t("filter.tst")}</option>
-            </select>
-          </label>
-          <label className="block text-mute">{t("filter.cuisine")}
-            <select value={extra.cuisine} onChange={(e) => setExtra({ ...extra, cuisine: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2 text-fg">
-              <option value="">{t("filter.any")}</option>
-              {CUISINES.map((c) => <option key={c}>{c}</option>)}
-            </select>
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {[["", "filter.any"], ["today", "filter.today"], ["upcoming", "filter.upcoming"]].map(([id, key]) => (
-              <button key={key} type="button" onClick={() => setExtra({ ...extra, when: id })} className={`rounded-full border px-3 py-1 ${extra.when === id ? "bg-fg text-ink" : "border-white/15"}`}>{t(key)}</button>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {[["", "filter.any"], ["gay", "filter.gay"], ["lesbian", "filter.lesbian"], ["dating", "filter.dating"]].map(([id, key]) => (
-              <button key={key} type="button" onClick={() => setExtra({ ...extra, purpose: id })} className={`rounded-full border px-3 py-1 ${extra.purpose === id ? "bg-fg text-ink" : "border-white/15"}`}>{t(key)}</button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="mb-8 grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {shown.map((venue) => {
-          const rows = soonestTable(venue);
-          const preview = rows[0];
-          const more = Math.max(0, rows.length - 1);
-          return (
-            <article
-              key={venue.id}
-              onClick={(e) => {
-                if (e.target.closest("button, input, label, textarea, select")) return;
-                if (editing) setSelectedId(venue.id);
-                router.push(`/venues/${venue.id}`);
-              }}
-              className={`bb-card flex h-full cursor-pointer flex-col transition ${venue.hidden ? "opacity-40" : ""} ${selectedId === venue.id ? "ring-2 ring-ember" : ""} ${venue.locked ? "ring-1 ring-white/20" : ""}`}
-            >
-              <Link href={`/venues/${venue.id}`} className="flex flex-1 flex-col" onClick={() => editing && setSelectedId(venue.id)}>
-                <div className="bb-img">
-                  <Photo
-                    src={venue.imageUrl}
-                    alt={venue.imageAlt}
-                    onChange={(imageUrl) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) { v.imageUrl = imageUrl; v.galleryVersion = 2; } })}
-                  />
-                  <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[0.7rem] font-semibold text-white">{venue.spots} {t("spots")}</span>
-                  <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-[0.7rem] font-semibold text-char">{venue.timeLabel}</span>
-                </div>
-                <div className="flex flex-1 flex-col px-4 pb-2 pt-4">
-                  <h3 className="font-serif text-[1.2rem] text-ember-soft">
-                    <Editable locked={venue.locked} value={venue.name} onChange={(name) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.name = name; })} />
-                  </h3>
-                  <p className="mt-1 text-[0.72rem] tracking-wide text-mute">
-                    <Editable locked={venue.locked} value={venue.cuisine || venue.typeLabel} onChange={(cuisine) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.cuisine = cuisine; })} />
-                  </p>
-                  <p className="text-[0.72rem] tracking-wide text-mute">
-                    <Editable locked={venue.locked} value={venue.locationLabel} onChange={(locationLabel) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.locationLabel = locationLabel; })} />
-                  </p>
-                  <p className="mt-1 text-[0.8rem] text-mute">{venue.priceTier} · {venue.hours}</p>
-                  {venue.petFriendly && <p className="mt-1 text-[0.72rem] uppercase tracking-[0.12em] text-ember">{t("venue.pet")}</p>}
-                  {preview ? (
-                    <div className="mb-3 mt-auto flex min-h-[7.6rem] flex-col rounded-xl bg-white/5 px-3 py-2 pt-3 text-[0.75rem]">
-                      <div className="flex items-center gap-2">
-                        <HostBadge handle={preview.table.hostHandle} tier={preview.table.hostTier} />
-                        <span>{preview.table.hostHandle} {t("host.line")}</span>
-                      </div>
-                      <p className="mt-2 text-mute">{prettyDate(preview.table.dateISO, lang)} · {preview.table.time} · {preview.hold.held} people · {preview.hold.places} left</p>
-                      <p className="text-mute">{tablePrefs(preview.table)}</p>
-                      <p className={`mt-auto pt-1 ${more > 0 ? "text-ember" : "invisible"}`}>+ {t("moreEvents")}</p>
-                    </div>
-                  ) : (
-                    <div className="mb-3 mt-auto min-h-[7.6rem]" />
-                  )}
-                </div>
-              </Link>
-              <div className="mt-auto flex gap-2.5 px-4 pb-[18px] pt-2">
-                <button type="button" className="flex-1 rounded-full border border-white/15 py-2.5 text-[0.8rem] font-semibold" onClick={(e) => { e.stopPropagation(); setFlow({ type: "invite", venueId: venue.id }); }}>{t("btn.invite")}</button>
-                <button type="button" className="flex-1 rounded-full bg-fg py-2.5 text-[0.8rem] font-semibold text-ink" onClick={(e) => { e.stopPropagation(); setFlow({ type: "join", venueId: venue.id }); }}>{t("btn.join")}</button>
-              </div>
-            </article>
-          );
-        })}
-      </div>
-      {shown.length === 0 && <p className="pb-10 text-center text-sm text-mute">{t("empty.filter")}</p>}
-      <Copy as="p" k="hero.footer" legacy={copy.footer} className="pb-8 text-center text-[0.7rem] tracking-[0.08em] text-mute" onEnglish={(d, next) => { d.copy.venues.footer = next; }} />
-    </main>
-  );
+  });
+  (content.events || []).forEach((event) => {
+    if (!event || event.hidden || event.kind === "quick") return;
+    if (event.dateISO && event.dateISO < today) return;
+    const spots = Number(event.spots);
+    if (Number.isFinite(spots) && spots <= 0) return;
+    const joined = Math.max(1, Number(event.joined) || (event.participants || []).length || 1);
+    rows.push({
+      kind: "private",
+      id: event.id,
+      event,
+      joined,
+      when: event.dateISO ? new Date(`${event.dateISO}T12:00:00+08:00`).getTime() : Number.MAX_SAFE_INTEGER,
+      name: event.name,
+      image: event.imageUrl,
+      area: event.location || "",
+      meta: [event.location, event.typeLabel].filter(Boolean).join(" · "),
+      about: event.description || event.forWhom || "",
+      time: event.timeLabel || "",
+      spots: Number.isFinite(spots) ? spots : null,
+      href: `/private/${event.id}`,
+    });
+  });
+  rows.sort((a, b) => b.joined - a.joined || a.when - b.when);
+  return rows;
 }
 
 export default function HomePage() {
+  const bb = useBB();
+  const rows = useMemo(() => upcoming(bb.content), [bb.content]);
+  const featured = rows[0];
+  const today = iso(0);
+  const events = rows.length;
+  const scenes = rows.filter((row) => (row.kind === "table" ? row.table.dateISO : row.event.dateISO) === today).length;
+  const stars = (bb.content.peerReviews || []).map((review) => Number(review.stars)).filter((n) => n > 0);
+  const rating = stars.length ? (stars.reduce((sum, n) => sum + n, 0) / stars.length).toFixed(1) : "—";
+  const hosts = new Set(rows.map((row) => (row.kind === "table" ? row.table.hostHandle : row.event.hostName)).filter(Boolean)).size;
+  const [pay, setPay] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(null);
+
+  async function confirmPay() {
+    if (!pay) return;
+    setBusy(true);
+    const res = await bb.joinPrivate(pay.id);
+    setBusy(false);
+    if (res.needLogin) {
+      rememberReturn();
+      window.location.href = "/login";
+      return;
+    }
+    if (res.error) bb.notify(res.error === "FULL" ? "FULL. No more places." : res.error);
+    else {
+      setDone(pay);
+      setPay(null);
+    }
+  }
+
+  function joinFeatured() {
+    if (!featured) return;
+    if (featured.kind === "private") {
+      setPay(featured.event);
+      return;
+    }
+    bb.setFlow({ type: "join", venueId: featured.venue.id, tableId: featured.table.id });
+  }
+
   return (
-    <Suspense fallback={<main className="bb-frame py-20 text-mute">Loading venues…</main>}>
-      <Home />
-    </Suspense>
+    <main className="bb-frame pb-28 pt-8 md:pb-20 md:pt-14">
+      <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <section>
+          <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/50">
+            Hong Kong · Tonight · {rows.length} blind boxes / {hosts} hosts / {scenes} scenes
+          </p>
+          <h1 className="mt-8 font-serif text-[2.7rem] leading-[0.95] text-white sm:text-6xl lg:text-7xl">
+            You don't know
+            <br />
+            who you'll meet.
+            <span className="mt-3 block italic text-ember">That's the point.</span>
+          </h1>
+          <p className="mt-6 max-w-md text-sm leading-relaxed text-white/70">
+            Restaurants provide the scene. Private events create the reason.
+            <br />
+            You bring curiosity.
+          </p>
+          <Link href="/register" className="mt-8 inline-flex items-center rounded-full bg-white px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-ink">
+            Join Buddy →
+          </Link>
+          <div className="mt-16 grid grid-cols-3 gap-4 border-t border-white/15 pt-8">
+            <div>
+              <p className="font-serif text-4xl text-white">{events}</p>
+              <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">Total events</p>
+            </div>
+            <div>
+              <p className="font-serif text-4xl text-white">{scenes}</p>
+              <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">Scenes tonight</p>
+            </div>
+            <div>
+              <p className="font-serif text-4xl text-white">{rating}</p>
+              <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">Avg after-talk rating</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <p className="mb-3 flex items-center gap-2 text-[0.68rem] uppercase tracking-[0.16em] text-white/55">
+            <span className="text-ember">●</span>
+            Featured tonight · The blind box we bring
+          </p>
+          {featured ? (
+            <article className="overflow-hidden rounded-[28px] border border-white/10 bg-[#121212]">
+              <Link href={featured.href} className="relative block">
+                <img src={featured.image} alt="" className="aspect-[16/10] w-full object-cover" />
+                <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-black/70 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-white">
+                    {[featured.area, featured.time].filter(Boolean).join(" · ")}
+                  </span>
+                  {featured.spots != null && (
+                    <span className="rounded-full bg-ember px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[#1a1408]">
+                      {featured.spots} spots left
+                    </span>
+                  )}
+                </div>
+              </Link>
+              <div className="px-5 pb-5 pt-4">
+                <h2 className="font-serif text-3xl text-white">{featured.name}</h2>
+                {featured.meta && <p className="mt-2 text-[0.68rem] uppercase tracking-[0.12em] text-white/45">{featured.meta}</p>}
+                {featured.about && <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-white/70">{featured.about}</p>}
+                <button type="button" onClick={joinFeatured} className="mt-5 w-full rounded-full bg-white py-3 text-xs font-semibold uppercase tracking-[0.16em] text-ink">
+                  Join
+                </button>
+              </div>
+            </article>
+          ) : (
+            <div className="rounded-[28px] border border-white/10 px-6 py-16 text-center">
+              <p className="text-sm text-white/60">No table open yet.</p>
+              <Link href="/venues" className="mt-4 inline-block text-sm text-ember">See the venues</Link>
+            </div>
+          )}
+        </section>
+      </div>
+
+      <PayDialog
+        open={!!pay}
+        title={`Join · ${pay?.name || ""}`}
+        lines={[pay?.name, pay?.location, `${pay?.dateISO || ""} · ${pay?.timeLabel || ""}`, pay?.forWhom || pay?.typeLabel]}
+        busy={busy}
+        onClose={() => setPay(null)}
+        onConfirm={confirmPay}
+      />
+      {done && (
+        <DoneShare
+          title={done.name}
+          lines={[done.location, `${done.dateISO || ""} · ${done.timeLabel || ""}`]}
+          path={`/share/private/${done.id}`}
+          invite={{ name: done.name, eventId: done.id }}
+          onClose={() => setDone(null)}
+        />
+      )}
+    </main>
   );
 }

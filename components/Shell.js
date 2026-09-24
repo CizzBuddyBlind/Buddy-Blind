@@ -10,7 +10,7 @@ import { RestaurantAdmin } from "./RestaurantAdmin";
 import { iso } from "@/lib/bible";
 
 const TOP = [
-  { href: "/", label: "Venues" },
+  { href: "/venues", label: "Venues" },
   { href: "/quick", label: "Quick" },
   { href: "/private", label: "Private" },
   { href: "/how", label: "How" },
@@ -58,7 +58,7 @@ function ProfileIcon() {
 }
 
 const BOTTOM = [
-  { href: "/", key: "nav.venues", Icon: VenuesIcon },
+  { href: "/venues", key: "nav.venues", Icon: VenuesIcon },
   { href: "/quick", key: "nav.quick", Icon: QuickIcon },
   { href: "/how", key: "nav.how", center: true },
   { href: "/private", key: "nav.private", Icon: PrivateIcon },
@@ -139,10 +139,13 @@ export function Shell({ children }) {
         <div className={frame}>
           <header className={`sticky z-40 border-b border-white/10 bg-ink text-fg ${bb.editing ? "top-[46px]" : "top-0"}`}>
             <div className="bb-frame relative flex h-16 items-center justify-between">
-              <Link href="/" className="font-serif text-[1.05rem] tracking-[0.14em] md:invisible">BUDDY BLIND</Link>
+              <Link href="/" className="flex items-center gap-2.5">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-white font-serif text-[0.72rem] font-semibold tracking-wide text-ink">BB</span>
+                <span className="font-serif text-[0.95rem] tracking-[0.16em]">BUDDY BLIND</span>
+              </Link>
               <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex">
                 {TOP.map((item) => {
-                  const active = item.href === "/" ? path === "/" : path.startsWith(item.href);
+                  const active = path === item.href || (item.href !== "/" && path.startsWith(`${item.href}/`));
                   return (
                     <Link key={item.href} href={item.href} className={`text-[0.72rem] font-medium uppercase tracking-[0.16em] ${active ? "text-white" : "text-white/45"}`}>
                       {item.label}

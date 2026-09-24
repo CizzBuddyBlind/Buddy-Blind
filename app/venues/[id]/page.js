@@ -24,7 +24,7 @@ export default function VenuePage() {
     return (
       <main className="bb-frame py-20 text-center">
         <p className="text-mute">That place isn't here.</p>
-        <Link href="/" className="mt-4 inline-block text-ember">{t("btn.back")}</Link>
+        <Link href="/venues" className="mt-4 inline-block text-ember">{t("btn.back")}</Link>
       </main>
     );
   }
@@ -47,7 +47,7 @@ export default function VenuePage() {
 
   return (
     <main className="bb-frame pb-28 pt-6 md:pb-16">
-      <Link href="/" className="text-xs uppercase tracking-[0.16em] text-mute hover:text-ember">{t("btn.back")}</Link>
+      <Link href="/venues" className="text-xs uppercase tracking-[0.16em] text-mute hover:text-ember">{t("btn.back")}</Link>
       <div className="mt-4 grid items-start gap-8 md:grid-cols-2">
         <div>
           <div className="relative aspect-[4/5] overflow-hidden rounded-[1.4rem] bg-card">
