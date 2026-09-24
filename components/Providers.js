@@ -943,7 +943,7 @@ export function BuddyProvider({ children }) {
       ageRange: input.ageRange || "",
       videoUrl: input.videoUrl || "",
       showHostPhoto: !!input.showHostPhoto,
-      imageUrl: input.imageUrl || "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80",
+      imageUrl: input.imageUrl || "",
       gallery: input.gallery || [],
       participants: [{ handle: session.handle, role: "host" }],
       pings: [],

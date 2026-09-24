@@ -472,9 +472,11 @@ export function PrivateWizard({ venueId = "", onClose }) {
     gender: "",
     ageRange: "",
     videoUrl: "",
-    imageUrl: preset?.imageUrl || "",
+    imageUrl: "",
   });
   const [uploads, setUploads] = useState([]);
+  const [useVenuePhotos, setUseVenuePhotos] = useState(false);
+  const [pickedVenue, setPickedVenue] = useState([]);
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [publishedId, setPublishedId] = useState("");
@@ -483,7 +485,9 @@ export function PrivateWizard({ venueId = "", onClose }) {
   const branch = branches.find((b) => b.id === branchId) || (branches.length === 1 ? branches[0] : null);
   const fee = adminFee();
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
-  const photos = [...(venue?.gallery?.length ? venue.gallery : venue?.imageUrl ? [venue.imageUrl] : []), ...uploads];
+  const venuePhotos = venue?.gallery?.length ? venue.gallery : venue?.imageUrl ? [venue.imageUrl] : [];
+  const chosenVenue = useVenuePhotos ? venuePhotos.filter((src) => pickedVenue.includes(src)) : [];
+  const photos = [...chosenVenue, ...uploads];
   const location = venue
     ? [venue.name, branch?.label, branch?.address || (!branch ? venue.locationLabel : "")].filter(Boolean).join(" · ")
     : "";
@@ -491,7 +495,7 @@ export function PrivateWizard({ venueId = "", onClose }) {
   function chooseVenue(next) {
     setPickedId(next.id);
     setBranchId((next.branches || []).length === 1 ? next.branches[0].id : "");
-    setForm((f) => ({ ...f, imageUrl: f.imageUrl || next.imageUrl || "" }));
+    setForm((f) => ({ ...f, imageUrl: "" }));
   }
 
   async function close() {
@@ -509,22 +513,34 @@ export function PrivateWizard({ venueId = "", onClose }) {
   async function addPhoto(file) {
     if (!file) return;
     try {
-      const imageUrl = await fileToCover(file);
-      setUploads((list) => [...list, imageUrl]);
+      let imageUrl = "";
+      try {
+        imageUrl = await fileToCover(file);
+      } catch {
+        imageUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ""));
+          reader.onerror = () => reject(new Error("no"));
+          reader.readAsDataURL(file);
+        });
+      }
+      if (!imageUrl) throw new Error("no");
+      setUploads((list) => [...list, imageUrl].slice(0, 8));
       set("imageUrl", imageUrl);
     } catch {
-      bb.notify("That photo didn't load.");
+      bb.notify("That photo didn't load. Try a JPG.");
     }
   }
 
   function addVideo(file) {
     if (!file) return;
-    if (file.size > 2_000_000) {
-      bb.notify("Keep the video under 2 MB.");
+    if (file.size > 8_000_000) {
+      bb.notify("That video is too big. Keep it under 8 MB.");
       return;
     }
     const reader = new FileReader();
     reader.onload = () => set("videoUrl", String(reader.result || ""));
+    reader.onerror = () => bb.notify("That video didn't load.");
     reader.readAsDataURL(file);
   }
 
@@ -540,7 +556,7 @@ export function PrivateWizard({ venueId = "", onClose }) {
       location,
       forWhom: [form.orientation, form.gender, form.ageRange].filter(Boolean).join(" · ") || "Anyone",
       capacity: Math.min(20, Math.max(2, Number(form.capacity) || 2)),
-      imageUrl: form.imageUrl || venue.imageUrl,
+      imageUrl: photos.includes(form.imageUrl) ? form.imageUrl : (photos[0] || ""),
       gallery: photos,
     });
     setBusy(false);
@@ -647,22 +663,55 @@ export function PrivateWizard({ venueId = "", onClose }) {
           <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Name the night" className="w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
           <textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="What's the night about?" className="h-24 w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
           <p className="text-xs uppercase tracking-[0.16em] text-mute">Photos</p>
-          <div className="flex gap-2 overflow-x-auto">
-            {photos.map((src) => (
-              <button key={src} type="button" onClick={() => set("imageUrl", src)} className={`h-16 w-20 shrink-0 overflow-hidden rounded-xl border ${form.imageUrl === src ? "border-ember" : "border-white/15"}`}>
-                <img src={src} alt="" className="h-full w-full object-cover" />
-              </button>
-            ))}
-          </div>
-          <label className="block text-xs text-mute">
-            Upload a photo
-            <input type="file" accept="image/*" className="mt-1 block text-xs" onChange={(e) => { addPhoto(e.target.files?.[0]); e.target.value = ""; }} />
+          <button
+            type="button"
+            onClick={() => {
+              setUseVenuePhotos((on) => !on);
+              setPickedVenue([]);
+              set("imageUrl", uploads[0] || "");
+            }}
+            className={`rounded-full border px-4 py-2 text-sm ${useVenuePhotos ? "border-ember text-ember" : "border-white/15"}`}
+          >
+            {useVenuePhotos ? "Using venue photos" : "Use venue photos"}
+          </button>
+          {useVenuePhotos && (
+            <div className="flex gap-2 overflow-x-auto">
+              {venuePhotos.map((src) => (
+                <button
+                  key={src}
+                  type="button"
+                  onClick={() => {
+                    setPickedVenue((list) => list.includes(src) ? list.filter((item) => item !== src) : [...list, src]);
+                    set("imageUrl", src);
+                  }}
+                  className={`h-16 w-20 shrink-0 overflow-hidden rounded-xl border ${pickedVenue.includes(src) ? "border-ember" : "border-white/15 opacity-60"}`}
+                >
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+          {uploads.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto">
+              {uploads.map((src, index) => (
+                <button key={`${index}-${src.slice(0, 24)}`} type="button" onClick={() => set("imageUrl", src)} className={`h-16 w-20 shrink-0 overflow-hidden rounded-xl border ${form.imageUrl === src ? "border-ember" : "border-white/15"}`}>
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+          <label className="block">
+            <span className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm">Upload your photos</span>
+            <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => {
+              [...(e.target.files || [])].forEach((file) => addPhoto(file));
+              e.target.value = "";
+            }} />
           </label>
-          <label className="block text-xs text-mute">
-            Or a short video
-            <input type="file" accept="video/*" className="mt-1 block text-xs" onChange={(e) => { addVideo(e.target.files?.[0]); e.target.value = ""; }} />
+          <label className="block">
+            <span className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm">Upload a video</span>
+            <input type="file" accept="video/*" className="sr-only" onChange={(e) => { addVideo(e.target.files?.[0]); e.target.value = ""; }} />
           </label>
-          {form.videoUrl && <p className="text-xs text-ember">Video added.</p>}
+          {form.videoUrl && <video src={form.videoUrl} className="h-28 w-full rounded-xl object-cover" controls />}
           <div className="flex flex-wrap gap-2">
             {nextDays(7).map((day) => (
               <Choice key={day} on={form.dateISO === day} onClick={() => set("dateISO", day)}>{prettyDate(day, bb.lang)}</Choice>
