@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { SEED, SEED_ACCOUNTS } from "@/lib/defaults";
 import { loadSharedContent, saveSharedContent, supabaseReady } from "@/lib/supabase";
-import { bookingHold, iso, logEntry, normalizeContent, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
+import { bookingHold, iso, logEntry, normalizeContent, tableStart, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
 import { channelNote, notifyRestaurant } from "@/lib/notify";
 
 const Ctx = createContext(null);
@@ -964,9 +964,11 @@ export function BuddyProvider({ children }) {
     if (!others.length) return { error: "No one else has joined yet." };
     const day = target.dateISO || "";
     if (day && day < iso(0)) return { error: "That event is already over." };
-    const live = day === iso(0);
-    if (live && choice !== "here" && choice !== "miss") return { error: "That line is for before the day." };
-    if (!live && (choice === "here" || choice === "miss")) return { error: "That line is only for the event day." };
+    if (day !== iso(0)) return { error: "Notify opens on the day." };
+    const start = tableStart({ dateISO: day, time: target.time || target.timeLabel }).getTime();
+    const live = Date.now() >= start;
+    if (live && choice !== "here" && choice !== "miss") return { error: "That line was for before it started." };
+    if (!live && choice !== "coming" && choice !== "cant") return { error: "That line opens once it starts." };
     target.pings = [...(target.pings || []), {
       id: `ping-${Date.now().toString(36)}`,
       from: session.handle,

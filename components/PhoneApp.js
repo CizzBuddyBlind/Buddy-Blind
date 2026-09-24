@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useBB } from "./Providers";
-import { iso, prettyDate, queryHits, soonestTable } from "@/lib/bible";
+import { iso, prettyDate, queryHits, soonestTable, tableStart } from "@/lib/bible";
 
 function hourOf(time) {
   const match = String(time || "").toUpperCase().match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/);
@@ -303,12 +303,14 @@ function mySeats(bb) {
   return seats.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
 }
 
-function happening(date) {
-  return date === iso(0);
+function phaseOf(date, time) {
+  if (date !== iso(0)) return "wait";
+  const start = tableStart({ dateISO: date, time }).getTime();
+  return Date.now() >= start ? "live" : "soon";
 }
 
-function NotifyBox({ live, onSend }) {
-  const options = live
+function NotifyBox({ phase, onSend }) {
+  const options = phase === "live"
     ? [
         ["here", "I'm here"],
         ["miss", "Can't make it tonight"],
@@ -321,9 +323,11 @@ function NotifyBox({ live, onSend }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const picked = options.some(([id]) => id === choice) ? choice : options[0][0];
+  if (phase === "wait") {
+    return <p className="text-sm text-neutral-500">Notify opens on the day.</p>;
+  }
   return (
     <div className="space-y-2">
-      <p className="text-xs text-neutral-500">{live ? "Event day." : "Before the day."}</p>
       {options.map(([id, label]) => (
         <button key={id} type="button" onClick={() => setChoice(id)} className={`block w-full rounded-xl px-3 py-2 text-left text-sm ${picked === id ? "bg-black text-white" : "bg-neutral-100"}`}>
           {label}
@@ -441,7 +445,7 @@ function ProfileTab() {
         <p className="text-sm">{seat.joined} joined</p>
         {!!seat.people.length && <p className="text-xs text-neutral-500">{seat.people.join(" · ")}</p>}
         <NotifyBox
-          live={happening(seat.date)}
+          phase={phaseOf(seat.date, seat.time)}
           onSend={async (choice) => {
             const res = await bb.sendPing({ venueId: seat.venueId, tableId: seat.tableId, eventId: seat.eventId, choice });
             setSent(res?.error || "");
