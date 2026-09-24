@@ -76,18 +76,19 @@ function Home() {
           <Copy k="hero.left" legacy={copy.kickerLeft} className="bb-kicker" onEnglish={(d, next) => { d.copy.venues.kickerLeft = next; }} />
           <Copy k="hero.right" legacy={copy.kickerRight} className="bb-kicker text-right" onEnglish={(d, next) => { d.copy.venues.kickerRight = next; }} />
         </div>
-        <h1 className="bb-hero-title">
-          <Copy k="hero.title" legacy={copy.title} onEnglish={(d, next) => { d.copy.venues.title = next; }} />
-          <br />
-          <Copy k="hero.accent" legacy={copy.accent} className="italic text-ember" onEnglish={(d, next) => { d.copy.venues.accent = next; }} />
+        <h1 className="font-serif leading-[1.02]">
+          <span className="block text-3xl sm:text-4xl md:text-5xl">
+            <Copy k="hero.title" legacy={copy.title} onEnglish={(d, next) => { d.copy.venues.title = next; }} />
+          </span>
+          <span className="mt-3 block text-5xl italic text-ember sm:text-6xl md:text-7xl">
+            <Copy k="hero.accent" legacy={copy.accent} onEnglish={(d, next) => { d.copy.venues.accent = next; }} />
+          </span>
         </h1>
-        <Copy
-          as="p"
-          k="hero.sub"
-          legacy={copy.sub}
-          className="mx-auto mt-4 max-w-md text-[0.9rem] leading-relaxed text-mute"
-          onEnglish={(d, next) => { d.copy.venues.sub = next; }}
-        />
+        <p className="mx-auto mt-6 max-w-lg text-sm leading-relaxed text-mute">
+          No faces, just places.
+          <br />
+          Enough to WANT, enough uncertainty to be WORTH having.
+        </p>
       </section>
 
       <div className="mb-4">
