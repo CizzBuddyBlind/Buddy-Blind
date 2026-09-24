@@ -149,7 +149,8 @@ export function Shell({ children }) {
                   );
                 })}
               </nav>
-              <div className="relative flex items-center gap-2">
+              <div className="relative flex items-center gap-3">
+                <Link href="/about" className="text-[0.72rem] font-medium uppercase tracking-[0.14em]">About us</Link>
                 <button
                   type="button"
                   aria-label="Notifications"
