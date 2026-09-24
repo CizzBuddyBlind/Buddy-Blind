@@ -244,7 +244,7 @@ export function BuddyProvider({ children }) {
     return () => mq.removeEventListener("change", apply);
   }, []);
   const staff = !!(session && (session.role === "admin" || session.role === "founder"));
-  const editing = !!(staff && !preview && ready && !narrow);
+  const editing = false;
   const content = editing ? draft || published : published;
 
   const saveDraft = useCallback(() => {

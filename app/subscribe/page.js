@@ -188,7 +188,7 @@ export default function SubscribePage() {
           Wine, work, a hike. Or whatever you care about.
         </p>
 
-        <div className="mt-8 grid items-stretch gap-4 lg:grid-cols-[1fr_1fr_1fr]">
+        <div className="mt-24 grid items-stretch gap-4 md:mt-36 lg:grid-cols-[1fr_1fr_1fr]">
           <div className="grid h-full rounded-[28px] bg-[#111] md:grid-cols-2 lg:col-span-2">
             {CARDS.filter((card) => card.id !== "premium").map((card) => (
               <PlanCard key={card.id} card={card} plan={plan} busy={busy} onPay={pay} />

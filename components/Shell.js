@@ -230,6 +230,7 @@ export function Shell({ children }) {
                       <Link href="/login" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>{t("nav.login")}</Link>
                     )}
                     <Link href="/subscribe" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>Upgrade plan</Link>
+                    {bb.staff && <Link href="/admin" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>Restaurants</Link>}
                     <Link href="/about" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>About us</Link>
                   </div>
                 )}
