@@ -481,7 +481,6 @@ export function PrivateWizard({ venueId = "", onClose }) {
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [publishedId, setPublishedId] = useState("");
-  const [linkPop, setLinkPop] = useState("");
   const venue = venues.find((v) => v.id === pickedId) || null;
   const branches = venue?.branches || [];
   const branch = branches.find((b) => b.id === branchId) || (branches.length === 1 ? branches[0] : null);
@@ -585,16 +584,12 @@ export function PrivateWizard({ venueId = "", onClose }) {
     const path = `/share/private/${publishedId}`;
     const lines = [form.name || venue?.name, location, `${form.dateISO} · ${form.time} · ${form.capacity} seats`, form.description].filter(Boolean);
     const text = shareText({ path, lines });
-    const url = `${window.location.origin}${path}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: form.name || "Buddy Blind", text, url });
-        return;
-      } catch (err) {
-        if (err && err.name === "AbortError") return;
-      }
+    try {
+      await navigator.clipboard.writeText(text);
+      bb.notify("Copied.");
+    } catch {
+      bb.notify("Couldn't copy. Try again.");
     }
-    setLinkPop(url);
   }
 
   const found = venues.filter((item) => queryHits(`${item.name} ${item.cuisine || ""} ${item.locationLabel || ""} ${item.area || ""}`, query)).slice(0, 8);
@@ -614,28 +609,6 @@ export function PrivateWizard({ venueId = "", onClose }) {
         <BuddyAsk
           invite={{ name: form.name || venue?.name, eventId: publishedId, path: `/share/private/${publishedId}` }}
         />
-        {linkPop && (
-          <div className="fixed inset-0 z-[90] grid place-items-center bg-black/60 p-6" onClick={() => setLinkPop("")}>
-            <div className="w-full max-w-sm rounded-3xl bg-[#161616] p-5 text-center" onClick={(e) => e.stopPropagation()}>
-              <p className="text-sm text-mute">Join me here via</p>
-              <p className="mt-3 break-all text-sm">{linkPop}</p>
-              <button
-                type="button"
-                className="mt-5 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink"
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(`Join me here via ${linkPop}`);
-                    bb.notify("Copied.");
-                  } catch {
-                    bb.notify("Select the link.");
-                  }
-                }}
-              >
-                Copy link
-              </button>
-            </div>
-          </div>
-        )}
       </Frame>
     );
   }
@@ -857,7 +830,9 @@ export function DoneShare({ title, lines, path, invite, onClose }) {
   return (
     <Frame title="You're in." step={1} total={1} onBack={onClose} onClose={onClose}>
       <p className="font-serif text-2xl">{title}</p>
-      <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-mute">{text}</p>
+      <ul className="mt-4 space-y-1 text-sm text-mute">
+        {(lines || []).filter(Boolean).map((line) => <li key={line}>{line}</li>)}
+      </ul>
       <div className="mt-6 flex gap-2">
         <button type="button" className="flex-1 rounded-full border border-white/15 py-3 text-sm" onClick={onClose}>Done</button>
         <button type="button" className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={share}>Share</button>
@@ -871,32 +846,19 @@ export function DoneShare({ title, lines, path, invite, onClose }) {
 export function ShareSheet({ open, onClose, joined, lines, path }) {
   const bb = useBB();
   const [copied, setCopied] = useState(false);
-  const [pop, setPop] = useState(false);
   if (!open) return null;
-  const text = shareText({ path, joined, lines });
+  const text = shareText({ path, lines });
   async function copy() {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
       bb.notify("Copied.");
     } catch {
-      bb.notify("Select the summary and copy it.");
+      bb.notify("Couldn't copy. Try again.");
     }
-  }
-  async function native() {
-    const url = `${window.location.origin}${path}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Buddy Blind", text, url });
-        return;
-      } catch (err) {
-        if (err && err.name === "AbortError") return;
-      }
-    }
-    setPop(true);
   }
   return (
-    <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[85] grid place-items-center bg-black/70 p-3 backdrop-blur-sm" onClick={onClose}>
       <div className="bb-sheet w-full max-w-md rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg" onClick={(e) => e.stopPropagation()}>
         <p className="bb-kicker text-ember">Share</p>
         <h2 className="mt-2 font-serif text-3xl">{joined ? "I joined." : "Come join me."}</h2>
@@ -905,15 +867,8 @@ export function ShareSheet({ open, onClose, joined, lines, path }) {
         </ul>
         <div className="mt-5 flex gap-2">
           <button type="button" className="flex-1 rounded-full border border-white/15 py-3 text-sm" onClick={onClose}>Close</button>
-          <button type="button" className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={native}>Share</button>
+          <button type="button" className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={copy}>{copied ? "Copied" : "Copy link"}</button>
         </div>
-        {pop && (
-          <div className="mt-4 rounded-2xl border border-white/10 p-4 text-center">
-            <p className="text-sm text-mute">Join me here via</p>
-            <p className="mt-2 break-all text-sm">{`${window.location.origin}${path}`}</p>
-            <button type="button" className="mt-4 text-sm text-ember" onClick={copy}>{copied ? "Copied" : "Copy link"}</button>
-          </div>
-        )}
       </div>
     </div>
   );
