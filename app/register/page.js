@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [sent, setSent] = useState("");
+  const [test, setTest] = useState(false);
   const [busy, setBusy] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
@@ -35,6 +36,13 @@ export default function RegisterPage() {
         setError(data.reason || t("reg.otp"));
         return;
       }
+      if (data.test) {
+        setTest(true);
+        setOtp(data.code || "248163");
+        setSent(data.phone || phone);
+        return;
+      }
+      setTest(false);
       setSent(data.phone || phone);
     } catch {
       setError(t("reg.otp"));
@@ -67,7 +75,7 @@ export default function RegisterPage() {
         setError(message);
         return;
       }
-      router.push("/subscribe?trial=1");
+      router.push("/profile");
       router.refresh();
     } catch {
       setError(t("reg.bad"));
@@ -92,7 +100,7 @@ export default function RegisterPage() {
           <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+852 9123 4567" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
           <input required value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
           <button type="button" disabled={busy} className="text-xs text-ember disabled:opacity-40" onClick={() => void sendCode()}>{t("reg.send")}</button>
-          {sent && <p className="text-xs text-mute">{t("reg.sent")} {sent}</p>}
+          {sent && <p className="text-xs text-mute">{test ? "Test code 248163. No text yet." : `${t("reg.sent")} ${sent}`}</p>}
           <input value={otp} onChange={(e) => setOtp(e.target.value)} inputMode="numeric" placeholder="Code" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
