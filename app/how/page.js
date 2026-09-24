@@ -3,38 +3,38 @@
 const STEPS = [
   {
     n: "01",
-    title: "See venue / private event",
-    body: "Photo is the filter. If you like the light, you’ll like the people.",
+    title: "See the venue",
+    body: "A restaurant, or a private night. The photo is the filter. Like the light, you’ll like the night.",
   },
   {
     n: "02",
-    title: "See neighborhood / vibe / time / places left",
-    body: "Soho tonight? Central tomorrow? How many seats left — real numbers.",
+    title: "See enough to want it",
+    body: "Neighborhood, vibe, time, seats left. Soho tonight or Central tomorrow. Real numbers. No faces.",
   },
   {
     n: "03",
     title: "Join",
-    body: "One tap. HK$5 admin for trust and security. No pre-pay anxiety.",
+    body: "One tap. HK$5 only when you confirm. That’s for trust, not the meal.",
   },
   {
     n: "04",
     title: "Meet",
-    body: "No names before. No photos before. Just show up. Restaurants provide the scene, interact and connect.",
+    body: "No names before. No photos before. Show up. The restaurant is the scene. You do the talking.",
   },
   {
     n: "05",
-    title: "Rate & Comment",
-    body: "Stars isn’t about looks. A comment is your reputation, and you voice your own.",
+    title: "Rate and comment",
+    body: "Stars aren’t about looks. A short line is your reputation. “On time.” “Easy to talk to.”",
   },
   {
     n: "06",
-    title: "Add as buddy — Hey! You are my vibe, let's be buddies!",
-    body: "One-click after. If both say yes, you’re buddies.",
+    title: "Add a buddy",
+    body: "Hey, you’re my vibe. One tap. If you both say yes, you’re buddies.",
   },
   {
     n: "07",
     title: "Create your own",
-    body: "Premium unlocks private up to 20. Wine, industry, social, Networking — host creates attraction.",
+    body: "Premium hosts a private night, up to 20. Wine, work, social, networking. You make the reason.",
   },
 ];
 
