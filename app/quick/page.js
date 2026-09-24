@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Copy, Editable, Photo, Sheet } from "@/components/Bits";
 import { PayDialog } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
-import { MoveBox } from "@/components/MoveBox";
 import { queryHits } from "@/lib/bible";
 
 export default function QuickPage() {
@@ -35,22 +34,18 @@ export default function QuickPage() {
     <main className="bb-frame pb-28 pt-8 md:pb-16">
       <div className="grid items-stretch gap-10 md:grid-cols-2">
         <section className="flex flex-col justify-center py-8">
-          <MoveBox id="quick-kicker">
-            <p className="text-xs uppercase tracking-[0.22em] text-mute">Quick meet</p>
-          </MoveBox>
+          <p className="text-xs uppercase tracking-[0.22em] text-mute">Quick meet</p>
           <h1 className="mt-4 font-serif text-5xl leading-[0.95] text-char md:text-6xl">
             <Copy k="quick.title" legacy={copy.title} onEnglish={(d, next) => { d.copy.quick.title = next; }} />
             <br />
             <Copy k="quick.accent" legacy={copy.accent} className="italic text-ember" onEnglish={(d, next) => { d.copy.quick.accent = next; }} />
           </h1>
-          <MoveBox id="quick-lines" className="mt-5">
-            <p className="max-w-sm text-sm leading-relaxed text-mute">A seat nearby. A time. No bio, no swipe. If you're free, sit down.</p>
-            <ul className="mt-6 space-y-2 text-sm">
-              <li>Nearby, today</li>
-              <li>Coffee, lunch, or a drink</li>
-              <li>Join a seat, or open one</li>
-            </ul>
-          </MoveBox>
+          <p className="mt-5 max-w-sm text-sm leading-relaxed text-mute">A seat nearby. A time. No bio, no swipe. If you're free, sit down.</p>
+          <ul className="mt-6 space-y-2 text-sm">
+            <li>Nearby, today</li>
+            <li>Coffee, lunch, or a drink</li>
+            <li>Join a seat, or open one</li>
+          </ul>
         </section>
         <section>
           <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Tonight, Central, 中環, café…" className="w-full rounded-full border border-black/10 bg-white px-4 py-3 text-sm outline-none transition focus:border-ember" />

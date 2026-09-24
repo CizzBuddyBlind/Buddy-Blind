@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { useBB } from "./Providers";
-import { MoveBox } from "./MoveBox";
 import { resolveCopy } from "@/lib/i18n";
 
 function escapeText(value) {
@@ -12,7 +11,7 @@ function escapeText(value) {
     .replace(/>/g, ">");
 }
 
-export function Editable({ value, onChange, className = "", as = "span", locked = false, box }) {
+export function Editable({ value, onChange, className = "", as = "span", locked = false }) {
   const { editing } = useBB();
   const ref = useRef(null);
   const Tag = as;
@@ -22,11 +21,8 @@ export function Editable({ value, onChange, className = "", as = "span", locked 
     if (!el || document.activeElement === el) return;
     if (el.textContent !== safe) el.textContent = safe;
   }, [safe, editing]);
-  if (!editing || locked) {
-    const plain = <Tag className={className}>{safe}</Tag>;
-    return box ? <MoveBox id={box}>{plain}</MoveBox> : plain;
-  }
-  const field = (
+  if (!editing || locked) return <Tag className={className}>{safe}</Tag>;
+  return (
     <Tag
       ref={ref}
       className={`${className} cursor-text rounded-sm`}
@@ -41,7 +37,6 @@ export function Editable({ value, onChange, className = "", as = "span", locked 
       }}
     />
   );
-  return box ? <MoveBox id={box}>{field}</MoveBox> : field;
 }
 
 export function Copy({ k, legacy, className = "", as = "span", locked = false, onEnglish }) {
@@ -51,7 +46,6 @@ export function Copy({ k, legacy, className = "", as = "span", locked = false, o
     <Editable
       as={as}
       className={className}
-      box={k}
       locked={locked}
       value={value}
       onChange={(next) => update((draft) => {

@@ -53,7 +53,7 @@ export default function PrivateDetailPage() {
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-ember">{event.forWhom || event.typeLabel}</p>
           <h1 className="mt-2 font-serif text-4xl leading-tight md:text-5xl">
-            <Editable box={`event-name-${event.id}`} value={event.name} onChange={(name) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.name = name; })} />
+            <Editable value={event.name} onChange={(name) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.name = name; })} />
           </h1>
           <p className="mt-3 text-sm text-mute">Host · {event.hostName || event.hostLabel}</p>
           {event.showHostPhoto && event.hostPhoto && (
@@ -61,7 +61,7 @@ export default function PrivateDetailPage() {
           )}
           <p className="mt-3 text-sm">{event.location} · {event.dateISO} · {event.timeLabel}</p>
           <p className="mt-1 text-sm text-mute">{full ? "Full" : `${event.spots} seats left`}{event.ageRange ? ` · ${event.ageRange}` : ""}</p>
-          <Editable box={`event-about-${event.id}`} as="p" className="mt-6 text-base leading-relaxed" value={event.description || ""} onChange={(description) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.description = description; })} />
+          <Editable as="p" className="mt-6 text-base leading-relaxed" value={event.description || ""} onChange={(description) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.description = description; })} />
           {event.videoUrl && (
             <p className="mt-4 text-sm"><a className="underline" href={event.videoUrl} target="_blank" rel="noreferrer">Host video</a></p>
           )}

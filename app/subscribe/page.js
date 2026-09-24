@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useBB } from "@/components/Providers";
-import { MoveBox } from "@/components/MoveBox";
 
 const RANK = { free: 0, lite: 1, premium: 2 };
 
@@ -180,19 +179,13 @@ export default function SubscribePage() {
 
   return (
     <main className="bb-frame mx-auto pb-28 pt-8 md:pb-20 md:pt-12">
-      <MoveBox id="premium-kicker">
-        <p className="bb-kicker text-ember">Premium · More heart, more reasons</p>
-      </MoveBox>
-      <MoveBox id="premium-title" className="mt-4">
-        <h1 className="max-w-4xl font-serif text-[2.7rem] leading-[1.02] tracking-tight md:text-6xl">
-          Why Premium unlocks Private up to 20.
-        </h1>
-      </MoveBox>
-      <MoveBox id="premium-sub" className="mt-5">
-        <p className="max-w-2xl text-[15px] leading-relaxed text-mute">
-          Create your own vibe: Industry dinners, wine circles, 50+ social afternoons, hiking buddies. Host creates attraction and download reasons — people join for the reason, stay for the people.
-        </p>
-      </MoveBox>
+      <p className="bb-kicker text-ember">Premium · More heart, more reasons</p>
+      <h1 className="mt-4 max-w-4xl font-serif text-[2.7rem] leading-[1.02] tracking-tight md:text-6xl">
+        Why Premium unlocks Private up to 20.
+      </h1>
+      <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-mute">
+        Create your own vibe: Industry dinners, wine circles, 50+ social afternoons, hiking buddies. Host creates attraction and download reasons — people join for the reason, stay for the people.
+      </p>
 
       <div className="mt-10 grid items-stretch gap-4 lg:grid-cols-[2fr_1.08fr]">
         <div className="grid overflow-hidden rounded-[28px] bg-[#111] md:grid-cols-2">
@@ -233,9 +226,7 @@ function PlanCard({ card, plan, busy, onPay, light }) {
   return (
     <article className={`flex flex-col px-6 py-8 md:px-8 md:py-10 ${light ? "rounded-[28px] bg-[#f6f3ee] text-ink" : "bg-transparent"}`}>
       <div className="flex items-baseline justify-between gap-3">
-        <MoveBox id={`plan-name-${card.id}`}>
-          <h2 className="font-serif text-3xl">{card.name}</h2>
-        </MoveBox>
+        <h2 className="font-serif text-3xl">{card.name}</h2>
         <p className={`max-w-[9rem] text-right text-[10px] font-semibold uppercase tracking-[0.16em] ${light ? "text-ink/55" : "text-mute"}`}>
           {card.cadence}
         </p>

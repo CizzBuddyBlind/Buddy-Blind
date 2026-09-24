@@ -79,10 +79,10 @@ export default function VenuePage() {
 
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-ember">
-            <Editable box={`venue-cuisine-${venue.id}`} locked={venue.locked} value={venue.cuisine || ""} onChange={(cuisine) => patch({ cuisine })} />
+            <Editable locked={venue.locked} value={venue.cuisine || ""} onChange={(cuisine) => patch({ cuisine })} />
           </p>
           <h1 className="mt-2 font-serif text-4xl leading-tight md:text-5xl">
-            <Editable box={`venue-name-${venue.id}`} locked={venue.locked} value={venue.name} onChange={(name) => patch({ name })} />
+            <Editable locked={venue.locked} value={venue.name} onChange={(name) => patch({ name })} />
           </h1>
           <p className="mt-3 text-sm text-mute">
             <Editable locked={venue.locked} value={venue.locationLabel || ""} onChange={(locationLabel) => patch({ locationLabel })} />
@@ -98,7 +98,7 @@ export default function VenuePage() {
               {t("venue.pet")}
             </label>
           )}
-          <Editable box={`venue-about-${venue.id}`} as="p" className="mt-6 text-base leading-relaxed text-fg/90" locked={venue.locked} value={venue.about || ""} onChange={(about) => patch({ about })} />
+          <Editable as="p" className="mt-6 text-base leading-relaxed text-fg/90" locked={venue.locked} value={venue.about || ""} onChange={(about) => patch({ about })} />
           {(venue.goodFor || editing) && (
             <p className="mt-3 text-sm text-mute">
               {t("venue.good")} · <Editable locked={venue.locked} value={venue.goodFor || ""} onChange={(goodFor) => patch({ goodFor })} />
