@@ -1,15 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Editable, Photo, Sheet } from "@/components/Bits";
+import { Copy, Editable, Photo } from "@/components/Bits";
 import { PayDialog } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { queryHits } from "@/lib/bible";
 
+const NEAR = [
+  { q: "central", lat: 22.2819, lng: 114.155 },
+  { q: "cwb", lat: 22.28, lng: 114.185 },
+  { q: "tst", lat: 22.298, lng: 114.172 },
+  { q: "sai kung", lat: 22.382, lng: 114.273 },
+];
+
+function nearestArea(lat, lng) {
+  let best = NEAR[0];
+  let bestDist = Infinity;
+  NEAR.forEach((spot) => {
+    const d = (spot.lat - lat) ** 2 + (spot.lng - lng) ** 2;
+    if (d < bestDist) {
+      best = spot;
+      bestDist = d;
+    }
+  });
+  return best.q;
+}
+
 export default function QuickPage() {
-  const { content, editing, update, act, notify, setSelectedId, selectedId, insertEvent } = useBB();
+  const { content, editing, update, act, notify, setSelectedId, selectedId, setFlow } = useBB();
   const [sheet, setSheet] = useState(null);
   const [area, setArea] = useState("");
+  const [free, setFree] = useState(false);
+  const [ask, setAsk] = useState(false);
+  const [place, setPlace] = useState("");
+  const [note, setNote] = useState("");
   const copy = content.copy.quick;
   const query = area.trim().toLowerCase();
   const rows = content.events.filter((e) => e.kind === "quick" && (editing || !e.hidden)).filter((row) => {
@@ -17,6 +41,28 @@ export default function QuickPage() {
     const blob = `${row.name} ${row.timeLabel} ${row.area || ""} ${row.detail || ""} ${row.typeLabel || ""} quick now tonight 今晚`;
     return queryHits(blob, query);
   });
+  const venues = (content.venues || []).filter((venue) => !venue.hidden || editing);
+  const placeQuery = place.trim().toLowerCase();
+  const matches = placeQuery
+    ? venues.filter((venue) => queryHits(`${venue.name} ${venue.area || ""} ${venue.locationLabel || ""} ${venue.address || ""} ${(venue.branches || []).map((b) => `${b.label} ${b.address} ${b.area}`).join(" ")}`, placeQuery))
+    : [];
+
+  function shareLocation() {
+    setAsk(false);
+    if (!navigator.geolocation) {
+      setNote("Location isn't available here. Type an area.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const found = nearestArea(pos.coords.latitude, pos.coords.longitude);
+        setPlace(found);
+        setNote("");
+      },
+      () => setNote("Couldn't get your location. Type an area."),
+      { enableHighAccuracy: false, timeout: 8000 },
+    );
+  }
 
   async function confirmSheet() {
     const res = await act("event", sheet.id, sheet.mode);
@@ -75,38 +121,42 @@ export default function QuickPage() {
         ))}
           </div>
           <Copy as="p" k="quick.note" legacy={copy.note} className="mt-6 text-sm leading-relaxed text-mute" onEnglish={(d, next) => { d.copy.quick.note = next; }} />
-          <button type="button" className="mt-4 rounded-full border border-char px-5 py-2 text-sm" onClick={() => setSheet({ id: "create", name: "a quick seat", mode: "create-new" })}>
+          <button type="button" className="mt-4 rounded-full border border-char px-5 py-2 text-sm" onClick={() => { setFree((v) => !v); setAsk(false); }}>
             I'm free now
           </button>
+          {free && (
+            <div className="mt-4 rounded-2xl border border-black/10 bg-white p-4">
+              <p className="text-sm">Where are you?</p>
+              <input value={place} onChange={(e) => { setPlace(e.target.value); setNote(""); }} placeholder="Central, CWB, TST…" className="mt-3 w-full rounded-full border border-black/10 px-4 py-2.5 text-sm outline-none focus:border-ember" />
+              <button type="button" className="mt-3 rounded-full bg-char px-4 py-2 text-xs font-semibold text-paper" onClick={() => setAsk(true)}>Nearby</button>
+              {ask && (
+                <div className="mt-3 rounded-xl bg-black/[0.03] p-3">
+                  <p className="text-sm">Share your location? We only use it to show places near you.</p>
+                  <div className="mt-3 flex gap-2">
+                    <button type="button" className="rounded-full bg-char px-4 py-2 text-xs font-semibold text-paper" onClick={shareLocation}>Share</button>
+                    <button type="button" className="rounded-full border border-black/15 px-4 py-2 text-xs" onClick={() => setAsk(false)}>Not now</button>
+                  </div>
+                </div>
+              )}
+              {note && <p className="mt-3 text-sm text-mute">{note}</p>}
+              {placeQuery && (
+                <div className="mt-4 space-y-2">
+                  {!matches.length && <p className="text-sm text-mute">Nothing there. Try another area.</p>}
+                  {matches.map((venue) => (
+                    <button key={venue.id} type="button" className="flex w-full items-center gap-3 rounded-xl border border-black/10 p-2 text-left" onClick={() => { setFlow({ type: "invite", venueId: venue.id }); setFree(false); }}>
+                      <img src={venue.imageUrl} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                      <span>
+                        <span className="block text-sm font-medium">{venue.name}</span>
+                        <span className="block text-xs text-mute">{venue.locationLabel}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </section>
       </div>
-      <Sheet
-        open={sheet?.mode === "create-new"}
-        title="Create a quick seat"
-        body="If nobody joins, you were already going to eat. +5 points when you post it."
-        confirmLabel="Create"
-        onClose={() => setSheet(null)}
-        onConfirm={async () => {
-          const res = await insertEvent({
-            id: `quick-${Date.now().toString(36)}`,
-            kind: "quick",
-            name: area.trim() ? `Free in ${area.trim()}` : "My table",
-            typeLabel: "NOW",
-            timeLabel: `NOW · ${(area.trim() || "NEAR ME").toUpperCase()}`,
-            area: area.trim().toLowerCase(),
-            detail: "You created this",
-            spots: 2,
-            hidden: false,
-            imageUrl: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=60",
-          }, 5);
-          if (res.needLogin) {
-            window.location.href = "/login";
-            return;
-          }
-          notify("Quick seat posted · +5 pts");
-          setSheet(null);
-        }}
-      />
       <PayDialog
         open={sheet?.mode === "join"}
         title={`Join · ${sheet?.name || ""}`}
