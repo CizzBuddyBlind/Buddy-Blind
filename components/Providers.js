@@ -181,9 +181,11 @@ export function BuddyProvider({ children }) {
         }
       }
 
-      publishedRef.current = pub;
-      setPublished(normalizeContent(pub));
-      write(PUB, normalizeContent(pub));
+      stripHeavy(pub);
+      const clean = normalizeContent(pub);
+      publishedRef.current = clean;
+      setPublished(clean);
+      write(PUB, clean);
       const normalizedDraft = dr ? normalizeContent(dr) : null;
       setDraft(normalizedDraft);
       const start = normalizedDraft || clone(pub);
@@ -848,11 +850,11 @@ export function BuddyProvider({ children }) {
 
   const openTable = useCallback(async (input) => {
     if (!session) return { needLogin: true };
-    const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
-    const venue = base.venues.find((v) => v.id === input.venueId);
-    if (!venue) return { error: "That restaurant is not on the page." };
-    if (venue.hidden) return { error: "This restaurant is not taking tables." };
-    const branch = (venue.branches || []).find((b) => b.id === input.branchId) || venue.branches?.[0];
+    const src = publishedRef.current;
+    const found = src?.venues?.find((v) => v.id === input.venueId);
+    if (!found) return { error: "That restaurant is not on the page." };
+    if (found.hidden) return { error: "This restaurant is not taking tables." };
+    const branch = (found.branches || []).find((b) => b.id === input.branchId) || found.branches?.[0];
     const capacity = Math.min(6, Math.max(2, Number(input.participants) || 2));
     const table = {
       id: `tbl-${Date.now().toString(36)}`,
@@ -863,22 +865,33 @@ export function BuddyProvider({ children }) {
       capacity,
       joined: 1,
       hostHandle: session.handle,
-      hostTier: tierFromPoints(session.points || 0, base.pointThresholds),
+      hostTier: tierFromPoints(session.points || 0, src.pointThresholds),
       gender: input.gender || "",
       orientation: input.orientation || "",
       ageRange: input.ageRange || "",
       branchId: branch?.id || "main",
-      area: branch?.area || venue.area,
-      address: branch?.address || venue.address,
+      area: branch?.area || found.area,
+      address: branch?.address || found.address,
       inviteText: `${session.handle} invites you to join a dinner and meet new friends.`,
       participants: [{ handle: session.handle, role: "host" }],
       pings: [],
     };
-    venue.tables = [...(venue.tables || []), table];
+    const venue = { ...found, tables: [...(found.tables || []), table] };
     const hold = bookingHold(table);
-    base.bookingLog = [logEntry({ venue, table, hold, action: "opened", host: session.handle }), ...(base.bookingLog || [])].slice(0, 40);
-    const saved = await applyLive(base);
-    if (!saved.ok && saved.error) return { error: saved.error };
+    const next = {
+      ...src,
+      venues: src.venues.map((v) => (v.id === venue.id ? venue : v)),
+      bookingLog: [logEntry({ venue, table, hold, action: "opened", host: session.handle }), ...(src.bookingLog || [])].slice(0, 40),
+    };
+    publishedRef.current = next;
+    setPublished(next);
+    setTimeout(() => {
+      try {
+        stripHeavy(next);
+        write(PUB, next);
+        if (supabaseReady) saveSharedContent(next).catch(() => setRemote("error"));
+      } catch { /* keep the table on screen even if the save is slow */ }
+    }, 0);
     notifyRestaurant({
       venueName: venue.name,
       email: venue.email,
@@ -899,29 +912,45 @@ export function BuddyProvider({ children }) {
       id: table.id, venueId: venue.id, name: venue.name, kind: "table", mode: "invite", at: Date.now(),
       dateISO: table.dateISO, time: table.time, location: table.address,
     }, points);
-    pushNote("Table opened", `${venue.name} · ${table.time} · ${table.dateISO}. Restaurant queued via ${venue.contactMethod || "email"}.`);
-    log(`Opened ${venue.name}`);
+    pushNote("Table opened", `${venue.name} · ${table.time} · ${table.dateISO}.`);
     return { ok: true, tableId: table.id, venueId: venue.id };
-  }, [applyLive, editing, log, pushNote, session]);
+  }, [pushNote, session]);
 
   const joinTable = useCallback(async ({ venueId, tableId }) => {
     if (!session) return { needLogin: true };
-    const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
-    const venue = base.venues.find((v) => v.id === venueId);
-    const table = venue?.tables?.find((t) => t.id === tableId);
-    if (!venue || !table) return { error: "That table is gone." };
-    const before = bookingHold(table);
-    if (before.closed || before.places <= 0 || before.status === "walk-in") return { error: before.reason };
-    table.joined += 1;
-    if ((venue.spots || 0) > 0) venue.spots -= 1;
-    if (!Array.isArray(table.participants)) table.participants = [];
-    if (!table.participants.some((p) => p.handle === session.handle)) {
-      table.participants.push({ handle: session.handle, role: "guest" });
-    }
+    const src = publishedRef.current;
+    const found = src?.venues?.find((v) => v.id === venueId);
+    const current = found?.tables?.find((t) => t.id === tableId);
+    if (!found || !current) return { error: "That table is gone." };
+    const before = bookingHold(current);
+    if (before.closed || before.places <= 0 || before.status === "walk-in") return { error: before.reason || "That table is full." };
+    const people = [...(current.participants || [])];
+    if (!people.some((p) => p.handle === session.handle)) people.push({ handle: session.handle, role: "guest" });
+    const table = {
+      ...current,
+      joined: (current.joined || 1) + 1,
+      participants: people,
+    };
+    const venue = {
+      ...found,
+      spots: Math.max(0, (found.spots || 0) - 1),
+      tables: found.tables.map((t) => (t.id === table.id ? table : t)),
+    };
     const hold = bookingHold(table);
-    base.bookingLog = [logEntry({ venue, table, hold, action: "joined", host: table.hostHandle }), ...(base.bookingLog || [])].slice(0, 40);
-    const saved = await applyLive(base);
-    if (!saved.ok && saved.error) return { error: saved.error };
+    const next = {
+      ...src,
+      venues: src.venues.map((v) => (v.id === venue.id ? venue : v)),
+      bookingLog: [logEntry({ venue, table, hold, action: "joined", host: table.hostHandle }), ...(src.bookingLog || [])].slice(0, 40),
+    };
+    publishedRef.current = next;
+    setPublished(next);
+    setTimeout(() => {
+      try {
+        stripHeavy(next);
+        write(PUB, next);
+        if (supabaseReady) saveSharedContent(next).catch(() => setRemote("error"));
+      } catch { /* the seat is already kept on screen */ }
+    }, 0);
     notifyRestaurant({
       venueName: venue.name,
       email: venue.email,
@@ -942,10 +971,9 @@ export function BuddyProvider({ children }) {
       id: table.id, venueId: venue.id, name: venue.name, kind: "table", mode: "join", at: Date.now(),
       dateISO: table.dateISO, time: table.time, location: table.address || venue.locationLabel,
     }, points);
-    pushNote("You're booked", `${venue.name} · ${table.time} · ${hold.joined} people · ${hold.status}.`);
-    if (hold.status === "walk-in") pushNote("Walk-in", `${venue.name} is no longer holding a table. You can still go without a reservation.`);
+    pushNote("You're booked", `${venue.name} · ${table.time} · ${hold.joined} people.`);
     return { ok: true };
-  }, [applyLive, editing, pushNote, session]);
+  }, [pushNote, session]);
 
   const createPrivate = useCallback(async (input) => {
     if (!session) return { needLogin: true };

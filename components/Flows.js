@@ -64,7 +64,7 @@ function Choice({ on, children, onClick }) {
   );
 }
 
-function PayStep({ fee, checked, setChecked, onConfirm, busy }) {
+function PayStep({ fee, checked, setChecked, onConfirm, busy, error }) {
   const { lang } = useBB();
   const t = (key) => translate(lang, key);
   const paid = fee.total > 0;
@@ -80,9 +80,9 @@ function PayStep({ fee, checked, setChecked, onConfirm, busy }) {
         <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
         <span>{paid ? t("pay.check") : t("pay.freeCheck")}</span>
       </label>
-      <p className="text-xs text-mute">{t("pay.emailNote")}</p>
+      {error && <p className="text-sm text-ember">{error}</p>}
       <button type="button" disabled={!checked || busy} onClick={onConfirm} className="w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink disabled:opacity-40">
-        {paid ? t("pay.confirm") : t("pay.confirmFree")}
+        {busy ? "One moment" : paid ? t("pay.confirm") : t("pay.confirmFree")}
       </button>
     </div>
   );
@@ -102,6 +102,7 @@ export function OpenTableWizard({ venue, onClose }) {
   const [ageRange, setAgeRange] = useState("");
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [payError, setPayError] = useState("");
   const [done, setDone] = useState(null);
   const branch = (venue.branches || []).find((b) => b.id === branchId) || venue.branches?.[0];
   const fee = { base: 5, total: 5 };
@@ -117,6 +118,7 @@ export function OpenTableWizard({ venue, onClose }) {
 
   async function confirmPay() {
     setBusy(true);
+    setPayError("");
     try {
       const res = await bb.openTable({
         venueId: venue.id,
@@ -129,16 +131,15 @@ export function OpenTableWizard({ venue, onClose }) {
         orientation,
         ageRange,
       });
-      if (res.needLogin) {
+      if (res?.needLogin) {
         rememberReturn();
         window.location.href = "/login";
         return;
       }
-      if (res.error) {
-        bb.notify(res.error);
+      if (!res?.ok) {
+        setPayError(res?.error || "That didn't go through. Try again.");
         return;
       }
-      bb.notify("Table opened · +2 pts");
       setDone({
         title: venue.name,
         lines: [branch?.label, `${dateISO} · ${time}`],
@@ -146,7 +147,7 @@ export function OpenTableWizard({ venue, onClose }) {
         invite: { name: venue.name, venueId: venue.id, tableId: res.tableId },
       });
     } catch {
-      bb.notify("That didn't go through. Try again.");
+      setPayError("That didn't go through. Try again.");
     } finally {
       setBusy(false);
     }
@@ -242,7 +243,7 @@ export function OpenTableWizard({ venue, onClose }) {
           <button type="button" className="mt-3 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(7)}>{t("btn.next")}</button>
         </div>
       )}
-      {step === 7 && <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={confirmPay} busy={busy} />}
+      {step === 7 && <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={confirmPay} busy={busy} error={payError} />}
     </Frame>
   );
 }
@@ -261,6 +262,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
   const [step, setStep] = useState(tableId || openId ? 1 : 0);
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [payError, setPayError] = useState("");
   const [done, setDone] = useState(null);
   const row = tables.find((item) => item.table.id === picked) || tables.find((item) => item.table.id === tableId);
   const bookable = tables.filter((row) => !row.hold.closed && row.hold.places > 0);
@@ -277,18 +279,18 @@ export function JoinWizard({ venue, tableId, onClose }) {
 
   async function confirmPay() {
     setBusy(true);
+    setPayError("");
     try {
       const res = await bb.joinTable({ venueId: venue.id, tableId: picked || tableId });
-      if (res.needLogin) {
+      if (res?.needLogin) {
         rememberReturn();
         window.location.href = "/login";
         return;
       }
-      if (res.error) {
-        bb.notify(res.error);
+      if (!res?.ok) {
+        setPayError(res?.error || "That didn't go through. Try again.");
         return;
       }
-      bb.notify("You're in.");
       const table = row?.table;
       setDone({
         title: venue.name,
@@ -297,7 +299,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
         invite: { name: venue.name, venueId: venue.id, tableId: table?.id || picked || tableId },
       });
     } catch {
-      bb.notify("That didn't go through. Try again.");
+      setPayError("That didn't go through. Try again.");
     } finally {
       setBusy(false);
     }
@@ -352,7 +354,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
             <p>{tablePrefs(row.table) || "Meet friends"}</p>
             <p>{row.hold.places} places left</p>
           </div>
-          <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={confirmPay} busy={busy || row.hold.closed} />
+          <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={confirmPay} busy={busy} error={payError} />
         </div>
       )}
       {step === 1 && !row && <p className="text-sm text-mute">That table is gone. Go back and pick another.</p>}
