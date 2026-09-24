@@ -179,21 +179,23 @@ export default function SubscribePage() {
 
   return (
     <main className="bb-frame mx-auto pb-28 pt-8 md:pb-20 md:pt-12">
-      <h1 className="max-w-4xl font-serif leading-[1.05]">
-        <span className="block text-xl text-white sm:text-2xl md:text-3xl">Host the vibe you care about — or join one. Guests stay blind.</span>
-        <span className="mt-4 block text-5xl text-ember sm:text-6xl md:text-7xl">Your reason. New people.</span>
-      </h1>
-      <p className="mt-6 max-w-2xl text-[15px] leading-relaxed text-mute">
-        Wine, work, a hike. Or whatever you care about.
-      </p>
+      <div className="mx-auto w-full max-w-5xl">
+        <h1 className="font-serif leading-[1.05]">
+          <span className="block text-base text-white/85 sm:text-lg">Host the vibe you care about — or join one. Guests stay blind.</span>
+          <span className="mt-3 block text-4xl text-ember sm:text-5xl md:text-6xl">Your reason. New people.</span>
+        </h1>
+        <p className="mt-4 max-w-xl text-sm leading-relaxed text-mute">
+          Wine, work, a hike. Or whatever you care about.
+        </p>
 
-      <div className="mt-10 grid items-stretch gap-4 lg:grid-cols-[2fr_1.08fr]">
-        <div className="grid overflow-hidden rounded-[28px] bg-[#111] md:grid-cols-2">
-          {CARDS.filter((card) => card.id !== "premium").map((card) => (
-            <PlanCard key={card.id} card={card} plan={plan} busy={busy} onPay={pay} />
-          ))}
+        <div className="mt-8 grid items-stretch gap-4 lg:grid-cols-[1fr_1fr_1fr]">
+          <div className="grid h-full rounded-[28px] bg-[#111] md:grid-cols-2 lg:col-span-2">
+            {CARDS.filter((card) => card.id !== "premium").map((card) => (
+              <PlanCard key={card.id} card={card} plan={plan} busy={busy} onPay={pay} />
+            ))}
+          </div>
+          <PlanCard card={CARDS[2]} plan={plan} busy={busy} onPay={pay} light />
         </div>
-        <PlanCard card={CARDS[2]} plan={plan} busy={busy} onPay={pay} light />
       </div>
 
       {sheet && (
@@ -224,20 +226,20 @@ function PlanCard({ card, plan, busy, onPay, light }) {
         ? card.id === "lite" ? "Upgrade to Lite" : "Go Premium"
         : "Downgrade to Lite";
   return (
-    <article className={`flex flex-col px-6 py-8 md:px-8 md:py-10 ${light ? "rounded-[28px] bg-[#f6f3ee] text-ink" : "bg-transparent"}`}>
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-serif text-3xl">{card.name}</h2>
-        <p className={`max-w-[9rem] text-right text-[10px] font-semibold uppercase tracking-[0.16em] ${light ? "text-ink/55" : "text-mute"}`}>
+    <article className={`flex h-full flex-col px-5 py-7 md:px-6 md:py-8 ${light ? "rounded-[28px] bg-[#f6f3ee] text-ink" : "bg-transparent"}`}>
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="font-serif text-[1.7rem] leading-none">{card.name}</h2>
+        <p className={`max-w-[6.5rem] text-right text-[9px] font-semibold uppercase leading-tight tracking-[0.14em] ${light ? "text-ink/50" : "text-mute"}`}>
           {card.cadence}
         </p>
       </div>
-      <p className="mt-8 font-serif text-6xl tracking-tight">{card.price}</p>
-      <ul className={`mt-8 space-y-3 text-[12px] font-medium uppercase tracking-[0.12em] ${light ? "text-ink/80" : "text-mute"}`}>
+      <p className="mt-6 font-serif text-5xl tracking-normal">{card.price}</p>
+      <ul className={`mt-6 space-y-2 text-[11px] font-medium uppercase leading-relaxed tracking-[0.04em] ${light ? "text-ink/75" : "text-mute"}`}>
         {card.perks.map((perk) => (
           <li key={perk}>— {perk}</li>
         ))}
       </ul>
-      <div className="mt-auto pt-10">
+      <div className="mt-auto pt-8">
         <button
           type="button"
           disabled={!!busy || current}
@@ -248,11 +250,9 @@ function PlanCard({ card, plan, busy, onPay, light }) {
         >
           {busy === card.id ? "One moment…" : label}
         </button>
-        {light && (
-          <p className="mt-4 text-center text-[10px] font-medium uppercase tracking-[0.14em] text-ink/45">
-            90 days trial · Cancel anytime · HK$5 admin fee per confirmed join
-          </p>
-        )}
+        <p className={`mt-3 text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.12em] ${light ? "text-ink/45" : "invisible"}`}>
+          90 days trial · Cancel anytime · HK$5 admin fee per confirmed join
+        </p>
       </div>
     </article>
   );
