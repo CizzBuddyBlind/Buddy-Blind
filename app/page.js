@@ -101,7 +101,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="bb-frame pb-28 pt-8 md:pb-20 md:pt-14">
+    <main className="bb-frame flex min-h-[calc(100dvh-4rem)] flex-col justify-center py-10 pb-28 md:py-12">
       <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
         <section>
           <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/50">
@@ -110,7 +110,7 @@ export default function HomePage() {
           <h1 className="mt-8 font-serif text-[2.7rem] leading-[0.95] text-white sm:text-6xl lg:text-7xl">
             You don't know
             <br />
-            who you'll meet.
+            who <span className="italic">you'll meet.</span>
             <span className="mt-3 block italic text-ember">That's the point.</span>
           </h1>
           <p className="mt-6 max-w-md text-sm leading-relaxed text-white/70">
@@ -123,15 +123,15 @@ export default function HomePage() {
           </Link>
           <div className="mt-16 grid grid-cols-3 gap-4 border-t border-white/15 pt-8">
             <div>
-              <p className="font-serif text-4xl text-white">{events}</p>
+              <p className="bb-figure text-4xl text-white">{events}</p>
               <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">Total events</p>
             </div>
             <div>
-              <p className="font-serif text-4xl text-white">{scenes}</p>
+              <p className="bb-figure text-4xl text-white">{scenes}</p>
               <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">Scenes tonight</p>
             </div>
             <div>
-              <p className="font-serif text-4xl text-white">{rating}</p>
+              <p className="bb-figure text-4xl text-white">{rating}</p>
               <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">Avg after-talk rating</p>
             </div>
           </div>

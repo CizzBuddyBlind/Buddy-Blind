@@ -140,8 +140,8 @@ export function Shell({ children }) {
           <header className={`sticky z-40 border-b border-white/10 bg-ink text-fg ${bb.editing ? "top-[46px]" : "top-0"}`}>
             <div className="bb-frame relative flex h-16 items-center justify-between">
               <Link href="/" className="flex items-center gap-2.5">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-white font-serif text-[0.72rem] font-semibold tracking-wide text-ink">BB</span>
-                <span className="font-serif text-[0.95rem] tracking-[0.16em]">BUDDY BLIND</span>
+                <span className="bb-word grid h-9 w-9 place-items-center rounded-full bg-white text-[0.72rem] font-semibold tracking-wide text-ink">BB</span>
+                <span className="bb-word text-[0.95rem] tracking-[0.16em]">BUDDY BLIND</span>
               </Link>
               <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex">
                 {TOP.map((item) => {

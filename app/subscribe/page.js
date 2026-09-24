@@ -233,7 +233,7 @@ function PlanCard({ card, plan, busy, onPay, light, split }) {
           {card.cadence}
         </p>
       </div>
-      <p className="mt-8 font-serif text-5xl tracking-tight md:text-6xl">{card.price}</p>
+      <p className="mt-8 text-5xl tracking-tight md:text-6xl">{card.price}</p>
       <ul className={`mt-8 space-y-3 text-[11px] font-medium uppercase leading-relaxed tracking-[0.08em] ${light ? "text-ink/70" : "text-white/55"}`}>
         {card.perks.map((perk) => (
           <li key={perk}>— {perk}</li>

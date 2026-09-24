@@ -180,3 +180,20 @@ textarea:hover {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* One face for headings and taglines. One face for everything else, including buttons. Italic stays italic. */
+body {
+  font-family: var(--font-inter), "PingFang HK", "PingFang SC", "Noto Sans HK", "Noto Sans SC", "Microsoft JhengHei", ui-sans-serif, system-ui, sans-serif;
+}
+p, p.font-serif, li, li.font-serif, label, dd, dt,
+button, button.font-serif,
+input, select, textarea {
+  font-family: var(--font-inter), "PingFang HK", "PingFang SC", "Noto Sans HK", "Noto Sans SC", "Microsoft JhengHei", ui-sans-serif, system-ui, sans-serif;
+}
+h1, h2, h3,
+h1.font-serif, h2.font-serif, h3.font-serif,
+h1 *, h2 *, h3 *,
+.bb-hero-title, .bb-hero-title *,
+.bb-word, .bb-figure {
+  font-family: var(--font-playfair), Georgia, "PMingLiU", "Songti SC", serif;
+}
