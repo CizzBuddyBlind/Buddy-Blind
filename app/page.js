@@ -158,7 +158,7 @@ function Home() {
               }}
               className={`bb-card flex h-full cursor-pointer flex-col transition ${venue.hidden ? "opacity-40" : ""} ${selectedId === venue.id ? "ring-2 ring-ember" : ""} ${venue.locked ? "ring-1 ring-white/20" : ""}`}
             >
-              <Link href={`/venues/${venue.id}`} className="block flex-1" onClick={() => editing && setSelectedId(venue.id)}>
+              <Link href={`/venues/${venue.id}`} className="flex flex-1 flex-col" onClick={() => editing && setSelectedId(venue.id)}>
                 <div className="bb-img">
                   <Photo
                     src={venue.imageUrl}
@@ -168,7 +168,7 @@ function Home() {
                   <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[0.7rem] font-semibold text-white">{venue.spots} {t("spots")}</span>
                   <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-[0.7rem] font-semibold text-char">{venue.timeLabel}</span>
                 </div>
-                <div className="px-4 pb-2 pt-4">
+                <div className="flex flex-1 flex-col px-4 pb-2 pt-4">
                   <h3 className="font-serif text-[1.2rem] text-ember-soft">
                     <Editable locked={venue.locked} value={venue.name} onChange={(name) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.name = name; })} />
                   </h3>
@@ -180,8 +180,8 @@ function Home() {
                   </p>
                   <p className="mt-1 text-[0.8rem] text-mute">{venue.priceTier} · {venue.hours}</p>
                   {venue.petFriendly && <p className="mt-1 text-[0.72rem] uppercase tracking-[0.12em] text-ember">{t("venue.pet")}</p>}
-                  {preview && (
-                    <div className="mb-3 mt-3 flex min-h-[7.6rem] flex-col rounded-xl bg-white/5 px-3 py-2 text-[0.75rem]">
+                  {preview ? (
+                    <div className="mb-3 mt-auto flex min-h-[7.6rem] flex-col rounded-xl bg-white/5 px-3 py-2 pt-3 text-[0.75rem]">
                       <div className="flex items-center gap-2">
                         <HostBadge handle={preview.table.hostHandle} tier={preview.table.hostTier} />
                         <span>{preview.table.hostHandle} {t("host.line")}</span>
@@ -190,6 +190,8 @@ function Home() {
                       <p className="text-mute">{tablePrefs(preview.table)}</p>
                       <p className={`mt-auto pt-1 ${more > 0 ? "text-ember" : "invisible"}`}>+ {t("moreEvents")}</p>
                     </div>
+                  ) : (
+                    <div className="mb-3 mt-auto min-h-[7.6rem]" />
                   )}
                 </div>
               </Link>
