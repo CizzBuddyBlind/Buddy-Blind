@@ -129,12 +129,13 @@ function PayStep({ fee, checked, setChecked, onConfirm, busy, error }) {
   );
 }
 
-export function OpenTableWizard({ venue, onClose }) {
+export function OpenTableWizard({ venue, onClose, todayOnly = false }) {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
+  const today = iso(0);
   const [step, setStep] = useState(0);
   const [branchId, setBranchId] = useState(venue.branches?.[0]?.id || "main");
-  const [dateISO, setDateISO] = useState(nextDays()[0]);
+  const [dateISO, setDateISO] = useState(todayOnly ? today : nextDays()[0]);
   const [time, setTime] = useState("7:00 PM");
   const [tableType, setTableType] = useState("meet-friends");
   const [participants, setParticipants] = useState(4);
@@ -145,7 +146,11 @@ export function OpenTableWizard({ venue, onClose }) {
   const [done, setDone] = useState(null);
   const branch = (venue.branches || []).find((b) => b.id === branchId) || venue.branches?.[0];
   const fee = { base: 5, total: 5 };
-  const titles = [t("step.location"), t("step.date"), t("step.time"), t("step.type"), t("step.people"), t("step.prefs"), t("step.summary"), t("step.pay")];
+  const titles = todayOnly
+    ? [t("step.location"), t("step.time"), t("step.type"), t("step.people"), t("step.prefs"), t("step.summary"), t("step.pay")]
+    : [t("step.location"), t("step.date"), t("step.time"), t("step.type"), t("step.people"), t("step.prefs"), t("step.summary"), t("step.pay")];
+  const title = todayOnly && step > 1 ? titles[step - 1] : titles[step];
+  const shown = todayOnly && step > 0 ? step : step + 1;
   const pay = useFeeCheckout(finish);
   const [bookError, setBookError] = useState("");
 
@@ -163,7 +168,7 @@ export function OpenTableWizard({ venue, onClose }) {
       const res = await bb.openTable({
         venueId: venue.id,
         branchId: branch?.id,
-        dateISO,
+        dateISO: todayOnly ? today : dateISO,
         time,
         tableType,
         participants,
@@ -196,7 +201,7 @@ export function OpenTableWizard({ venue, onClose }) {
   }
 
   return (
-    <Frame title={`${titles[step]} · ${venue.name}`} step={step + 1} total={8} onBack={step === 0 ? close : () => setStep((s) => s - 1)} onClose={close}>
+    <Frame title={`${title} · ${venue.name}`} step={shown} total={todayOnly ? 7 : 8} onBack={step === 0 ? close : () => setStep(todayOnly && step === 2 ? 0 : step - 1)} onClose={close}>
       <p className="mb-3 text-xs text-mute">{t("adult.note")}</p>
       {step === 0 && (
         <div className="space-y-2">
@@ -205,7 +210,7 @@ export function OpenTableWizard({ venue, onClose }) {
               {b.label} — {b.address}
             </Choice>
           ))}
-          <button type="button" className="mt-3 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(1)}>{t("btn.next")}</button>
+          <button type="button" className="mt-3 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(todayOnly ? 2 : 1)}>{t("btn.next")}</button>
         </div>
       )}
       {step === 1 && (
@@ -272,7 +277,7 @@ export function OpenTableWizard({ venue, onClose }) {
         <div className="space-y-1 text-sm text-mute">
           <p>Restaurant · {venue.name}</p>
           <p>Location · {branch?.label} · {branch?.address}</p>
-          <p>Date · {prettyDate(dateISO, bb.lang)}</p>
+          <p>Date · {todayOnly ? "Today" : prettyDate(dateISO, bb.lang)}</p>
           <p>Time · {time}</p>
           <p>Type · {tableType === "blind-date" ? "Blind Date" : "Meet Friends"}</p>
           <p>Participants · {participants} · places after you sit · {participants - 1}</p>

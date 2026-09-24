@@ -434,7 +434,7 @@ export function Shell({ children }) {
           }}
         />
       )}
-      {bb.flow?.type === "invite" && flowVenue && <OpenTableWizard venue={flowVenue} onClose={() => bb.setFlow(null)} />}
+      {bb.flow?.type === "invite" && flowVenue && <OpenTableWizard venue={flowVenue} todayOnly={!!bb.flow.quick} onClose={() => bb.setFlow(null)} />}
       {bb.flow?.type === "join" && flowVenue && (
         <JoinWizard venue={flowVenue} tableId={bb.flow.tableId} onClose={() => bb.setFlow(null)} />
       )}
