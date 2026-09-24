@@ -75,7 +75,7 @@ export default function RegisterPage() {
         setError(message);
         return;
       }
-      router.push("/profile");
+      router.push("/subscribe?trial=1");
       router.refresh();
     } catch {
       setError(t("reg.bad"));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { fileToCover } from "./Bits";
 import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
@@ -70,44 +70,6 @@ function useFeeCheckout(onPaid) {
   paid.current = onPaid;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [sheet, setSheet] = useState(null);
-
-  useEffect(() => {
-    if (!sheet?.clientSecret || !sheet.publishableKey) return undefined;
-    let checkout;
-    let gone = false;
-    (async () => {
-      const { loadStripe } = await import("@stripe/stripe-js");
-      const stripe = await loadStripe(sheet.publishableKey);
-      if (!stripe || gone) return;
-      checkout = await stripe.createEmbeddedCheckoutPage({
-        clientSecret: sheet.clientSecret,
-        onComplete: () => {
-          fetch(`/api/checkout?session_id=${encodeURIComponent(sheet.sessionId)}`)
-            .then((res) => res.json())
-            .then(async (data) => {
-              if (!data?.ok) {
-                setError(data?.reason || "Payment did not finish.");
-                return;
-              }
-              await paid.current();
-            })
-            .catch(() => setError("Payment did not finish."));
-        },
-      });
-      if (gone) {
-        checkout.destroy();
-        return;
-      }
-      checkout.mount("#bb-fee");
-    })().catch((err) => {
-      if (!gone) setError(err instanceof Error ? err.message : "Card form did not open.");
-    });
-    return () => {
-      gone = true;
-      checkout?.destroy();
-    };
-  }, [sheet]);
 
   async function start() {
     if (!bb.session) {
@@ -121,22 +83,26 @@ function useFeeCheckout(onPaid) {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: "fee", email: bb.session.email || "" }),
+        body: JSON.stringify({
+          action: "charge-fee",
+          email: bb.session.email || "",
+          customerId: bb.planMeta?.customerId || "",
+        }),
       });
       const data = await res.json();
-      if (!data?.clientSecret || !data.publishableKey) {
-        setError(data?.reason || "Stripe is not linked yet. The HK$5 card form has no key.");
+      if (!data?.ok) {
+        setError(data?.reason || "The card was not charged.");
         return;
       }
-      setSheet({ clientSecret: data.clientSecret, publishableKey: data.publishableKey, sessionId: data.sessionId });
+      await paid.current();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Stripe is not linked yet.");
+      setError(err instanceof Error ? err.message : "The card was not charged.");
     } finally {
       setBusy(false);
     }
   }
 
-  return { busy, error, sheet, start };
+  return { busy, error, sheet: null, start };
 }
 
 function PayStep({ fee, checked, setChecked, onConfirm, busy, error }) {

@@ -32,6 +32,54 @@ function idOf(value) {
   return typeof value === "string" ? value : value.id || "";
 }
 
+async function findCustomer(secret, { email, customerId }) {
+  if (customerId) {
+    const { ok, data } = await stripe(secret, `/v1/customers/${encodeURIComponent(customerId)}`);
+    if (ok && !data.deleted) return data;
+  }
+  if (!email || !email.includes("@")) return null;
+  const found = await stripe(secret, `/v1/customers?email=${encodeURIComponent(email)}&limit=1`);
+  return found.data?.data?.[0] || null;
+}
+
+async function savedCard(secret, customer) {
+  const onFile = idOf(customer.invoice_settings?.default_payment_method);
+  if (onFile) return onFile;
+  const listed = await stripe(secret, `/v1/customers/${customer.id}/payment_methods?type=card&limit=1`);
+  return idOf(listed.data?.data?.[0]);
+}
+
+async function chargeSavedCard(secret, body) {
+  const customer = await findCustomer(secret, body);
+  if (!customer) return Response.json({ ok: false, reason: "No card yet. Start Premium and save one." });
+  const method = await savedCard(secret, customer);
+  if (!method) return Response.json({ ok: false, reason: "No card yet. Start Premium and save one." });
+  const price = await stripe(secret, `/v1/prices/${encodeURIComponent(PRICES.fee)}`);
+  const amount = price.data?.unit_amount;
+  const currency = price.data?.currency || "hkd";
+  if (!price.ok || !amount) {
+    return Response.json({ ok: false, reason: price.data?.error?.message || "The HK$5 price is not set in Stripe." });
+  }
+  const params = new URLSearchParams({
+    amount: String(amount),
+    currency,
+    customer: customer.id,
+    payment_method: method,
+    off_session: "true",
+    confirm: "true",
+    description: "Buddy Blind admin fee",
+    "metadata[kind]": "fee",
+  });
+  const charged = await stripe(secret, "/v1/payment_intents", { method: "POST", params });
+  if (!charged.ok) {
+    return Response.json({ ok: false, reason: charged.data.error?.message || "The card was not charged." });
+  }
+  if (charged.data.status !== "succeeded") {
+    return Response.json({ ok: false, reason: "The bank did not take the HK$5. Check the card on Premium." });
+  }
+  return Response.json({ ok: true, id: charged.data.id });
+}
+
 async function liveSub(secret, { email, subscriptionId }) {
   if (subscriptionId) {
     const { ok, data } = await stripe(secret, `/v1/subscriptions/${encodeURIComponent(subscriptionId)}`);
@@ -106,6 +154,7 @@ export async function POST(request) {
   const body = await request.json().catch(() => ({}));
   const secret = process.env.STRIPE_SECRET_KEY;
   if (!secret) return Response.json({ ok: false, reason: "Card checkout is not ready yet." });
+  if (body.action === "charge-fee") return chargeSavedCard(secret, body);
   if (body.action === "switch") return switchPlan(secret, body);
 
   const kind = body.kind === "lite" || body.kind === "premium" || body.kind === "fee" ? body.kind : "fee";
