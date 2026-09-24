@@ -19,22 +19,22 @@ const STEPS = [
   {
     n: "04",
     title: "Meet",
-    body: "No names before. No photos before. Show up. The restaurant is the scene. You do the talking.",
+    body: "No names before. No photos before. Show up. The restaurant is the scene. You bring the vibe.",
   },
   {
     n: "05",
     title: "Rate and comment",
-    body: "Stars aren’t about looks. A short line is your reputation. “On time.” “Easy to talk to.”",
+    body: "Stars aren’t about looks. A short line is your reputation. Your voice matters.",
   },
   {
     n: "06",
     title: "Add a buddy",
-    body: "Hey, you’re my vibe. One tap. If you both say yes, you’re buddies.",
+    body: "Hey, you’re my vibe. One tap. If they say yes too, you’re buddies.",
   },
   {
     n: "07",
     title: "Create your own",
-    body: "Premium hosts a private night, up to 20. Wine, work, social, networking. You make the reason.",
+    body: "Premium. Host a private night. Meet your people. Wine, social, networking. You make the reason.",
   },
 ];
 
