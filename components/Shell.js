@@ -114,7 +114,7 @@ export function Shell({ children }) {
         <div className="sticky top-0 z-[60] hidden border-b border-white/10 bg-[#0c0c0c] text-fg md:block">
           <div className="flex items-center gap-2 overflow-x-auto px-3 py-2">
             <span className="shrink-0 font-serif text-sm">Edit</span>
-            <span className="shrink-0 text-[10px] uppercase tracking-widest text-mute">Drag the orange dot to move. White corner resizes.</span>
+            <span className="shrink-0 text-[10px] uppercase tracking-widest text-mute">Left, center, right, or delete. Orange dot moves. White corner resizes.</span>
             <span className="shrink-0 text-[10px] uppercase tracking-widest text-mute">{bb.session.role}</span>
             <span className="shrink-0 text-[10px] uppercase tracking-widest text-ember">
               {bb.remote === "live" ? "Supabase" : bb.remote === "error" ? "Supabase error" : "Supabase off"}

@@ -26,13 +26,15 @@ export function MoveBox({ id, className = "", children }) {
         y: Math.round(next.y || 0),
         w: Math.round(next.w || 0),
         scale: Math.round((next.scale || 1) * 100) / 100,
+        align: next.align || "",
+        hidden: !!next.hidden,
       };
     });
     setLive(null);
   }
 
   function pointer(start, onMove) {
-    const liveBox = { x, y, w: box.w || 0, scale };
+    const liveBox = { x, y, w: box.w || 0, scale, align: box.align || "", hidden: false };
     function move(ev) {
       onMove(liveBox, ev.clientX - start.x, ev.clientY - start.y);
       setLive({ ...liveBox });
@@ -46,8 +48,18 @@ export function MoveBox({ id, className = "", children }) {
     window.addEventListener("pointerup", up);
   }
 
-  const moved = x || y || width || scale !== 1;
+  const align = box.align || "";
+  const moved = x || y || width || scale !== 1 || align || saved.hidden;
+  if (saved.hidden) return null;
   if (!editing && !moved) return children;
+
+  function setAlign(next) {
+    commit({ x, y, w: box.w || 0, scale, align: next, hidden: false });
+  }
+
+  function removeBox() {
+    commit({ x, y, w: box.w || 0, scale, align, hidden: true });
+  }
 
   return (
     <div
@@ -55,11 +67,35 @@ export function MoveBox({ id, className = "", children }) {
       className={editing ? `${className} rounded-md outline outline-1 outline-dashed outline-ember/70` : className}
       style={{
         transform: `translate(${x}px, ${y}px)`,
-        width: width || undefined,
+        width: width || (align ? "100%" : undefined),
+        textAlign: align || undefined,
+        marginLeft: align === "center" || align === "right" ? "auto" : undefined,
+        marginRight: align === "center" || align === "left" ? "auto" : undefined,
         position: "relative",
         zIndex: editing ? 3 : undefined,
       }}
     >
+      {editing && (
+        <div className="absolute -top-7 left-0 z-10 flex items-center gap-1">
+          {[
+            ["left", "Left"],
+            ["center", "Center"],
+            ["right", "Right"],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setAlign(align === id ? "" : id)}
+              className={`rounded-full px-2 py-0.5 text-[10px] ${align === id ? "bg-ember text-white" : "bg-white text-black"}`}
+            >
+              {label}
+            </button>
+          ))}
+          <button type="button" onClick={removeBox} className="rounded-full bg-black px-2 py-0.5 text-[10px] text-white">
+            Delete
+          </button>
+        </div>
+      )}
       {editing && (
         <button
           type="button"
