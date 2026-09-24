@@ -357,17 +357,15 @@ function ChatTab() {
   const current = notes.find((item) => item.id === open);
   if (current) {
     const canReply = current.ping && !current.ping.replyOnly && !current.replied;
-    const replies = {
-      here: [
-        ["on-way", "Yes, on the way"],
-        ["miss-reply", "Sorry, I can't make it today, see you next time"],
-      ],
-      miss: [["ok", "Ok, no worries"]],
-    };
-    const options = replies[current.ping?.kind] || [
-      ["see-ya", "See ya"],
-      ["next-time", "No worries, see you next time"],
-    ];
+    const options = current.ping?.kind === "here" || current.ping?.kind === "miss"
+      ? [
+          ["on-way", "Yes, on the way"],
+          ["miss-reply", "Sorry, I can't make it today, see you next time"],
+        ]
+      : [
+          ["see-ya", "See ya"],
+          ["next-time", "No worries, see you next time"],
+        ];
     const picked = options.some(([id]) => id === choice) ? choice : options[0][0];
     return (
       <div className="space-y-3">
@@ -376,7 +374,6 @@ function ChatTab() {
         <p className="text-sm">{current.body}</p>
         {canReply && (
           <div className="space-y-2">
-            {current.ping?.kind === "miss" && <p className="text-xs text-neutral-500">You can leave this. No reply needed.</p>}
             {options.map(([id, label]) => (
               <button key={id} type="button" onClick={() => setChoice(id)} className={`block w-full rounded-xl px-3 py-2 text-left text-sm ${picked === id ? "bg-black text-white" : "bg-white ring-1 ring-black/10"}`}>
                 {label}

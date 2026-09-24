@@ -992,7 +992,7 @@ export function BuddyProvider({ children }) {
       coming: ["see-ya", "next-time"],
       cant: ["see-ya", "next-time"],
       here: ["on-way", "miss-reply"],
-      miss: ["ok"],
+      miss: ["on-way", "miss-reply"],
       "see-you": ["see-ya", "next-time"],
       arrive: ["see-ya", "next-time"],
     };
