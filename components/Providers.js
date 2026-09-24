@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { SEED, SEED_ACCOUNTS } from "@/lib/defaults";
 import { loadSharedContent, saveSharedContent, supabaseReady } from "@/lib/supabase";
-import { bookingHold, iso, logEntry, normalizeContent, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
+import { bookingHold, iso, logEntry, normalizeContent, tableStart, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
 import { channelNote, notifyRestaurant } from "@/lib/notify";
 
 const Ctx = createContext(null);
@@ -943,7 +943,13 @@ export function BuddyProvider({ children }) {
 
   const sendPing = useCallback(async ({ venueId, tableId, eventId, choice }) => {
     if (!session) return { needLogin: true };
-    const line = choice === "cant" ? "cant" : choice === "coming" ? "coming" : "";
+    const lines = {
+      coming: "I am coming",
+      cant: "Sorry guys, I can't make it today",
+      here: "I'm here, you guys coming",
+      miss: "Sorry guys, I can't make it today, see you guys next time",
+    };
+    const line = lines[choice];
     if (!line) return { error: "Pick a line first." };
     const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
     const target = eventId
@@ -958,28 +964,40 @@ export function BuddyProvider({ children }) {
     if (!others.length) return { error: "No one else has joined yet." };
     const day = target.dateISO || "";
     if (day && day < iso(0)) return { error: "That event is already over." };
+    const start = tableStart({ ...target, time: target.time || target.timeLabel }).getTime();
+    const live = Date.now() >= start && Date.now() <= start + 4 * 60 * 60 * 1000;
+    if (live && choice !== "here" && choice !== "miss") return { error: "That line is for before it starts." };
+    if (!live && (choice === "here" || choice === "miss")) return { error: "That line opens once it starts." };
     target.pings = [...(target.pings || []), {
       id: `ping-${Date.now().toString(36)}`,
       from: session.handle,
-      kind: line,
+      kind: choice,
       at: Date.now(),
       replies: [],
     }];
     const saved = await applyLive(base);
     if (!saved.ok && saved.error) return { error: saved.error };
-    pushNote("Sent", line === "coming" ? "I am coming" : "Sorry guys, I can't make it today");
+    pushNote("Sent", line);
     return { ok: true };
   }, [applyLive, editing, pushNote, session]);
 
   const replyPing = useCallback(async ({ venueId, tableId, eventId, pingId, choice }) => {
     if (!session) return { needLogin: true };
-    if (choice !== "see-ya" && choice !== "next-time") return { error: "Pick a line first." };
     const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
     const target = eventId
       ? base.events.find((e) => e.id === eventId)
       : base.venues.find((v) => v.id === venueId)?.tables?.find((t) => t.id === tableId);
     const ping = target?.pings?.find((p) => p.id === pingId);
     if (!ping) return { error: "That note is gone." };
+    const allowed = {
+      coming: ["see-ya", "next-time"],
+      cant: ["see-ya", "next-time"],
+      here: ["on-way", "miss-reply"],
+      miss: ["ok"],
+      "see-you": ["see-ya", "next-time"],
+      arrive: ["see-ya", "next-time"],
+    };
+    if (!(allowed[ping.kind] || allowed.coming).includes(choice)) return { error: "Pick a line first." };
     if (ping.from === session.handle) return { error: "This one is already yours." };
     if ((ping.replies || []).some((r) => r.from === session.handle)) return { error: "Already sent." };
     ping.replies = [...(ping.replies || []), { from: session.handle, choice, at: Date.now() }];
@@ -999,12 +1017,17 @@ export function BuddyProvider({ children }) {
     const line = {
       coming: "I am coming",
       cant: "Sorry guys, I can't make it today",
+      here: "I'm here, you guys coming",
+      miss: "Sorry guys, I can't make it today, see you guys next time",
       "see-you": "See you there",
       arrive: "Are you coming?",
     };
     const replyLine = {
       "see-ya": "See ya",
       "next-time": "No worries, see you next time",
+      "on-way": "Yes, on the way",
+      "miss-reply": "Sorry, I can't make it today, see you next time",
+      ok: "Ok, no worries",
     };
     const collect = (ping, meta, title) => {
       if (ping.from !== mine) {

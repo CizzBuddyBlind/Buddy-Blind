@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useBB } from "./Providers";
-import { iso, prettyDate, queryHits, soonestTable } from "@/lib/bible";
+import { iso, prettyDate, queryHits, soonestTable, tableStart } from "@/lib/bible";
 
 function hourOf(time) {
   const match = String(time || "").toUpperCase().match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/);
@@ -303,17 +303,31 @@ function mySeats(bb) {
   return seats.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
 }
 
-function NotifyBox({ onSend }) {
-  const [choice, setChoice] = useState("coming");
-  const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState("");
-  return (
-    <div className="space-y-2">
-      {[
+function happening(date, time) {
+  const start = tableStart({ dateISO: date, time }).getTime();
+  const now = Date.now();
+  return now >= start && now <= start + 4 * 60 * 60 * 1000;
+}
+
+function NotifyBox({ live, onSend }) {
+  const options = live
+    ? [
+        ["here", "I'm here, you guys coming"],
+        ["miss", "Sorry guys, I can't make it today, see you guys next time"],
+      ]
+    : [
         ["coming", "I am coming"],
         ["cant", "Sorry guys, I can't make it today"],
-      ].map(([id, label]) => (
-        <button key={id} type="button" onClick={() => setChoice(id)} className={`block w-full rounded-xl px-3 py-2 text-left text-sm ${choice === id ? "bg-black text-white" : "bg-neutral-100"}`}>
+      ];
+  const [choice, setChoice] = useState(options[0][0]);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+  const picked = options.some(([id]) => id === choice) ? choice : options[0][0];
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-neutral-500">{live ? "It's on now." : "Before it starts."}</p>
+      {options.map(([id, label]) => (
+        <button key={id} type="button" onClick={() => setChoice(id)} className={`block w-full rounded-xl px-3 py-2 text-left text-sm ${picked === id ? "bg-black text-white" : "bg-neutral-100"}`}>
           {label}
         </button>
       ))}
@@ -324,7 +338,7 @@ function NotifyBox({ onSend }) {
         onClick={async () => {
           setBusy(true);
           setNote("");
-          const res = await onSend(choice);
+          const res = await onSend(picked);
           setBusy(false);
           setNote(res?.error || "Sent. Only the others on this table get it.");
         }}
@@ -345,6 +359,18 @@ function ChatTab() {
   const current = notes.find((item) => item.id === open);
   if (current) {
     const canReply = current.ping && !current.ping.replyOnly && !current.replied;
+    const replies = {
+      here: [
+        ["on-way", "Yes, on the way"],
+        ["miss-reply", "Sorry, I can't make it today, see you next time"],
+      ],
+      miss: [["ok", "Ok, no worries"]],
+    };
+    const options = replies[current.ping?.kind] || [
+      ["see-ya", "See ya"],
+      ["next-time", "No worries, see you next time"],
+    ];
+    const picked = options.some(([id]) => id === choice) ? choice : options[0][0];
     return (
       <div className="space-y-3">
         <button type="button" className="text-sm text-neutral-500" onClick={() => { setOpen(null); setNote(""); }}>Back</button>
@@ -352,11 +378,9 @@ function ChatTab() {
         <p className="text-sm">{current.body}</p>
         {canReply && (
           <div className="space-y-2">
-            {[
-              ["see-ya", "See ya"],
-              ["next-time", "No worries, see you next time"],
-            ].map(([id, label]) => (
-              <button key={id} type="button" onClick={() => setChoice(id)} className={`block w-full rounded-xl px-3 py-2 text-left text-sm ${choice === id ? "bg-black text-white" : "bg-white ring-1 ring-black/10"}`}>
+            {current.ping?.kind === "miss" && <p className="text-xs text-neutral-500">You can leave this. No reply needed.</p>}
+            {options.map(([id, label]) => (
+              <button key={id} type="button" onClick={() => setChoice(id)} className={`block w-full rounded-xl px-3 py-2 text-left text-sm ${picked === id ? "bg-black text-white" : "bg-white ring-1 ring-black/10"}`}>
                 {label}
               </button>
             ))}
@@ -364,7 +388,7 @@ function ChatTab() {
               type="button"
               className="w-full rounded-full bg-black py-2 text-sm text-white"
               onClick={async () => {
-                const res = await bb.replyPing({ ...current.ping, choice });
+                const res = await bb.replyPing({ ...current.ping, choice: picked });
                 setNote(res?.error || "Sent. No more replies.");
                 if (!res?.error) setOpen(null);
               }}
@@ -422,6 +446,7 @@ function ProfileTab() {
         <p className="text-sm">{seat.joined} joined</p>
         {!!seat.people.length && <p className="text-xs text-neutral-500">{seat.people.join(" · ")}</p>}
         <NotifyBox
+          live={happening(seat.date, seat.time)}
           onSend={async (choice) => {
             const res = await bb.sendPing({ venueId: seat.venueId, tableId: seat.tableId, eventId: seat.eventId, choice });
             setSent(res?.error || "");
