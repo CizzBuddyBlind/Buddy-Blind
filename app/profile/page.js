@@ -48,7 +48,7 @@ export default function ProfilePage() {
   const unread = (social.notes || []).filter((n) => !n.read).length;
 
   return (
-    <main className="bb-frame pb-28 pt-8 md:pb-16">
+    <main className="bb-frame min-h-[100dvh] bg-ink pb-28 pt-8">
       <header className="text-center">
         <div className="relative mx-auto mb-3 h-20 w-20">
           <span className="absolute -top-1 left-1/2 z-10 -translate-x-1/2 rounded-full bg-ember px-2 py-0.5 text-[10px] font-bold uppercase text-white">{metal}</span>

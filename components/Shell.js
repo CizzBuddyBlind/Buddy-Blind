@@ -25,20 +25,43 @@ function initials(session) {
   return "";
 }
 
-function Icon({ d }) {
+function VenuesIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-      <path d={d} strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+      <rect x="6.5" y="6.5" width="11" height="11" rx="1.5" />
+    </svg>
+  );
+}
+function QuickIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M15 3.2A8.2 8.2 0 1 0 20.8 14 6.6 6.6 0 0 1 15 3.2z" />
+    </svg>
+  );
+}
+function PrivateIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <rect x="7" y="5" width="3" height="14" rx="0.7" />
+      <rect x="14" y="5" width="3" height="14" rx="0.7" />
+    </svg>
+  );
+}
+function ProfileIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+      <circle cx="12" cy="12" r="7.2" />
+      <path d="M9 10h6M9 12h6M9 14h6" strokeLinecap="round" />
     </svg>
   );
 }
 
 const BOTTOM = [
-  { href: "/", key: "nav.venues", icon: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" },
-  { href: "/quick", key: "nav.quick", icon: "M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" },
+  { href: "/", key: "nav.venues", Icon: VenuesIcon },
+  { href: "/quick", key: "nav.quick", Icon: QuickIcon },
   { href: "/how", key: "nav.how", center: true },
-  { href: "/private", key: "nav.private", icon: "M12 3l2.2 6.4H21l-5.4 3.9 2.1 6.4L12 16.8 6.3 19.7l2.1-6.4L3 9.4h6.8z" },
-  { href: "/profile", key: "nav.profile", icon: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0" },
+  { href: "/private", key: "nav.private", Icon: PrivateIcon },
+  { href: "/profile", key: "nav.profile", Icon: ProfileIcon },
 ];
 
 export function Shell({ children }) {
@@ -47,6 +70,7 @@ export function Shell({ children }) {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
   const [menu, setMenu] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
   const [link, setLink] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [showToday, setShowToday] = useState(false);
@@ -112,26 +136,37 @@ export function Shell({ children }) {
       )}
       <div className={bb.editing && bb.device !== "desktop" ? "bg-[#050505] py-6" : ""}>
         <div className={frame}>
-          <header className={`sticky z-40 border-b backdrop-blur-xl ${bb.editing ? "top-[46px]" : "top-0"} ${light ? "border-black/10 bg-paper/95" : "border-white/10 bg-ink/90"}`}>
+          <header className={`sticky z-40 border-b border-black/5 bg-paper text-char ${bb.editing ? "top-[46px]" : "top-0"}`}>
             <div className="bb-frame flex h-14 items-center justify-between gap-4">
-              <Link href="/" className="font-serif text-[1.05rem] tracking-wide">BUDDY BLIND</Link>
+              <Link href="/" className="font-serif text-[1.05rem] tracking-[0.14em]">BUDDY BLIND</Link>
               <nav className="hidden items-center gap-6 md:flex">
                 {NAV.map((item) => {
                   const active = item.href === "/" ? path === "/" : path.startsWith(item.href);
                   return (
-                    <Link key={item.href} href={item.href} className={`text-[0.78rem] font-medium uppercase tracking-[0.08em] ${active ? "" : "text-mute"}`}>
+                    <Link key={item.href} href={item.href} className={`text-[0.78rem] font-medium uppercase tracking-[0.08em] ${active ? "text-ember" : "text-mute"}`}>
                       {t(item.key)}
                     </Link>
                   );
                 })}
               </nav>
               <div className="relative flex items-center gap-2">
-                <LangSwitch light={light} />
+                <button
+                  type="button"
+                  aria-label="Notifications"
+                  onClick={() => {
+                    setNotesOpen((v) => !v);
+                    setMenu(false);
+                    bb.markNotesRead?.();
+                  }}
+                  className="grid h-9 w-9 place-items-center rounded-full bg-black text-sm font-medium text-white"
+                >
+                  {(bb.social?.notes || []).filter((note) => !note.read).length}
+                </button>
                 <button
                   type="button"
                   aria-label="Account"
-                  onClick={() => setMenu((v) => !v)}
-                  className="grid h-9 w-9 place-items-center rounded-full bg-ember text-sm font-semibold text-white"
+                  onClick={() => { setMenu((v) => !v); setNotesOpen(false); }}
+                  className="grid h-9 w-9 place-items-center rounded-full border border-black/15 bg-white text-sm font-semibold"
                 >
                   {mark || (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -139,19 +174,36 @@ export function Shell({ children }) {
                     </svg>
                   )}
                 </button>
+                {notesOpen && (
+                  <div className="absolute right-0 top-12 z-50 w-72 overflow-hidden rounded-2xl border border-black/10 bg-[#141414] text-fg shadow-2xl">
+                    <p className="border-b border-white/10 px-4 py-3 text-xs uppercase tracking-[0.14em] text-mute">Notifications</p>
+                    <div className="max-h-80 overflow-y-auto">
+                      {(bb.social?.notes || []).length === 0 && <p className="px-4 py-6 text-sm text-mute">Nothing yet.</p>}
+                      {(bb.social?.notes || []).slice(0, 12).map((note) => (
+                        <div key={note.id} className="border-b border-white/5 px-4 py-3">
+                          <p className="text-sm">{note.title}</p>
+                          <p className="mt-1 text-xs text-mute">{note.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {menu && (
-                  <div className={`absolute right-0 top-12 z-50 w-56 overflow-hidden rounded-xl border shadow-2xl ${light ? "border-black/10 bg-white text-char" : "border-white/10 bg-card text-fg"}`}>
+                  <div className="absolute right-0 top-12 z-50 w-56 overflow-hidden rounded-xl border border-black/10 bg-white text-char shadow-2xl">
                     {bb.session && (
-                      <div className="border-b border-white/10 px-4 py-3">
+                      <div className="border-b border-black/10 px-4 py-3">
                         <div className="text-sm">{bb.session.handle || bb.session.username}</div>
                         <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ember">{mark}</div>
                       </div>
                     )}
-                    <Link href="/subscribe" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>Upgrade plan</Link>
+                    <div className="border-b border-black/10 px-3 py-2">
+                      <LangSwitch light />
+                    </div>
+                    <Link href="/subscribe" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>Upgrade plan</Link>
                     {bb.session ? (
                       <button
                         type="button"
-                        className="block w-full px-4 py-2.5 text-left text-sm hover:bg-white/5"
+                        className="block w-full px-4 py-2.5 text-left text-sm"
                         onClick={() => {
                           setMenu(false);
                           bb.logout();
@@ -160,7 +212,7 @@ export function Shell({ children }) {
                         {t("nav.logout")}
                       </button>
                     ) : (
-                      <Link href="/login" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>{t("nav.login")}</Link>
+                      <Link href="/login" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>{t("nav.login")}</Link>
                     )}
                   </div>
                 )}
@@ -170,20 +222,21 @@ export function Shell({ children }) {
 
           <div className={bb.editing ? "md:pl-16" : ""}>{children}</div>
 
-          <nav className={`fixed inset-x-0 bottom-0 z-40 border-t md:hidden ${light ? "border-black/10 bg-paper/95" : "border-white/10 bg-ink/95"}`}>
-            <div className="grid grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)]">
+          <nav className={`fixed inset-x-0 bottom-0 z-40 md:hidden ${light ? "bg-paper text-char" : "bg-[#0c0c0c] text-white"}`}>
+            <div className="grid grid-cols-5 items-end px-2 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-2">
               {BOTTOM.map((item) => {
                 const active = item.href === "/" ? path === "/" : path.startsWith(item.href);
                 if (item.center) {
                   return (
-                    <Link key={item.href} href={item.href} className="flex items-center justify-center py-2">
-                      <span className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg ${active ? "bg-ember text-white" : light ? "bg-char text-paper" : "bg-fg text-ink"}`}>?</span>
+                    <Link key={item.href} href={item.href} className="flex items-center justify-center pb-1">
+                      <span className={`grid h-14 w-14 -translate-y-3 place-items-center rounded-full font-serif text-2xl shadow-lg ${active ? "bg-ember text-white" : light ? "bg-black text-white" : "bg-white text-black"}`}>?</span>
                     </Link>
                   );
                 }
+                const Glyph = item.Icon;
                 return (
-                  <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-0.5 py-2.5 text-[0.62rem] font-medium tracking-[0.08em] ${active ? "" : "text-mute"}`}>
-                    <Icon d={item.icon} />
+                  <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-1 pb-1 text-[0.62rem] font-medium uppercase tracking-[0.12em] ${active ? "text-ember" : light ? "text-black/45" : "text-white/55"}`}>
+                    <Glyph />
                     {t(item.key)}
                   </Link>
                 );
