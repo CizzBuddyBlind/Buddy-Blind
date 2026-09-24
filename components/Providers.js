@@ -1082,7 +1082,7 @@ export function BuddyProvider({ children }) {
         videoUrl = `idb:${current.id}:video`;
       }
       gallery = await Promise.all(gallery.map(async (srcUrl, index) => {
-        if (typeof srcUrl === "string" && srcUrl.startsWith("data:") && srcUrl.length > 120000) {
+        if (typeof srcUrl === "string" && srcUrl.startsWith("data:")) {
           const key = `${current.id}:e${index}`;
           await putMedia(key, srcUrl);
           return `idb:${key}`;

@@ -52,7 +52,8 @@ export default function PrivateDetailPage() {
   const initial = String(host.handle || "H").trim().slice(0, 1).toUpperCase();
   const buddyLabel = Number(host.buddies) >= 15 ? "15+" : host.buddies != null ? String(host.buddies) : "";
   const full = (event.spots || 0) <= 0;
-  const isHost = !!(bb.session && (bb.session.handle === event.hostName || bb.session.handle === host.handle));
+  const hostHandle = event.hostName || event.hostProfile?.handle || "";
+  const isHost = !!(bb.session?.handle && hostHandle && bb.session.handle === hostHandle);
   const canEdit = privateEditOpen(event.dateISO);
   const lockOn = privateLockDate(event.dateISO);
   const lockLabel = lockOn
@@ -70,10 +71,26 @@ export default function PrivateDetailPage() {
   }
 
   async function addEditPhoto(file) {
-    if (!file || !draft || draft.photos.length >= 6) return;
+    if (!draft) return;
+    if (!file) return;
+    if (draft.photos.length >= 6) {
+      bb.notify("6 photos max.");
+      return;
+    }
     try {
-      const imageUrl = await fileToCover(file);
-      setDraft((current) => current ? { ...current, photos: [...current.photos, imageUrl].slice(0, 6) } : current);
+      let imageUrl = "";
+      try {
+        imageUrl = await fileToCover(file);
+      } catch {
+        imageUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ""));
+          reader.onerror = () => reject(new Error("no"));
+          reader.readAsDataURL(file);
+        });
+      }
+      if (!imageUrl.startsWith("data:image")) throw new Error("no");
+      setDraft((current) => (current ? { ...current, photos: [...current.photos, imageUrl].slice(0, 6) } : current));
     } catch {
       bb.notify("That photo didn't load. Try a JPG.");
     }
@@ -168,7 +185,21 @@ export default function PrivateDetailPage() {
             <div className="mt-3 flex gap-2 overflow-x-auto">
               {slides.map((item, index) => (
                 <button key={index} type="button" onClick={() => setShot(index)} className={`h-16 w-20 shrink-0 overflow-hidden rounded-xl border ${shot === index ? "border-ember" : "border-black/10"}`}>
-                  {item.type === "video" ? <span className="grid h-full w-full place-items-center bg-char text-xs text-paper">Video</span> : <img src={item.src.startsWith("idb:") ? media[item.src] || "" : item.src} alt="" className="h-full w-full object-cover" />}
+                  {item.type === "video" ? (
+                    <video
+                      src={item.src.startsWith("idb:") ? media[item.src] || "" : item.src}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="h-full w-full object-cover"
+                      onLoadedData={(e) => {
+                        const clip = e.currentTarget;
+                        if (clip.currentTime < 0.1) clip.currentTime = 0.1;
+                      }}
+                    />
+                  ) : (
+                    <img src={item.src.startsWith("idb:") ? media[item.src] || "" : item.src} alt="" className="h-full w-full object-cover" />
+                  )}
                 </button>
               ))}
             </div>
@@ -220,7 +251,7 @@ export default function PrivateDetailPage() {
                 : `Notice: From ${lockLabel}, nothing can change.`}
             </p>
           )}
-          {editingNight && draft && (
+          {isHost && editingNight && draft && (
             <div className="mt-4 space-y-3 rounded-2xl border border-black/10 bg-white p-4">
               <p className="text-xs uppercase tracking-[0.16em] text-mute">Locked</p>
               <p className="text-sm">{event.location} · {event.dateISO} · {event.timeLabel}</p>
