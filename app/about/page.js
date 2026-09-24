@@ -2,8 +2,10 @@ export default function AboutPage() {
   return (
     <main className="bb-frame bg-ink pb-28 pt-16 text-fg md:pb-20">
       <p className="text-[0.72rem] uppercase tracking-[0.2em] text-ember">About us</p>
-      <h1 className="mt-5 max-w-4xl font-serif text-[2.6rem] leading-[1.05] text-white sm:text-5xl md:text-6xl">
-        The restaurant is the setting. The people are the experience. The conversation is the point.
+      <h1 className="mt-5 max-w-4xl font-serif leading-[1.05]">
+        <span className="block text-3xl text-white sm:text-4xl md:text-5xl">The restaurant is the setting.</span>
+        <span className="mt-2 block text-3xl text-white sm:text-4xl md:text-5xl">The people are the experience.</span>
+        <span className="mt-3 block text-5xl text-ember sm:text-6xl md:text-7xl">The conversation is the point.</span>
       </h1>
       <div className="mt-12 max-w-2xl space-y-5 text-base leading-relaxed text-white/70">
         <p>Buddy Blind is built on one simple idea: meet people without knowing exactly who you’re going to meet.</p>
