@@ -9,12 +9,12 @@ import { JoinWizard, LangSwitch, OpenTableWizard, PrivateWizard, TodayPopup, Tri
 import { RestaurantAdmin } from "./RestaurantAdmin";
 import { iso } from "@/lib/bible";
 
-const NAV = [
-  { href: "/", key: "nav.venues" },
-  { href: "/quick", key: "nav.quick" },
-  { href: "/how", key: "nav.how" },
-  { href: "/private", key: "nav.private" },
-  { href: "/profile", key: "nav.profile" },
+const TOP = [
+  { href: "/", label: "Venues" },
+  { href: "/private", label: "Private events" },
+  { href: "/how", label: "How it works" },
+  { href: "/subscribe", label: "Premium" },
+  { href: "/profile", label: "Profile" },
 ];
 
 function initials(session) {
@@ -136,21 +136,21 @@ export function Shell({ children }) {
       )}
       <div className={bb.editing && bb.device !== "desktop" ? "bg-[#050505] py-6" : ""}>
         <div className={frame}>
-          <header className={`sticky z-40 border-b border-black/5 bg-paper text-char ${bb.editing ? "top-[46px]" : "top-0"}`}>
-            <div className="bb-frame flex h-14 items-center justify-between gap-4">
-              <Link href="/" className="font-serif text-[1.05rem] tracking-[0.14em]">BUDDY BLIND</Link>
-              <nav className="hidden items-center gap-6 md:flex">
-                {NAV.map((item) => {
+          <header className={`sticky z-40 border-b border-white/10 bg-ink text-fg ${bb.editing ? "top-[46px]" : "top-0"}`}>
+            <div className="bb-frame relative flex h-16 items-center justify-between">
+              <Link href="/" className="font-serif text-[1.05rem] tracking-[0.14em] md:invisible">BUDDY BLIND</Link>
+              <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex">
+                {TOP.map((item) => {
                   const active = item.href === "/" ? path === "/" : path.startsWith(item.href);
                   return (
-                    <Link key={item.href} href={item.href} className={`text-[0.78rem] font-medium uppercase tracking-[0.08em] ${active ? "text-ember" : "text-mute"}`}>
-                      {t(item.key)}
+                    <Link key={item.href} href={item.href} className={`text-[0.72rem] font-medium uppercase tracking-[0.16em] ${active ? "text-white" : "text-white/45"}`}>
+                      {item.label}
                     </Link>
                   );
                 })}
               </nav>
               <div className="relative flex items-center gap-3">
-                <Link href="/about" className="text-[0.72rem] font-medium uppercase tracking-[0.14em]">About us</Link>
+                <Link href="/about" className="text-[0.72rem] font-medium uppercase tracking-[0.14em] text-white/80">About us</Link>
                 <button
                   type="button"
                   aria-label="Notifications"
@@ -159,7 +159,7 @@ export function Shell({ children }) {
                     setMenu(false);
                     bb.markNotesRead?.();
                   }}
-                  className="grid h-9 w-9 place-items-center rounded-full bg-black text-sm font-medium text-white"
+                  className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-white text-sm font-medium text-black"
                 >
                   {(bb.social?.notes || []).filter((note) => !note.read).length}
                 </button>
@@ -298,9 +298,9 @@ export function Shell({ children }) {
           {bb.panel === "pages" && (
             <div className="space-y-2">
               <p className="bb-kicker text-mute">Pages</p>
-              {[...NAV, { href: "/profile", key: "nav.profile" }, { href: "/login", key: "nav.login" }].map((item) => (
+              {TOP.map((item) => (
                 <Link key={item.href} href={item.href} className="block rounded-lg px-2 py-2 hover:bg-white/5" onClick={() => bb.setPanel(null)}>
-                  {t(item.key)}
+                  {item.label}
                 </Link>
               ))}
             </div>

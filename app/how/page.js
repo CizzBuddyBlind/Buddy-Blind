@@ -1,30 +1,44 @@
 "use client";
 
-import { Editable } from "@/components/Bits";
-import { useBB } from "@/components/Providers";
+const STEPS = [
+  {
+    n: "01",
+    title: "See venue / private event",
+    body: "Photo is the filter. If you like the light, you'll like the people.",
+  },
+  {
+    n: "02",
+    title: "See neighborhood / vibe / time / places left",
+    body: "Soho tonight? Central tomorrow? How many seats left — real numbers.",
+  },
+  {
+    n: "03",
+    title: "Join",
+    body: "One tap. HK$5 admin only after confirmation. No pre-pay anxiety.",
+  },
+  {
+    n: "04",
+    title: "Meet",
+    body: "Same time. Same table. You find out who when you sit down.",
+  },
+];
 
 export default function HowPage() {
-  const { content, update } = useBB();
-  const copy = content.copy.how;
   return (
-    <main className="bb-frame pb-28 pt-10 md:pb-16">
-      <p className="text-[0.72rem] uppercase tracking-[0.18em] text-ember">
-        <Editable value={copy.kicker} onChange={(kicker) => update((d) => { d.copy.how.kicker = kicker; })} />
-      </p>
-      <h1 className="mt-4 max-w-3xl font-serif text-5xl leading-[1.02] md:text-6xl">
-        <Editable value={copy.title} onChange={(title) => update((d) => { d.copy.how.title = title; })} />
-        {copy.accent ? " " : ""}
-        <Editable className="italic" value={copy.accent} onChange={(accent) => update((d) => { d.copy.how.accent = accent; })} />
+    <main className="bb-frame bg-ink pb-28 pt-16 text-fg md:pb-20">
+      <p className="text-[0.72rem] uppercase tracking-[0.2em] text-ember">How it works · No meta wording</p>
+      <h1 className="mt-5 max-w-4xl font-serif text-[3.4rem] leading-[0.95] text-white sm:text-6xl md:text-7xl">
+        See venue,
+        <br />
+        see vibe, join.
       </h1>
-      <ol className="mt-10 overflow-hidden rounded-[1.6rem] border border-white/15">
-        {(copy.steps || []).map((step, index) => (
-          <li key={step.n || index} className="grid grid-cols-[2.5rem_1fr] gap-4 border-t border-white/10 px-5 py-6 first:border-t-0 sm:px-8">
-            <span className="pt-2 text-xs tracking-[0.14em] text-mute">{step.n}</span>
+      <ol className="mt-14 overflow-hidden rounded-[1.7rem] border border-white/15">
+        {STEPS.map((step) => (
+          <li key={step.n} className="grid grid-cols-[3.2rem_1fr] gap-2 border-t border-white/10 px-6 py-7 first:border-t-0 sm:px-10">
+            <span className="pt-2 text-xs tracking-[0.12em] text-white/40">{step.n}</span>
             <div>
-              <h2 className="font-serif text-2xl md:text-[1.7rem]">
-                <Editable value={step.title} onChange={(title) => update((d) => { d.copy.how.steps[index].title = title; })} />
-              </h2>
-              <Editable as="p" className="mt-2 max-w-xl text-sm leading-relaxed text-mute" value={step.body} onChange={(body) => update((d) => { d.copy.how.steps[index].body = body; })} />
+              <h2 className="font-serif text-[1.65rem] leading-tight text-white md:text-[1.85rem]">{step.title}</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/55">{step.body}</p>
             </div>
           </li>
         ))}
