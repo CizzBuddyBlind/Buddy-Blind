@@ -4,7 +4,7 @@ const STEPS = [
   {
     n: "01",
     title: "See venue / private event",
-    body: "Photo is the filter. If you like the light, you'll like the people.",
+    body: "Photo is the filter. If you like the light, you’ll like the people.",
   },
   {
     n: "02",
@@ -14,12 +14,27 @@ const STEPS = [
   {
     n: "03",
     title: "Join",
-    body: "One tap. HK$5 admin only after confirmation. No pre-pay anxiety.",
+    body: "One tap. HK$5 admin for trust and security. No pre-pay anxiety.",
   },
   {
     n: "04",
     title: "Meet",
-    body: "Same time. Same table. You find out who when you sit down.",
+    body: "No names before. No photos before. Just show up. Restaurants provide the scene, interact and connect.",
+  },
+  {
+    n: "05",
+    title: "Rate & Comment",
+    body: "Stars isn’t about looks. A comment is your reputation, and you voice your own.",
+  },
+  {
+    n: "06",
+    title: "Add as buddy — Hey! You are my vibe, let's be buddies!",
+    body: "One-click after. If both say yes, you’re buddies.",
+  },
+  {
+    n: "07",
+    title: "Create your own",
+    body: "Premium unlocks private up to 20. Wine, industry, social, Networking — host creates attraction.",
   },
 ];
 
