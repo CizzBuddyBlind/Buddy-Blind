@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fileToCover } from "./Bits";
 import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
@@ -129,8 +129,9 @@ function PayStep({ fee, checked, setChecked, onConfirm, busy, error }) {
   );
 }
 
-export function OpenTableWizard({ venue, onClose, todayOnly = false }) {
+export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = false }) {
   const bb = useBB();
+  const todayOnly = todayOnlyProp || bb.flow?.type === "quick-invite" || bb.flow?.quick === true;
   const t = (key) => translate(bb.lang, key);
   const today = iso(0);
   const [step, setStep] = useState(0);
@@ -153,6 +154,10 @@ export function OpenTableWizard({ venue, onClose, todayOnly = false }) {
   const shown = todayOnly && step > 0 ? step : step + 1;
   const pay = useFeeCheckout(finish);
   const [bookError, setBookError] = useState("");
+
+  useEffect(() => {
+    if (todayOnly && step === 1) setStep(2);
+  }, [todayOnly, step]);
 
   async function close() {
     if (step > 0) {
@@ -213,7 +218,7 @@ export function OpenTableWizard({ venue, onClose, todayOnly = false }) {
           <button type="button" className="mt-3 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(todayOnly ? 2 : 1)}>{t("btn.next")}</button>
         </div>
       )}
-      {step === 1 && (
+      {step === 1 && !todayOnly && (
         <div className="grid grid-cols-2 gap-2">
           {nextDays(7).map((day) => (
             <Choice key={day} on={dateISO === day} onClick={() => setDateISO(day)}>{prettyDate(day, bb.lang)}</Choice>

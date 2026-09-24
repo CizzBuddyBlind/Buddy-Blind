@@ -143,7 +143,7 @@ export default function QuickPage() {
                 <div className="mt-4 space-y-2">
                   {!matches.length && <p className="text-sm text-mute">Nothing there. Try another area.</p>}
                   {matches.map((venue) => (
-                    <button key={venue.id} type="button" className="flex w-full items-center gap-3 rounded-xl border border-black/10 p-2 text-left" onClick={() => { setFlow({ type: "invite", venueId: venue.id, quick: true }); setFree(false); }}>
+                    <button key={venue.id} type="button" className="flex w-full items-center gap-3 rounded-xl border border-black/10 p-2 text-left" onClick={() => { setFlow({ type: "quick-invite", venueId: venue.id }); setFree(false); }}>
                       <img src={venue.imageUrl} alt="" className="h-12 w-12 rounded-lg object-cover" />
                       <span>
                         <span className="block text-sm font-medium">{venue.name}</span>
