@@ -96,11 +96,13 @@ export default function LoginForm() {
         <button type="submit" className="mt-5 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink">
           {mode === "in" ? "Login" : mode === "up" ? "Create account" : "Activate and login"}
         </button>
-        {mode !== "activate" && (
-          <button type="button" className="mt-4 w-full text-sm text-mute" onClick={() => { setMode(mode === "in" ? "up" : "in"); setError(""); }}>
-            {mode === "in" ? "Need a seat? Create account" : "Already have one? Login"}
+        {mode === "in" ? (
+          <a href="/register" className="mt-4 block w-full text-center text-sm text-mute">Need a seat? Create account</a>
+        ) : mode !== "activate" ? (
+          <button type="button" className="mt-4 w-full text-sm text-mute" onClick={() => { setMode("in"); setError(""); }}>
+            Already have one? Login
           </button>
-        )}
+        ) : null}
       </form>
     </main>
   );

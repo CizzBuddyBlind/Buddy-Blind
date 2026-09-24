@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBB } from "@/components/Providers";
 
 const RANK = { free: 0, lite: 1, premium: 2 };
@@ -46,6 +46,7 @@ export default function SubscribePage() {
   const [busy, setBusy] = useState("");
   const [sheet, setSheet] = useState(null);
   const plan = bb.plan || "free";
+  const trialOpened = useRef(false);
 
   useEffect(() => {
     if (!bb.ready) return;
@@ -102,6 +103,15 @@ export default function SubscribePage() {
       checkout?.destroy();
     };
   }, [sheet]);
+
+  useEffect(() => {
+    if (trialOpened.current || !bb.ready || !bb.session || plan === "premium") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("trial") !== "1") return;
+    trialOpened.current = true;
+    window.history.replaceState({}, "", "/subscribe");
+    void pay("premium");
+  }, [bb.ready, bb.session, plan]);
 
   async function pay(kind) {
     if (kind === plan || busy) return;

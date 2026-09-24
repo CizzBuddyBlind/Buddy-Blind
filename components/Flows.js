@@ -404,7 +404,9 @@ export function LangSwitch({ light = false }) {
 export function TrialGate() {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
-  const [checked, setChecked] = useState(false);
+  function start() {
+    window.location.href = bb.session ? "/subscribe?trial=1" : "/register";
+  }
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-4">
       <div className="absolute right-3 top-3 z-[120]">
@@ -414,12 +416,8 @@ export function TrialGate() {
         <p className="bb-kicker text-ember">{t("trial.kicker")}</p>
         <h2 className="mt-2 font-serif text-3xl">{t("trial.title")}</h2>
         <p className="mt-3 text-sm leading-relaxed text-mute">{t("trial.body")}</p>
-        <label className="mt-4 flex items-start gap-2 text-sm">
-          <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
-          <span>{t("trial.check")}</span>
-        </label>
-        <button type="button" disabled={!checked} onClick={bb.acceptTrial} className="mt-5 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink disabled:opacity-40">
-          {t("trial.start")}
+        <button type="button" onClick={start} className="mt-5 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink">
+          {bb.session ? t("trial.card") : t("trial.start")}
         </button>
         <p className="mt-3 text-xs text-mute">{t("trial.note")}</p>
       </div>

@@ -339,7 +339,7 @@ export function Shell({ children }) {
           {bb.toast}
         </div>
       )}
-      {bb.ready && !trialLive && <TrialGate />}
+      {bb.ready && !trialLive && path !== "/register" && path !== "/login" && path !== "/subscribe" && <TrialGate />}
       {showToday && !bb.flow && (
         <TodayPopup
           onJoin={(venueId, tableId) => {
