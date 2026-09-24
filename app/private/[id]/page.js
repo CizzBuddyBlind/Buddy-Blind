@@ -92,7 +92,7 @@ export default function PrivateDetailPage() {
                   setShot((n) => (n + 1) % slides.length);
                   requestAnimationFrame(() => window.scrollTo(0, y));
                 }}
-                className="absolute right-3 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/55 text-white"
+                className="bb-next absolute right-3 z-10 grid h-11 w-11 place-items-center rounded-full bg-black/55 text-white"
               >
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
               </button>

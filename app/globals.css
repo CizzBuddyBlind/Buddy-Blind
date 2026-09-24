@@ -104,11 +104,15 @@ a,
 input,
 select,
 textarea {
-  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, box-shadow 0.35s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease, box-shadow 0.35s ease;
 }
-button:hover:not(:disabled),
-.bb-press:hover {
-  transform: translateY(-1px);
+.bb-next,
+.bb-next:hover,
+.bb-next:active {
+  top: 50%;
+  transform: translateY(-50%);
+  filter: none;
+  transition: none;
 }
 nav a:hover,
 .bb-kicker:hover {

@@ -287,15 +287,10 @@ export function BuddyProvider({ children }) {
     publishedRef.current = slim;
     setPublished(slim);
     write(PUB, slim);
-    if (!supabaseReady) return { ok: false };
-    try {
-      await saveSharedContent(slim);
-      setRemote("live");
-      return { ok: true };
-    } catch (err) {
-      setRemote("error");
-      return { ok: false, error: err instanceof Error ? err.message : "Supabase save failed" };
+    if (supabaseReady) {
+      saveSharedContent(slim).then(() => setRemote("live")).catch(() => setRemote("error"));
     }
+    return { ok: true };
   }, []);
 
   const publish = useCallback(async () => {
@@ -865,8 +860,10 @@ export function BuddyProvider({ children }) {
     };
     venue.tables = [...(venue.tables || []), table];
     const hold = bookingHold(table);
-    const entry = logEntry({ venue, table, hold, action: "opened", host: session.handle });
-    const result = await notifyRestaurant({
+    base.bookingLog = [logEntry({ venue, table, hold, action: "opened", host: session.handle }), ...(base.bookingLog || [])].slice(0, 40);
+    const saved = await applyLive(base);
+    if (!saved.ok && saved.error) return { error: saved.error };
+    notifyRestaurant({
       venueName: venue.name,
       email: venue.email,
       phone: venue.phone,
@@ -880,12 +877,7 @@ export function BuddyProvider({ children }) {
       status: hold.status,
       reason: hold.reason,
       userEmail: session.email,
-    });
-    entry.channelNote = channelNote(result);
-    entry.status = result.email === "sent" || result.sms === "sent" || result.whatsapp === "sent" ? "sent" : "pending";
-    base.bookingLog = [entry, ...(base.bookingLog || [])].slice(0, 40);
-    const saved = await applyLive(base);
-    if (!saved.ok && saved.error) return { error: saved.error };
+    }).catch(() => {});
     const points = grantPoints("invite");
     rememberBooking({
       id: table.id, venueId: venue.id, name: venue.name, kind: "table", mode: "invite", at: Date.now(),
@@ -911,8 +903,10 @@ export function BuddyProvider({ children }) {
       table.participants.push({ handle: session.handle, role: "guest" });
     }
     const hold = bookingHold(table);
-    const entry = logEntry({ venue, table, hold, action: "joined", host: table.hostHandle });
-    const result = await notifyRestaurant({
+    base.bookingLog = [logEntry({ venue, table, hold, action: "joined", host: table.hostHandle }), ...(base.bookingLog || [])].slice(0, 40);
+    const saved = await applyLive(base);
+    if (!saved.ok && saved.error) return { error: saved.error };
+    notifyRestaurant({
       venueName: venue.name,
       email: venue.email,
       phone: venue.phone,
@@ -926,12 +920,7 @@ export function BuddyProvider({ children }) {
       status: hold.status,
       reason: hold.reason,
       userEmail: session.email,
-    });
-    entry.channelNote = channelNote(result);
-    entry.status = result.email === "sent" || result.sms === "sent" || result.whatsapp === "sent" ? "sent" : "pending";
-    base.bookingLog = [entry, ...(base.bookingLog || [])].slice(0, 40);
-    const saved = await applyLive(base);
-    if (!saved.ok && saved.error) return { error: saved.error };
+    }).catch(() => {});
     const points = grantPoints("join");
     rememberBooking({
       id: table.id, venueId: venue.id, name: venue.name, kind: "table", mode: "join", at: Date.now(),
