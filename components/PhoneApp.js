@@ -310,12 +310,12 @@ function happening(date) {
 function NotifyBox({ live, onSend }) {
   const options = live
     ? [
-        ["here", "I'm here, you guys coming"],
-        ["miss", "Sorry guys, I can't make it today, see you guys next time"],
+        ["here", "I'm here"],
+        ["miss", "Can't make it tonight"],
       ]
     : [
-        ["coming", "I am coming"],
-        ["cant", "Sorry guys, I can't make it today"],
+        ["coming", "I'm coming"],
+        ["cant", "Can't make today"],
       ];
   const [choice, setChoice] = useState(options[0][0]);
   const [busy, setBusy] = useState(false);
@@ -359,12 +359,12 @@ function ChatTab() {
     const canReply = current.ping && !current.ping.replyOnly && !current.replied;
     const options = current.ping?.kind === "here" || current.ping?.kind === "miss"
       ? [
-          ["on-way", "Yes, on the way"],
-          ["miss-reply", "Sorry, I can't make it today, see you next time"],
+          ["on-way", "On my way"],
+          ["miss-reply", "Next time"],
         ]
       : [
           ["see-ya", "See ya"],
-          ["next-time", "No worries, see you next time"],
+          ["next-time", "All good, next time"],
         ];
     const picked = options.some(([id]) => id === choice) ? choice : options[0][0];
     return (

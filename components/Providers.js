@@ -944,10 +944,10 @@ export function BuddyProvider({ children }) {
   const sendPing = useCallback(async ({ venueId, tableId, eventId, choice }) => {
     if (!session) return { needLogin: true };
     const lines = {
-      coming: "I am coming",
-      cant: "Sorry guys, I can't make it today",
-      here: "I'm here, you guys coming",
-      miss: "Sorry guys, I can't make it today, see you guys next time",
+      coming: "I'm coming",
+      cant: "Can't make today",
+      here: "I'm here",
+      miss: "Can't make it tonight",
     };
     const line = lines[choice];
     if (!line) return { error: "Pick a line first." };
@@ -1014,18 +1014,18 @@ export function BuddyProvider({ children }) {
     const additions = [];
     const seen = new Set((social.notes || []).map((n) => n.id));
     const line = {
-      coming: "I am coming",
-      cant: "Sorry guys, I can't make it today",
-      here: "I'm here, you guys coming",
-      miss: "Sorry guys, I can't make it today, see you guys next time",
+      coming: "I'm coming",
+      cant: "Can't make today",
+      here: "I'm here",
+      miss: "Can't make it tonight",
       "see-you": "See you there",
       arrive: "Are you coming?",
     };
     const replyLine = {
       "see-ya": "See ya",
-      "next-time": "No worries, see you next time",
-      "on-way": "Yes, on the way",
-      "miss-reply": "Sorry, I can't make it today, see you next time",
+      "next-time": "All good, next time",
+      "on-way": "On my way",
+      "miss-reply": "Next time",
       ok: "Ok, no worries",
     };
     const collect = (ping, meta, title) => {
@@ -1036,7 +1036,7 @@ export function BuddyProvider({ children }) {
           additions.push({
             id,
             title,
-            body: `${ping.from} · ${line[ping.kind] || "I am coming"}`,
+            body: `${ping.from} · ${line[ping.kind] || "I'm coming"}`,
             at: ping.at || Date.now(),
             read: false,
             ping: { ...meta, pingId: ping.id, kind: ping.kind },
