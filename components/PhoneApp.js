@@ -1,0 +1,339 @@
+"use client";
+
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { useBB } from "./Providers";
+import { iso, prettyDate, queryHits, soonestTable } from "@/lib/bible";
+
+function hourOf(time) {
+  const match = String(time || "").toUpperCase().match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/);
+  if (!match) return null;
+  let hour = Number(match[1]);
+  if (match[3] === "PM" && hour < 12) hour += 12;
+  if (match[3] === "AM" && hour === 12) hour = 0;
+  return hour;
+}
+
+function mealOf(time) {
+  const hour = hourOf(time);
+  if (hour == null) return "";
+  if (hour < 15) return "lunch";
+  if (hour < 18) return "happy";
+  if (hour < 21) return "dinner";
+  return "late";
+}
+
+function isBar(venue) {
+  return /bar|wine|pub/i.test(`${venue.typeLabel || ""} ${venue.cuisine || ""} ${venue.name || ""}`);
+}
+
+function Photo({ src, alt, className }) {
+  if (!src) return <div className={`bg-neutral-200 ${className || ""}`} />;
+  return <img src={src} alt={alt || ""} className={`object-cover ${className || ""}`} />;
+}
+
+function Search({ value, onChange, placeholder }) {
+  return (
+    <input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full rounded-full border border-black/10 bg-white px-4 py-3 text-sm outline-none"
+    />
+  );
+}
+
+function Chips({ options, value, onChange }) {
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1">
+      {options.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onChange(item.id)}
+          className={`shrink-0 rounded-full px-3 py-1.5 text-xs ${value === item.id ? "bg-black text-white" : "bg-white text-neutral-600 ring-1 ring-black/10"}`}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function HomeTab() {
+  const bb = useBB();
+  const [query, setQuery] = useState("");
+  const [where, setWhere] = useState(true);
+  const [mode, setMode] = useState("events");
+  const [date, setDate] = useState(iso(0));
+  const [meal, setMeal] = useState("");
+  const venues = bb.content.venues.filter((venue) => bb.editing || !venue.hidden);
+  const privates = bb.content.events.filter((event) => event.kind === "private" && (bb.editing || !event.hidden));
+  const cards = useMemo(() => {
+    if (mode === "private") {
+      return privates.filter((event) => queryHits(`${event.name} ${event.location} ${event.description} ${event.timeLabel}`, query));
+    }
+    return venues.filter((venue) => {
+      const rows = soonestTable(venue).filter((row) => {
+        if (date && row.table.dateISO !== date) return false;
+        if (meal && mealOf(row.table.time) !== meal) return false;
+        return true;
+      });
+      if ((date || meal) && !rows.length) return false;
+      return queryHits(`${venue.name} ${venue.cuisine} ${venue.area} ${venue.locationLabel} ${venue.about}`, query);
+    });
+  }, [mode, privates, venues, query, date, meal]);
+
+  return (
+    <div className="space-y-3">
+      <Search value={query} onChange={setQuery} placeholder="Search city" />
+      {where && (
+        <button type="button" onClick={() => setWhere(false)} className="rounded-full bg-white px-3 py-1 text-xs ring-1 ring-black/10">
+          Hong Kong ×
+        </button>
+      )}
+      <div className="grid grid-cols-2 rounded-full bg-neutral-200 p-1 text-sm">
+        {[["events", "Events"], ["private", "Private events"]].map(([id, label]) => (
+          <button key={id} type="button" onClick={() => setMode(id)} className={`rounded-full py-2 ${mode === id ? "bg-white font-medium" : "text-neutral-500"}`}>{label}</button>
+        ))}
+      </div>
+      {mode === "events" && (
+        <>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm" />
+          <Chips
+            value={meal}
+            onChange={setMeal}
+            options={[
+              { id: "", label: "Any time" },
+              { id: "lunch", label: "Lunch" },
+              { id: "happy", label: "Happy hour" },
+              { id: "dinner", label: "Dinner" },
+              { id: "late", label: "Late" },
+            ]}
+          />
+        </>
+      )}
+      <div className="space-y-3">
+        {mode === "private" && cards.map((event) => (
+          <article key={event.id} className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            <Photo src={event.imageUrl} alt="" className="h-36 w-full" />
+            <div className="space-y-2 p-3">
+              <h2 className="font-semibold">{event.name}</h2>
+              <p className="text-xs text-neutral-500">{prettyDate(event.dateISO)} · {event.timeLabel} · {event.location}</p>
+              <p className="line-clamp-2 text-sm text-neutral-600">{event.description}</p>
+              <Link href={`/private/${event.id}`} className="block rounded-full bg-black py-2 text-center text-sm text-white">Join</Link>
+            </div>
+          </article>
+        ))}
+        {mode === "events" && cards.map((venue) => (
+          <article key={venue.id} className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            <Link href={`/venues/${venue.id}`}>
+              <Photo src={venue.imageUrl} alt="" className="h-40 w-full" />
+            </Link>
+            <div className="space-y-2 p-3">
+              <Link href={`/venues/${venue.id}`} className="block font-semibold">{venue.name}</Link>
+              <p className="text-xs text-neutral-500">{venue.cuisine} · {venue.locationLabel || venue.area}</p>
+              <p className="line-clamp-2 text-sm text-neutral-600">{venue.about}</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" className="rounded-full border border-black py-2 text-sm" onClick={() => bb.setFlow({ type: "invite", venueId: venue.id })}>Invite</button>
+                <button type="button" className="rounded-full bg-black py-2 text-sm text-white" onClick={() => bb.setFlow({ type: "join", venueId: venue.id })}>Join</button>
+              </div>
+            </div>
+          </article>
+        ))}
+        {!cards.length && <p className="py-8 text-center text-sm text-neutral-500">Nothing for that time. Try another day.</p>}
+      </div>
+    </div>
+  );
+}
+
+function VenuesTab() {
+  const bb = useBB();
+  const [query, setQuery] = useState("");
+  const [kind, setKind] = useState("all");
+  const rows = bb.content.venues.filter((venue) => {
+    if (!bb.editing && venue.hidden) return false;
+    if (kind === "bar" && !isBar(venue)) return false;
+    if (kind === "restaurant" && isBar(venue)) return false;
+    return queryHits(`${venue.name} ${venue.cuisine} ${venue.typeLabel} ${venue.locationLabel} ${venue.about}`, query);
+  });
+  return (
+    <div className="space-y-3">
+      <Search value={query} onChange={setQuery} placeholder="Search venues" />
+      <Chips value={kind} onChange={setKind} options={[{ id: "all", label: "All" }, { id: "restaurant", label: "Restaurants" }, { id: "bar", label: "Bars" }]} />
+      <div className="space-y-2">
+        {rows.map((venue) => (
+          <Link key={venue.id} href={`/venues/${venue.id}`} className="flex gap-3 rounded-2xl bg-white p-2 shadow-sm">
+            <Photo src={venue.imageUrl} alt="" className="h-16 w-16 shrink-0 rounded-xl" />
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">{venue.name}</span>
+              <span className="block text-xs text-neutral-500">{venue.typeLabel || venue.cuisine} · {venue.locationLabel || venue.area} · {venue.priceTier || venue.priceLabel}</span>
+              <span className="line-clamp-2 block text-xs text-neutral-600">{venue.about}</span>
+            </span>
+            <span className="self-center pr-1 text-neutral-400">›</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EventsTab() {
+  const bb = useBB();
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("all");
+  const today = iso(0);
+  const week = iso(7);
+  const tables = [];
+  bb.content.venues.forEach((venue) => {
+    if (!bb.editing && venue.hidden) return;
+    soonestTable(venue).forEach((row) => {
+      tables.push({ venue, table: row.table, places: row.hold.places });
+    });
+  });
+  const privates = bb.content.events.filter((event) => event.kind === "private" && (bb.editing || !event.hidden));
+  const rows = filter === "private"
+    ? privates.filter((event) => queryHits(`${event.name} ${event.description} ${event.location}`, query))
+    : tables.filter(({ venue, table }) => {
+      if (filter === "today" && table.dateISO !== today) return false;
+      if (filter === "week" && (table.dateISO < today || table.dateISO > week)) return false;
+      return queryHits(`${venue.name} ${venue.cuisine} ${table.time} ${venue.area}`, query);
+    });
+
+  return (
+    <div className="space-y-3">
+      <Search value={query} onChange={setQuery} placeholder="Search events" />
+      <Chips
+        value={filter}
+        onChange={setFilter}
+        options={[
+          { id: "all", label: "All" },
+          { id: "today", label: "Today" },
+          { id: "week", label: "This week" },
+          { id: "private", label: "Private" },
+        ]}
+      />
+      <div className="space-y-3">
+        {filter === "private" && rows.map((event) => (
+          <article key={event.id} className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            <Photo src={event.imageUrl} alt="" className="h-32 w-full" />
+            <div className="space-y-1 p-3">
+              <h2 className="font-semibold">{event.name}</h2>
+              <p className="text-xs text-neutral-500">{prettyDate(event.dateISO)} · {event.timeLabel}</p>
+              <Link href={`/private/${event.id}`} className="mt-2 block rounded-full bg-black py-2 text-center text-sm text-white">Join</Link>
+            </div>
+          </article>
+        ))}
+        {filter !== "private" && rows.map(({ venue, table, places }) => (
+          <article key={table.id} className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            <Photo src={venue.imageUrl} alt="" className="h-32 w-full" />
+            <div className="space-y-1 p-3">
+              <h2 className="font-semibold">{venue.name}</h2>
+              <p className="text-xs text-neutral-500">{venue.cuisine}</p>
+              <p className="text-xs text-neutral-500">{prettyDate(table.dateISO)} · {table.time}</p>
+              <p className="text-xs text-neutral-500">{places} seats left</p>
+              <button type="button" className="mt-2 w-full rounded-full bg-black py-2 text-sm text-white" onClick={() => bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>Join</button>
+            </div>
+          </article>
+        ))}
+        {!rows.length && <p className="py-8 text-center text-sm text-neutral-500">No tables in this list.</p>}
+      </div>
+    </div>
+  );
+}
+
+function ChatTab() {
+  const bb = useBB();
+  const [query, setQuery] = useState("");
+  const notes = (bb.social?.notes || []).filter((note) => queryHits(`${note.title} ${note.body}`, query));
+  return (
+    <div className="space-y-3">
+      <Search value={query} onChange={setQuery} placeholder="Search messages" />
+      {!bb.session && <p className="text-sm text-neutral-500">Log in to see your messages.</p>}
+      {bb.session && !notes.length && <p className="py-8 text-center text-sm text-neutral-500">No messages yet.</p>}
+      <div className="space-y-2">
+        {notes.map((note) => (
+          <article key={note.id} className="rounded-2xl bg-white p-3 shadow-sm">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="font-medium">{note.title || "Buddy Blind"}</h2>
+              <span className="text-[10px] text-neutral-400">{note.at ? prettyDate(String(note.at).slice(0, 10)) : ""}</span>
+            </div>
+            <p className="mt-1 line-clamp-2 text-sm text-neutral-600">{note.body}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProfileTab() {
+  const bb = useBB();
+  const [open, setOpen] = useState(false);
+  if (!bb.session) {
+    return (
+      <div className="grid min-h-[50dvh] place-items-center text-center">
+        <div>
+          <h1 className="text-xl font-semibold">Your profile</h1>
+          <p className="mt-2 text-sm text-neutral-500">Log in to see membership and settings.</p>
+          <Link href="/login" className="mt-4 inline-block rounded-full bg-black px-5 py-2 text-sm text-white">Log in</Link>
+        </div>
+      </div>
+    );
+  }
+  const name = bb.session.handle || bb.session.username || "You";
+  const rows = [
+    ["Account settings", () => setOpen((v) => !v)],
+    ["Membership", "/subscribe"],
+    ["Payment methods", "/subscribe"],
+    ["Language", () => bb.setLang(bb.lang === "en" ? "zh-HK" : bb.lang === "zh-HK" ? "zh" : "en")],
+    ["Notifications", () => {}],
+    ["Blocked users", () => {}],
+    ["Privacy", "/how"],
+    ["Help", "/how"],
+  ];
+  return (
+    <div>
+      <div className="mb-4 flex items-center gap-3">
+        <div className="grid h-14 w-14 place-items-center rounded-full bg-neutral-200 text-lg font-semibold">{name.slice(0, 1).toUpperCase()}</div>
+        <div>
+          <h1 className="text-lg font-semibold">{name}</h1>
+          <p className="text-xs text-neutral-500">{bb.plan === "premium" ? "Premium" : bb.plan === "lite" ? "Lite" : "Free"}</p>
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+        {rows.map(([label, dest]) => (
+          typeof dest === "string" ? (
+            <Link key={label} href={dest} className="flex items-center justify-between border-b border-black/5 px-4 py-3 text-sm last:border-0">
+              {label}<span className="text-neutral-300">›</span>
+            </Link>
+          ) : (
+            <button key={label} type="button" onClick={dest} className="flex w-full items-center justify-between border-b border-black/5 px-4 py-3 text-left text-sm last:border-0">
+              {label}<span className="text-neutral-300">›</span>
+            </button>
+          )
+        ))}
+      </div>
+      {open && (
+        <div className="mt-3 rounded-2xl bg-white p-4 text-sm shadow-sm">
+          <p>{bb.session.email}</p>
+          <p className="text-neutral-500">{bb.session.phone || "No phone yet"}</p>
+        </div>
+      )}
+      <button type="button" onClick={() => bb.logout()} className="mt-4 w-full rounded-2xl bg-white py-3 text-sm text-red-600 shadow-sm">Sign out</button>
+    </div>
+  );
+}
+
+export function PhoneScreen({ tab }) {
+  const title = { home: "Home", venues: "Venues", events: "Events", chat: "Chat", profile: "Profile" }[tab] || "";
+  return (
+    <main className="min-h-dvh bg-[#f3f3f3] px-4 pb-28 pt-4 text-[#171717]">
+      <h1 className="mb-3 text-lg font-semibold">{title}</h1>
+      {tab === "home" && <HomeTab />}
+      {tab === "venues" && <VenuesTab />}
+      {tab === "events" && <EventsTab />}
+      {tab === "chat" && <ChatTab />}
+      {tab === "profile" && <ProfileTab />}
+    </main>
+  );
+}
