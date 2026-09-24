@@ -1,7 +1,5 @@
-"use client";
-
-import { PhoneScreen } from "@/components/PhoneApp";
+import { redirect } from "next/navigation";
 
 export default function EventsPage() {
-  return <PhoneScreen tab="events" />;
+  redirect("/");
 }
