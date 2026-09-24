@@ -183,6 +183,22 @@ export function Shell({ children }) {
                         <div key={note.id} className="border-b border-white/5 px-4 py-3">
                           <p className="text-sm">{note.title}</p>
                           <p className="mt-1 text-xs text-mute">{note.body}</p>
+                          {note.invite && (
+                            <button
+                              type="button"
+                              className="mt-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-black"
+                              onClick={async () => {
+                                const invite = note.invite;
+                                const res = invite.eventId
+                                  ? await bb.joinPrivate(invite.eventId)
+                                  : await bb.joinTable({ venueId: invite.venueId, tableId: invite.tableId });
+                                bb.notify(res?.error || "You're in.");
+                                setNotesOpen(false);
+                              }}
+                            >
+                              JOIN
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>

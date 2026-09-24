@@ -684,7 +684,7 @@ export function BuddyProvider({ children }) {
 
   const updateProfile = useCallback((partial) => {
     if (!session) return;
-    const allowed = ["handle", "gender", "occupation", "neighborhood", "ageRange", "phone", "verified"];
+    const allowed = ["handle", "gender", "orientation", "occupation", "neighborhood", "ageRange", "phone", "verified"];
     const extra = { ...(read(PROFILES, {})[session.email] || {}) };
     allowed.forEach((key) => {
       if (partial[key] !== undefined) extra[key] = partial[key];
@@ -735,6 +735,25 @@ export function BuddyProvider({ children }) {
     };
     saveSocial(next);
   }, [social]);
+
+  const askBuddies = useCallback((names, invite) => {
+    if (!session) return { error: "Log in first." };
+    const list = [...new Set((names || []).map((name) => String(name).trim()).filter(Boolean))];
+    if (!list.length) return { error: "Pick a buddy." };
+    const from = session.handle || "A buddy";
+    const current = { ...emptySocial(), ...read(SOCIAL, {}) };
+    const notes = list.map((name, i) => ({
+      id: `n-${Date.now()}-${i}`,
+      title: "Join?",
+      body: `${from} asked you to join ${invite?.name || "a table"}`,
+      at: new Date().toISOString(),
+      read: false,
+      invite: { ...(invite || {}), buddy: name },
+    }));
+    saveSocial({ ...current, notes: [...notes, ...(current.notes || [])].slice(0, 40) });
+    notify(list.length === 1 ? `Asked ${list[0]}.` : `Asked ${list.length}.`);
+    return { ok: true };
+  }, [notify, session]);
 
   const inviteBuddies = useCallback((eventName) => {
     const accepted = (social.buddies || []).filter((b) => b.status === "accepted");
@@ -1161,7 +1180,7 @@ export function BuddyProvider({ children }) {
       markNotesRead,
       requestBuddy,
       respondBuddy,
-      inviteBuddies,
+      inviteBuddies, askBuddies,
       addReview,
       flow,
       setFlow,

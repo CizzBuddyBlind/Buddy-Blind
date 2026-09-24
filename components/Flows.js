@@ -102,6 +102,7 @@ export function OpenTableWizard({ venue, onClose }) {
   const [ageRange, setAgeRange] = useState("");
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(null);
   const branch = (venue.branches || []).find((b) => b.id === branchId) || venue.branches?.[0];
   const fee = { base: 5, total: 5 };
   const titles = [t("step.location"), t("step.date"), t("step.time"), t("step.type"), t("step.people"), t("step.prefs"), t("step.summary"), t("step.pay")];
@@ -116,19 +117,16 @@ export function OpenTableWizard({ venue, onClose }) {
 
   async function confirmPay() {
     setBusy(true);
-    const res = await bb.payFee({
-      type: "open",
-      input: {
-        venueId: venue.id,
-        branchId: branch?.id,
-        dateISO,
-        time,
-        tableType,
-        participants,
-        gender,
-        orientation,
-        ageRange,
-      },
+    const res = await bb.openTable({
+      venueId: venue.id,
+      branchId: branch?.id,
+      dateISO,
+      time,
+      tableType,
+      participants,
+      gender,
+      orientation,
+      ageRange,
     });
     setBusy(false);
     if (res.needLogin) {
@@ -136,8 +134,21 @@ export function OpenTableWizard({ venue, onClose }) {
       window.location.href = "/login";
       return;
     }
-    if (res.redirecting) return;
-    if (res.error) bb.notify(res.error);
+    if (res.error) {
+      bb.notify(res.error);
+      return;
+    }
+    bb.notify("Table opened · +2 pts");
+    setDone({
+      title: venue.name,
+      lines: [branch?.label, `${dateISO} · ${time}`],
+      path: `/share/table/${venue.id}/${res.tableId}`,
+      invite: { name: venue.name, venueId: venue.id, tableId: res.tableId },
+    });
+  }
+
+  if (done) {
+    return <DoneShare title={done.title} lines={done.lines} path={done.path} invite={done.invite} onClose={onClose} />;
   }
 
   return (
@@ -245,6 +256,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
   const [step, setStep] = useState(tableId || openId ? 1 : 0);
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(null);
   const row = tables.find((item) => item.table.id === picked) || tables.find((item) => item.table.id === tableId);
   const bookable = tables.filter((row) => !row.hold.closed && row.hold.places > 0);
   const none = !tableId && bookable.length === 0;
@@ -260,15 +272,29 @@ export function JoinWizard({ venue, tableId, onClose }) {
 
   async function confirmPay() {
     setBusy(true);
-    const res = await bb.payFee({ type: "join", input: { venueId: venue.id, tableId: picked || tableId } });
+    const res = await bb.joinTable({ venueId: venue.id, tableId: picked || tableId });
     setBusy(false);
     if (res.needLogin) {
       rememberReturn();
       window.location.href = "/login";
       return;
     }
-    if (res.redirecting) return;
-    if (res.error) bb.notify(res.error);
+    if (res.error) {
+      bb.notify(res.error);
+      return;
+    }
+    bb.notify("You're in.");
+    const table = row?.table;
+    setDone({
+      title: venue.name,
+      lines: [table ? `${table.dateISO} · ${table.time}` : "", venue.locationLabel],
+      path: `/share/table/${venue.id}/${picked || tableId}`,
+      invite: { name: venue.name, venueId: venue.id, tableId: picked || tableId },
+    });
+  }
+
+  if (done) {
+    return <DoneShare title={done.title} lines={done.lines} path={done.path} invite={done.invite} onClose={onClose} />;
   }
 
   if (none) {
@@ -404,9 +430,7 @@ export function LangSwitch({ light = false }) {
 export function TrialGate() {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
-  function start() {
-    window.location.href = bb.session ? "/subscribe?trial=1" : "/register";
-  }
+  const [checked, setChecked] = useState(false);
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-4">
       <div className="absolute right-3 top-3 z-[120]">
@@ -416,8 +440,12 @@ export function TrialGate() {
         <p className="bb-kicker text-ember">{t("trial.kicker")}</p>
         <h2 className="mt-2 font-serif text-3xl">{t("trial.title")}</h2>
         <p className="mt-3 text-sm leading-relaxed text-mute">{t("trial.body")}</p>
-        <button type="button" onClick={start} className="mt-5 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink">
-          {bb.session ? t("trial.card") : t("trial.start")}
+        <label className="mt-4 flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
+          <span>{t("trial.check")}</span>
+        </label>
+        <button type="button" disabled={!checked} onClick={bb.acceptTrial} className="mt-5 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink disabled:opacity-40">
+          {t("trial.start")}
         </button>
         <p className="mt-3 text-xs text-mute">{t("trial.note")}</p>
       </div>
@@ -503,20 +531,17 @@ export function PrivateWizard({ venueId = "", onClose }) {
   async function publish() {
     if (!venue) return;
     setBusy(true);
-    const res = await bb.payFee({
-      type: "private-create",
-      input: {
-        ...form,
-        name: form.name.trim() || venue.name,
-        venueName: venue.name,
-        venueId: venue.id,
-        branchId: branch?.id || "",
-        location,
-        forWhom: [form.orientation, form.gender, form.ageRange].filter(Boolean).join(" · ") || "Anyone",
-        capacity: Math.min(20, Math.max(2, Number(form.capacity) || 2)),
-        imageUrl: form.imageUrl || venue.imageUrl,
-        gallery: photos,
-      },
+    const res = await bb.createPrivate({
+      ...form,
+      name: form.name.trim() || venue.name,
+      venueName: venue.name,
+      venueId: venue.id,
+      branchId: branch?.id || "",
+      location,
+      forWhom: [form.orientation, form.gender, form.ageRange].filter(Boolean).join(" · ") || "Anyone",
+      capacity: Math.min(20, Math.max(2, Number(form.capacity) || 2)),
+      imageUrl: form.imageUrl || venue.imageUrl,
+      gallery: photos,
     });
     setBusy(false);
     if (res.needLogin) {
@@ -524,8 +549,13 @@ export function PrivateWizard({ venueId = "", onClose }) {
       window.location.href = "/login";
       return;
     }
-    if (res.redirecting) return;
-    if (res.error) bb.notify(res.error);
+    if (res.error) {
+      bb.notify(res.error);
+      return;
+    }
+    setPublishedId(res.id);
+    setPhase("share");
+    bb.notify("It's live.");
   }
 
   async function shareLive() {
@@ -553,6 +583,9 @@ export function PrivateWizard({ venueId = "", onClose }) {
           <button type="button" className="flex-1 rounded-full border border-white/15 py-3 text-sm" onClick={onClose}>Done</button>
           <button type="button" className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={shareLive}>Share</button>
         </div>
+        <BuddyAsk
+          invite={{ name: form.name || venue?.name, eventId: publishedId, path: `/share/private/${publishedId}` }}
+        />
       </Frame>
     );
   }
@@ -691,6 +724,67 @@ export function shareText({ path, joined, lines }) {
   const url = `${window.location.origin}${path}`;
   const lead = joined ? `I joined. Come join me via ${url}` : `Come join me via ${url}`;
   return `${lead}\n\n${lines.filter(Boolean).join("\n")}`;
+}
+
+function BuddyAsk({ invite }) {
+  const bb = useBB();
+  const [list, setList] = useState(false);
+  const [picked, setPicked] = useState([]);
+  const [note, setNote] = useState("");
+  const buddies = (bb.social?.buddies || []).filter((b) => b.status === "accepted");
+  if (!buddies.length) return null;
+  function toggle(name) {
+    setPicked((curr) => (curr.includes(name) ? curr.filter((item) => item !== name) : [...curr, name]));
+  }
+  function ask() {
+    const res = bb.askBuddies(picked, invite);
+    setNote(res?.error || "Asked. They can join or leave it.");
+    if (!res?.error) setList(false);
+  }
+  return (
+    <div className="mt-3">
+      <button type="button" className="w-full rounded-full border border-white/15 py-3 text-sm" onClick={() => setList((v) => !v)}>Buddies</button>
+      {list && (
+        <div className="mt-3 space-y-2">
+          {buddies.map((buddy) => (
+            <button key={buddy.id} type="button" onClick={() => toggle(buddy.name)} className={`block w-full rounded-2xl border px-4 py-3 text-left text-sm ${picked.includes(buddy.name) ? "border-ember" : "border-white/10"}`}>
+              {buddy.name}
+            </button>
+          ))}
+          <button type="button" disabled={!picked.length} className="w-full rounded-full bg-ember py-3 text-sm font-semibold text-white disabled:opacity-40" onClick={ask}>Ask them</button>
+        </div>
+      )}
+      {note && <p className="mt-3 text-sm text-mute">{note}</p>}
+    </div>
+  );
+}
+
+export function DoneShare({ title, lines, path, invite, onClose }) {
+  const [note, setNote] = useState("");
+  async function share() {
+    const text = shareText({ path, joined: true, lines });
+    try {
+      if (navigator.share) await navigator.share({ title: title || "Buddy Blind", text, url: `${window.location.origin}${path}` });
+      else await navigator.clipboard.writeText(text);
+      setNote("Link ready.");
+    } catch {
+      window.prompt("Copy this", text);
+    }
+  }
+  return (
+    <Frame title="You're in." step={1} total={1} onBack={onClose} onClose={onClose}>
+      <p className="font-serif text-2xl">{title}</p>
+      <ul className="mt-3 space-y-1 text-sm text-mute">
+        {lines.filter(Boolean).map((line) => <li key={line}>{line}</li>)}
+      </ul>
+      <div className="mt-6 flex gap-2">
+        <button type="button" className="flex-1 rounded-full border border-white/15 py-3 text-sm" onClick={onClose}>Done</button>
+        <button type="button" className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={share}>Share</button>
+      </div>
+      <BuddyAsk invite={invite} />
+      {note && <p className="mt-3 text-sm text-mute">{note}</p>}
+    </Frame>
+  );
 }
 
 export function ShareSheet({ open, onClose, joined, lines, path }) {

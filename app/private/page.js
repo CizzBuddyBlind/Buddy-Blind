@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Copy, Editable, Photo } from "@/components/Bits";
-import { PayDialog, rememberReturn } from "@/components/Flows";
+import { DoneShare, PayDialog, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
 import { AGE_RANGES, queryHits } from "@/lib/bible";
@@ -18,6 +18,7 @@ export default function PrivatePage() {
   const [area, setArea] = useState("");
   const [age, setAge] = useState("");
   const [pay, setPay] = useState(null);
+  const [done, setDone] = useState(null);
   const [busy, setBusy] = useState(false);
   const campaign = nights.find((n) => n.featured) || nights[0];
   const shown = useMemo(() => {
@@ -34,16 +35,18 @@ export default function PrivatePage() {
   async function confirmPay() {
     if (!pay) return;
     setBusy(true);
-    const res = await bb.payFee({ type: "join-private", input: { id: pay.id } });
+    const res = await bb.joinPrivate(pay.id);
     setBusy(false);
     if (res.needLogin) {
       rememberReturn();
       window.location.href = "/login";
       return;
     }
-    if (res.redirecting) return;
-    if (res.error) bb.notify(res.error);
-    else setPay(null);
+    if (res.error) bb.notify(res.error === "FULL" ? "FULL. No more places." : res.error);
+    else {
+      setDone(pay);
+      setPay(null);
+    }
   }
 
   return (
@@ -125,7 +128,7 @@ export default function PrivatePage() {
               </div>
               <button
                 type="button"
-                className="mt-3 text-xs font-semibold uppercase tracking-widest"
+                className="mt-4 w-full rounded-full bg-char py-2.5 text-sm font-semibold tracking-wide text-paper"
                 onClick={() => {
                   if ((night.spots || 0) <= 0) {
                     bb.notify("FULL. No more places.");
@@ -148,6 +151,15 @@ export default function PrivatePage() {
         onClose={() => setPay(null)}
         onConfirm={confirmPay}
       />
+      {done && (
+        <DoneShare
+          title={done.name}
+          lines={[done.location, `${done.dateISO || ""} · ${done.timeLabel || ""}`]}
+          path={`/share/private/${done.id}`}
+          invite={{ name: done.name, eventId: done.id }}
+          onClose={() => setDone(null)}
+        />
+      )}
     </main>
   );
 }

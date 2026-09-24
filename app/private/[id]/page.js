@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Editable, Photo } from "@/components/Bits";
-import { PayDialog, ShareSheet, rememberReturn } from "@/components/Flows";
+import { DoneShare, PayDialog, ShareSheet, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 
 export default function PrivateDetailPage() {
@@ -14,6 +14,7 @@ export default function PrivateDetailPage() {
   const [busy, setBusy] = useState(false);
   const [pay, setPay] = useState(false);
   const [share, setShare] = useState(false);
+  const [done, setDone] = useState(false);
   if (!event) {
     return (
       <main className="bb-frame py-20">
@@ -33,7 +34,7 @@ export default function PrivateDetailPage() {
       return;
     }
     if (res.error) bb.notify(res.error === "FULL" ? "FULL. No more places." : res.error);
-    else bb.notify("You're in.");
+    else setDone(true);
     setPay(false);
   }
 
@@ -80,6 +81,15 @@ export default function PrivateDetailPage() {
         onClose={() => setPay(false)}
         onConfirm={join}
       />
+      {done && (
+        <DoneShare
+          title={event.name}
+          lines={[event.location, `${event.dateISO || ""} · ${event.timeLabel || ""}`]}
+          path={`/share/private/${event.id}`}
+          invite={{ name: event.name, eventId: event.id }}
+          onClose={() => setDone(false)}
+        />
+      )}
       <ShareSheet
         open={share}
         onClose={() => setShare(false)}
