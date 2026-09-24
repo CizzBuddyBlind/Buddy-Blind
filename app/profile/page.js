@@ -78,7 +78,7 @@ export default function ProfilePage() {
             <p className="text-[0.75rem] tracking-wide">BADGE · {metal.toUpperCase()}</p>
             <p className="mt-2 text-sm text-mute">Other people only see this badge. The number below is for you.</p>
             <p className="mt-3 text-sm">Private points · {points}. Silver {content.pointThresholds?.silver || 100} · Gold {content.pointThresholds?.gold || 500}.</p>
-            <p className="mt-2 text-[0.8rem] text-mute">2 invite · 1 join · 5 create. The HK$5 administration fee does not change with points.</p>
+            <p className="mt-2 text-[0.8rem] text-mute">Points change your badge. The fee shows when you confirm.</p>
           </div>
           <form className="space-y-2 rounded-2xl border border-white/10 bg-card p-[18px]" onSubmit={(e) => { e.preventDefault(); bb.updateProfile(form); setDraft(null); }}>
             {[

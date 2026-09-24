@@ -44,11 +44,11 @@ export default function ShareTablePage() {
       {!bb.session && (
         <div className="mt-8 rounded-3xl border border-white/10 p-5">
           <p className="font-serif text-2xl">Get Buddy Blind</p>
-          <p className="mt-2 text-sm leading-relaxed text-mute">There is no App Store or Google Play listing yet, so this page is the download. Create a seat, then the HK$5 join opens on this same event.</p>
+          <p className="mt-2 text-sm leading-relaxed text-mute">No store app yet. This page is the way in. Make a seat, then join this table.</p>
         </div>
       )}
       <button type="button" className="mt-8 rounded-full bg-fg px-6 py-3 text-sm font-semibold text-ink" onClick={enter}>
-        {bb.session ? "Join · HK$5" : "Create a seat to join"}
+        {bb.session ? "Join" : "Make a seat"}
       </button>
     </main>
   );

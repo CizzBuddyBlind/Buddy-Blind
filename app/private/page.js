@@ -43,7 +43,7 @@ export default function PrivatePage() {
     }
     if (res.error) bb.notify(res.error === "FULL" ? "FULL. No more places." : res.error);
     else {
-      bb.notify("You're in · HK$5 · +1 pt");
+      bb.notify("You're in.");
       setPay(null);
     }
   }
@@ -75,7 +75,7 @@ export default function PrivatePage() {
               <p className="mt-2 text-sm text-paper/70">{campaign.hostName || campaign.hostLabel} · {campaign.location || "Hong Kong"}</p>
               <p className="text-sm text-paper/70">{campaign.dateISO} · {campaign.timeLabel} · {campaign.spots} places</p>
               <p className="mt-3 text-sm text-paper/80">{campaign.description || campaign.forWhom || campaign.typeLabel}</p>
-              <span className="mt-4 inline-block rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">JOIN · HK$5</span>
+              <span className="mt-4 inline-block rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">JOIN</span>
             </div>
           </div>
         </Link>
@@ -128,7 +128,7 @@ export default function PrivatePage() {
                   setPay(night);
                 }}
               >
-                {(night.spots || 0) <= 0 ? t("priv.full") : "JOIN · HK$5"}
+                {(night.spots || 0) <= 0 ? t("priv.full") : "JOIN"}
               </button>
             </div>
           </article>

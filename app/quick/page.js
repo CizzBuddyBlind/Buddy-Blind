@@ -26,7 +26,7 @@ export default function QuickPage() {
       return;
     }
     if (res.error) notify(res.error);
-    else notify("You're in · HK$5 · +1 pt");
+    else notify("You're in.");
     setSheet(null);
   }
 
@@ -63,7 +63,7 @@ export default function QuickPage() {
               <div className="text-xs text-mute">{row.detail} · {row.spots} left</div>
             </div>
             <button type="button" className="rounded-full bg-char px-4 py-2 text-xs font-semibold text-paper" onClick={() => setSheet({ id: row.id, name: row.name, mode: "join", detail: row.timeLabel })}>
-              JOIN · HK$5
+              JOIN
             </button>
           </article>
         ))}

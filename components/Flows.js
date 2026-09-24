@@ -245,6 +245,8 @@ export function JoinWizard({ venue, tableId, onClose }) {
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const row = tables.find((item) => item.table.id === picked) || tables.find((item) => item.table.id === tableId);
+  const bookable = tables.filter((row) => !row.hold.closed && row.hold.places > 0);
+  const none = !tableId && bookable.length === 0;
   const fee = adminFee();
 
   async function close() {
@@ -268,15 +270,30 @@ export function JoinWizard({ venue, tableId, onClose }) {
       bb.notify(res.error);
       return;
     }
-    bb.notify("You're in · HK$5 · +1 pt");
+    bb.notify("You're in.");
     onClose();
+  }
+
+  if (none) {
+    return (
+      <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog">
+        <div className="bb-sheet w-full max-w-sm rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg">
+          <h2 className="font-serif text-3xl">{t("empty.inviteTitle")}</h2>
+          <p className="mt-2 text-sm text-mute">{t("empty.inviteBody")}</p>
+          <button type="button" className="mt-6 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => bb.setFlow({ type: "invite", venueId: venue.id })}>
+            {t("empty.inviteCta")}
+          </button>
+          <button type="button" className="mt-3 w-full py-2 text-sm text-mute" onClick={onClose}>{t("btn.close")}</button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <Frame title={`Join · ${venue.name}`} step={step + 1} total={2} onBack={step === 0 ? close : () => setStep(0)} onClose={close}>
       {step === 0 && (
         <div className="space-y-2">
-          <p className="text-sm text-mute">Pick the table. The next screen is the HK$5 payment.</p>
+          <p className="text-sm text-mute">Pick a table.</p>
           {tables.length === 0 && <p className="text-sm text-mute">No open table at this restaurant.</p>}
           {tables.map(({ table, hold }) => (
             <button key={table.id} type="button" onClick={() => setPicked(table.id)} className={`bb-choice block w-full rounded-2xl border p-3 text-left text-sm ${picked === table.id ? "border-ember" : "border-white/10"}`}>

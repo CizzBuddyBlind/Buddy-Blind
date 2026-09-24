@@ -39,7 +39,7 @@ export default function SharePrivatePage() {
     }
     if (res.error) bb.notify(res.error);
     else {
-      bb.notify("You're in · HK$5 · +1 pt");
+      bb.notify("You're in.");
       setPay(false);
     }
   }
@@ -51,7 +51,7 @@ export default function SharePrivatePage() {
         {lines.filter(Boolean).map((line) => <li key={line}>{line}</li>)}
       </ul>
       <p className="mt-4 text-sm leading-relaxed">{event.description}</p>
-      {!bb.session && <p className="mt-6 text-sm text-mute">No store app yet. Create a seat on this site, then pay HK$5 to join this event.</p>}
+      {!bb.session && <p className="mt-6 text-sm text-mute">New here? Make a seat on this site, then join this event.</p>}
       <button type="button" className="mt-8 rounded-full bg-fg px-6 py-3 text-sm font-semibold text-ink" onClick={() => {
         if (!bb.session) {
           rememberReturn();
@@ -59,7 +59,7 @@ export default function SharePrivatePage() {
           return;
         }
         setPay(true);
-      }}>Join · HK$5</button>
+      }}>Join</button>
       <PayDialog open={pay} title={`Join · ${event.name}`} lines={lines} busy={busy} onClose={() => setPay(false)} onConfirm={confirm} />
     </main>
   );
