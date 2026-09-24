@@ -150,7 +150,6 @@ export function Shell({ children }) {
                 })}
               </nav>
               <div className="relative flex items-center gap-3">
-                <Link href="/about" className="text-[0.72rem] font-medium uppercase tracking-[0.14em] text-white/80">About us</Link>
                 <button
                   type="button"
                   aria-label="Notifications"
@@ -216,7 +215,6 @@ export function Shell({ children }) {
                     <div className="border-b border-black/10 px-3 py-2">
                       <LangSwitch light />
                     </div>
-                    <Link href="/subscribe" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>Upgrade plan</Link>
                     {bb.session ? (
                       <button
                         type="button"
@@ -231,6 +229,8 @@ export function Shell({ children }) {
                     ) : (
                       <Link href="/login" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>{t("nav.login")}</Link>
                     )}
+                    <Link href="/subscribe" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>Upgrade plan</Link>
+                    <Link href="/about" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>About us</Link>
                   </div>
                 )}
               </div>
