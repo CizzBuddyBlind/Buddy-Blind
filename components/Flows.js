@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
 import {
@@ -35,17 +35,20 @@ function Frame({ title, step, total, onBack, onClose, children }) {
   const { lang } = useBB();
   const t = (key) => translate(lang, key);
   return (
-    <div className="fixed inset-0 z-[85] grid place-items-end bg-black/75 p-3 sm:place-items-center" role="dialog">
-      <div className="max-h-[92dvh] w-full max-w-lg overflow-auto rounded-2xl border border-white/10 bg-[#121212] p-5 text-fg shadow-2xl">
+    <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog">
+      <div className="bb-sheet max-h-[92dvh] w-full max-w-lg overflow-auto rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl">
+        <div className="mb-4 h-px w-full bg-white/10">
+          <div className="h-px bg-ember" style={{ width: `${Math.max(8, (step / total) * 100)}%` }} />
+        </div>
         <div className="flex items-center justify-between gap-3">
-          <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute" onClick={onBack || onClose}>
+          <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute hover:text-fg" onClick={onBack || onClose}>
             {t("btn.back")}
           </button>
           <span className="text-[10px] uppercase tracking-[0.16em] text-mute">{step}/{total}</span>
-          <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute" onClick={onClose}>{t("btn.close")}</button>
+          <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute hover:text-fg" onClick={onClose}>{t("btn.close")}</button>
         </div>
-        <h2 className="mt-3 font-serif text-2xl">{title}</h2>
-        <div className="mt-4">{children}</div>
+        <h2 className="mt-4 font-serif text-3xl leading-tight">{title}</h2>
+        <div className="mt-5">{children}</div>
       </div>
     </div>
   );
@@ -53,7 +56,7 @@ function Frame({ title, step, total, onBack, onClose, children }) {
 
 function Choice({ on, children, onClick }) {
   return (
-    <button type="button" onClick={onClick} className={`rounded-full border px-3 py-2 text-left text-sm ${on ? "border-white bg-white text-ink" : "border-white/15 text-fg"}`}>
+    <button type="button" onClick={onClick} className={`bb-choice rounded-2xl border px-4 py-3 text-left text-sm ${on ? "border-ember bg-white text-ink" : "border-white/15 text-fg"}`}>
       {children}
     </button>
   );
@@ -124,6 +127,7 @@ export function OpenTableWizard({ venue, onClose }) {
     });
     setBusy(false);
     if (res.needLogin) {
+      rememberReturn();
       window.location.href = "/login";
       return;
     }
@@ -233,12 +237,15 @@ export function JoinWizard({ venue, tableId, onClose }) {
     () => (venue.tables || []).map((table) => ({ table, hold: bookingHold(table) })).filter((row) => row.hold.status !== "walk-in"),
     [venue],
   );
-  const [picked, setPicked] = useState(tableId || "");
-  const [step, setStep] = useState(tableId ? 1 : 0);
+  const openId = !tableId && tables.filter((row) => !row.hold.closed && row.hold.places > 0).length === 1
+    ? tables.find((row) => !row.hold.closed && row.hold.places > 0).table.id
+    : "";
+  const [picked, setPicked] = useState(tableId || openId);
+  const [step, setStep] = useState(tableId || openId ? 1 : 0);
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
-  const row = tables.find((item) => item.table.id === picked);
-  const fee = { base: 0, off: 0, total: 0 };
+  const row = tables.find((item) => item.table.id === picked) || tables.find((item) => item.table.id === tableId);
+  const fee = adminFee();
 
   async function close() {
     if (step > 0) {
@@ -250,9 +257,10 @@ export function JoinWizard({ venue, tableId, onClose }) {
 
   async function confirmPay() {
     setBusy(true);
-    const res = await bb.joinTable({ venueId: venue.id, tableId: picked });
+    const res = await bb.joinTable({ venueId: venue.id, tableId: picked || tableId });
     setBusy(false);
     if (res.needLogin) {
+      rememberReturn();
       window.location.href = "/login";
       return;
     }
@@ -260,41 +268,57 @@ export function JoinWizard({ venue, tableId, onClose }) {
       bb.notify(res.error);
       return;
     }
-    bb.notify("You're in · +1 pt");
+    bb.notify("You're in · HK$5 · +1 pt");
     onClose();
   }
 
   return (
-    <Frame title={`Join · ${venue.name}`} step={step + 1} total={3} onBack={step === 0 ? close : () => setStep((s) => s - 1)} onClose={close}>
+    <Frame title={`Join · ${venue.name}`} step={step + 1} total={2} onBack={step === 0 ? close : () => setStep(0)} onClose={close}>
       {step === 0 && (
         <div className="space-y-2">
+          <p className="text-sm text-mute">Pick the table. The next screen is the HK$5 payment.</p>
           {tables.length === 0 && <p className="text-sm text-mute">No open table at this restaurant.</p>}
           {tables.map(({ table, hold }) => (
-            <button key={table.id} type="button" onClick={() => setPicked(table.id)} className={`block w-full rounded-xl border p-3 text-left text-sm ${picked === table.id ? "border-white" : "border-white/10"}`}>
+            <button key={table.id} type="button" onClick={() => setPicked(table.id)} className={`bb-choice block w-full rounded-2xl border p-3 text-left text-sm ${picked === table.id ? "border-ember" : "border-white/10"}`}>
               <div className="flex items-center gap-2">
                 <HostBadge handle={table.hostHandle} tier={table.hostTier} />
                 <div>
                   <div>{prettyDate(table.dateISO, bb.lang)} · {table.time}</div>
-                  <div className="text-mute">{hold.places} / {hold.held} open · {tablePrefs(table) || "No extra preference"}</div>
+                  <div className="text-mute">{hold.places} open · {tablePrefs(table) || "Meet friends"}</div>
                   {hold.closed && <div className="text-ember">{hold.reason}</div>}
                 </div>
               </div>
             </button>
           ))}
-          <button type="button" disabled={!picked} className="w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink disabled:opacity-40" onClick={() => setStep(1)}>{t("btn.next")}</button>
+          <button type="button" disabled={!picked} className="mt-3 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink disabled:opacity-40" onClick={() => setStep(1)}>{t("btn.next")}</button>
         </div>
       )}
       {step === 1 && row && (
-        <div className="space-y-1 text-sm text-mute">
-          <p>{venue.name}</p>
-          <p>{prettyDate(row.table.dateISO, bb.lang)} · {row.table.time}</p>
-          <p>{tablePrefs(row.table) || "Meet friends"}</p>
-          <p>{row.hold.places} places left · hold {row.hold.held} · original {row.hold.original}</p>
-          <p className="text-xs">{row.hold.reason}</p>
-          <button type="button" disabled={row.hold.closed} className="mt-3 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink disabled:opacity-40" onClick={() => setStep(2)}>{t("btn.next")}</button>
+        <div className="space-y-3">
+          <div className="space-y-1 text-sm text-mute">
+            <p className="font-serif text-2xl text-fg">{venue.name}</p>
+            <p>{row.table.address || venue.locationLabel}</p>
+            <p>{prettyDate(row.table.dateISO, bb.lang)} · {row.table.time}</p>
+            <p>{tablePrefs(row.table) || "Meet friends"}</p>
+            <p>{row.hold.places} places left</p>
+          </div>
+          <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={confirmPay} busy={busy || row.hold.closed} />
         </div>
       )}
-      {step === 2 && <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={confirmPay} busy={busy} />}
+      {step === 1 && !row && <p className="text-sm text-mute">That table is gone. Go back and pick another.</p>}
+    </Frame>
+  );
+}
+
+export function PayDialog({ open, title, lines, onClose, onConfirm, busy }) {
+  const [checked, setChecked] = useState(false);
+  if (!open) return null;
+  return (
+    <Frame title={title} step={1} total={1} onBack={onClose} onClose={onClose}>
+      <div className="mb-4 space-y-1 text-sm text-mute">
+        {lines.filter(Boolean).map((line) => <p key={line}>{line}</p>)}
+      </div>
+      <PayStep fee={adminFee()} checked={checked} setChecked={setChecked} onConfirm={onConfirm} busy={busy} />
     </Frame>
   );
 }
@@ -318,8 +342,8 @@ export function TodayPopup({ onJoin, onBrowse }) {
   }, [bb.content.venues, bb.editing]);
   if (!rows.length) return null;
   return (
-    <div className="fixed inset-0 z-[75] grid place-items-end bg-black/70 p-3 sm:place-items-center">
-      <div className="max-h-[88dvh] w-full max-w-md overflow-auto rounded-2xl border border-white/10 bg-[#121212] p-5 text-fg">
+    <div className="fixed inset-0 z-[75] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center">
+      <div className="bb-sheet max-h-[88dvh] w-full max-w-md overflow-auto rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl">
         <p className="bb-kicker text-ember">Today</p>
         <h2 className="mt-2 font-serif text-2xl">{t("today.title")}</h2>
         <p className="mt-2 text-sm text-mute">{t("today.sub")}</p>
@@ -372,7 +396,7 @@ export function TrialGate() {
       <div className="absolute right-3 top-3 z-[120]">
         <LangSwitch />
       </div>
-      <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#121212] p-6 text-fg">
+      <div className="bb-sheet w-full max-w-lg rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl">
         <p className="bb-kicker text-ember">{t("trial.kicker")}</p>
         <h2 className="mt-2 font-serif text-3xl">{t("trial.title")}</h2>
         <p className="mt-3 text-sm leading-relaxed text-mute">{t("trial.body")}</p>
@@ -428,6 +452,7 @@ export function PrivateWizard({ onClose }) {
     const res = await bb.createPrivate({ ...form, capacity: Number(form.capacity) || 8 });
     setBusy(false);
     if (res.needLogin) {
+      rememberReturn();
       window.location.href = "/login";
       return;
     }
@@ -494,9 +519,70 @@ export function PrivateWizard({ onClose }) {
   );
 }
 
+export function rememberReturn() {
+  try {
+    sessionStorage.setItem("bb_next", window.location.pathname + window.location.search);
+  } catch {
+    /* private mode */
+  }
+}
+
+export function shareText({ path, joined, lines }) {
+  const url = `${window.location.origin}${path}`;
+  const lead = joined ? `I joined. Come join me via ${url}` : `Come join me via ${url}`;
+  return `${lead}\n\n${lines.filter(Boolean).join("\n")}`;
+}
+
+export function ShareSheet({ open, onClose, joined, lines, path }) {
+  const bb = useBB();
+  const [copied, setCopied] = useState(false);
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => {
+    setCanShare(typeof navigator !== "undefined" && !!navigator.share);
+  }, []);
+  if (!open) return null;
+  const text = shareText({ path, joined, lines });
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      bb.notify("Copied. Post it as: I joined, or come join me, via the link.");
+    } catch {
+      window.prompt("Copy this", text);
+    }
+  }
+  async function native() {
+    if (!navigator.share) return copy();
+    try {
+      await navigator.share({ title: "Buddy Blind", text, url: `${window.location.origin}${path}` });
+    } catch {
+      /* cancelled */
+    }
+  }
+  return (
+    <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" onClick={onClose}>
+      <div className="bb-sheet w-full max-w-md rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg" onClick={(e) => e.stopPropagation()}>
+        <p className="bb-kicker text-ember">Share</p>
+        <h2 className="mt-2 font-serif text-3xl">{joined ? "I joined." : "Come join me."}</h2>
+        <ul className="mt-4 space-y-1 text-sm text-mute">
+          {lines.filter(Boolean).map((line) => <li key={line}>{line}</li>)}
+        </ul>
+        <p className="mt-4 break-all text-sm leading-relaxed">{text}</p>
+        <div className="mt-5 flex gap-2">
+          <button type="button" className="flex-1 rounded-full border border-white/15 py-3 text-sm" onClick={onClose}>Close</button>
+          {canShare && (
+            <button type="button" className="flex-1 rounded-full border border-white/15 py-3 text-sm" onClick={native}>Share</button>
+          )}
+          <button type="button" className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={copy}>{copied ? "Copied" : "Copy link"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export async function shareLink(path, title) {
   const url = `${window.location.origin}${path}`;
-  const text = `${title}\n${url}`;
+  const text = shareText({ path, joined: false, lines: [title] });
   if (navigator.share) {
     try {
       await navigator.share({ title, text, url });

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Editable, Photo, fileToCover } from "@/components/Bits";
-import { PingBox, shareLink } from "@/components/Flows";
+import { PayDialog, PingBox, ShareSheet, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 
 export default function PrivateDetailPage() {
@@ -13,6 +13,8 @@ export default function PrivateDetailPage() {
   const event = bb.content.events.find((item) => item.id === id && item.kind === "private");
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [pay, setPay] = useState(false);
+  const [share, setShare] = useState(false);
   if (!event) {
     return (
       <main className="bb-frame py-20">
@@ -27,11 +29,13 @@ export default function PrivateDetailPage() {
     const res = await bb.joinPrivate(event.id);
     setBusy(false);
     if (res.needLogin) {
+      rememberReturn();
       window.location.href = "/login";
       return;
     }
     if (res.error) bb.notify(res.error === "FULL" ? "FULL. No more places." : res.error);
-    else bb.notify("You're in · +1 pt");
+    else bb.notify("You're in · HK$5 · +1 pt");
+    setPay(false);
   }
 
   return (
@@ -72,25 +76,36 @@ export default function PrivateDetailPage() {
             }} />
           </label>
         )}
-        <label className="mt-6 flex items-start gap-2 text-sm">
-          <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
-          <span>I understand the other guests stay unknown. The host is the only person shown.</span>
-        </label>
         <PingBox
           table={{ ...event, id: event.id, time: event.timeLabel, eventId: event.id }}
           joined={!!(bb.session && ((event.participants || []).some((p) => p.handle === bb.session.handle) || event.hostName === bb.session.handle))}
           onSend={() => bb.sendPing({ eventId: event.id }).then((res) => res?.error && bb.notify(res.error))}
         />
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="button" disabled={!checked || busy || full} onClick={join} className="rounded-full bg-char px-5 py-3 text-sm font-semibold text-paper disabled:opacity-40">
-            {full ? "FULL" : "JOIN"}
+          <button type="button" disabled={busy || full} onClick={() => setPay(true)} className="rounded-full bg-char px-5 py-3 text-sm font-semibold text-paper disabled:opacity-40">
+            {full ? "FULL" : "JOIN · HK$5"}
           </button>
-          <button type="button" className="rounded-full border border-char/20 px-5 py-3 text-sm" onClick={() => shareLink(`/share/private/${event.id}`, event.name)}>Share</button>
+          <button type="button" className="rounded-full border border-char/20 px-5 py-3 text-sm" onClick={() => setShare(true)}>Share</button>
           <button type="button" className="rounded-full border border-char/20 px-5 py-3 text-sm" onClick={() => {
             const res = bb.inviteBuddies(event.name);
             if (res?.error) bb.notify(res.error);
           }}>Invite buddies</button>
         </div>
+        <PayDialog
+          open={pay}
+          title={`Join · ${event.name}`}
+          lines={[event.name, event.location, `${event.dateISO || ""} · ${event.timeLabel || ""}`, event.forWhom, `${event.spots} seats left`]}
+          busy={busy}
+          onClose={() => setPay(false)}
+          onConfirm={join}
+        />
+        <ShareSheet
+          open={share}
+          onClose={() => setShare(false)}
+          joined={!!(bb.session && (event.participants || []).some((p) => p.handle === bb.session.handle))}
+          path={`/share/private/${event.id}`}
+          lines={[event.name, event.location || "Hong Kong", `${event.dateISO || ""} · ${event.timeLabel || ""}`, event.forWhom || event.typeLabel, `${event.spots} seats left`]}
+        />
       </div>
     </main>
   );

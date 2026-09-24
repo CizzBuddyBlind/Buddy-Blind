@@ -1,12 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { Copy, Editable } from "@/components/Bits";
 import { useBB } from "@/components/Providers";
-import { translate } from "@/lib/i18n";
 
 export default function HowPage() {
-  const { content, update, lang } = useBB();
+  const { content, update } = useBB();
   const copy = content.copy.how;
   return (
     <main className="bb-frame pb-28 pt-10 md:pb-16">
@@ -32,9 +30,16 @@ export default function HowPage() {
       <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-mute">
         <Copy as="span" k="how.note" />
       </p>
-      <p className="mt-6 text-center">
-        <Link href="/about" className="text-sm text-ember">{translate(lang, "how.link")}</Link>
-      </p>
+      <section id="about" className="mx-auto mt-16 max-w-2xl scroll-mt-24 border-t border-white/10 pt-12">
+        <p className="bb-kicker text-ember"><Copy k="about.kicker" /></p>
+        <h2 className="mt-3 font-serif text-4xl"><Copy k="about.title" /></h2>
+        {["1", "2", "3", "4"].map((n) => (
+          <div key={n} className="mt-8">
+            <h3 className="font-serif text-2xl"><Copy k={`about.${n}t`} /></h3>
+            <Copy as="p" k={`about.${n}`} className="mt-2 text-sm leading-relaxed text-mute" />
+          </div>
+        ))}
+      </section>
     </main>
   );
 }

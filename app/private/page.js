@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Copy, Editable, Photo } from "@/components/Bits";
+import { PayDialog, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
-import { AGE_RANGES } from "@/lib/bible";
+import { AGE_RANGES, queryHits } from "@/lib/bible";
 
 export default function PrivatePage() {
   const bb = useBB();
@@ -16,17 +17,36 @@ export default function PrivatePage() {
   const [q, setQ] = useState("");
   const [area, setArea] = useState("");
   const [age, setAge] = useState("");
+  const [pay, setPay] = useState(null);
+  const [busy, setBusy] = useState(false);
   const campaign = nights.find((n) => n.featured) || nights[0];
   const shown = useMemo(() => {
     const query = q.trim().toLowerCase();
     return nights.filter((night) => {
-      const blob = `${night.name} ${night.typeLabel} ${night.description || ""} ${night.forWhom || ""} ${night.hostName || ""} ${night.location || ""}`.toLowerCase();
-      if (query && !blob.includes(query)) return false;
-      if (area && !blob.includes(area.toLowerCase())) return false;
+      const blob = `${night.name} ${night.typeLabel} ${night.description || ""} ${night.forWhom || ""} ${night.hostName || ""} ${night.location || ""} ${night.ageRange || ""} ${night.timeLabel || ""}`;
+      if (query && !queryHits(blob, query)) return false;
+      if (area && !queryHits(`${blob} ${night.location || ""}`, area)) return false;
       if (age && night.ageRange && night.ageRange !== age) return false;
       return true;
     });
   }, [nights, q, area, age]);
+
+  async function confirmPay() {
+    if (!pay) return;
+    setBusy(true);
+    const res = await bb.joinPrivate(pay.id);
+    setBusy(false);
+    if (res.needLogin) {
+      rememberReturn();
+      window.location.href = "/login";
+      return;
+    }
+    if (res.error) bb.notify(res.error === "FULL" ? "FULL. No more places." : res.error);
+    else {
+      bb.notify("You're in · HK$5 · +1 pt");
+      setPay(null);
+    }
+  }
 
   return (
     <main className="bb-frame pb-28 pt-8 md:pb-16">
@@ -44,7 +64,7 @@ export default function PrivatePage() {
       </section>
 
       {campaign && (
-        <Link href={`/private/${campaign.id}`} className="mt-8 block overflow-hidden rounded-3xl bg-char text-paper">
+        <Link href={`/private/${campaign.id}`} className="bb-lift mt-8 block overflow-hidden rounded-3xl bg-char text-paper">
           <div className="grid md:grid-cols-2">
             <div className="relative min-h-[220px]">
               <Photo src={campaign.imageUrl} alt={campaign.name} onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === campaign.id); if (item) item.imageUrl = imageUrl; })} />
@@ -55,7 +75,7 @@ export default function PrivatePage() {
               <p className="mt-2 text-sm text-paper/70">{campaign.hostName || campaign.hostLabel} · {campaign.location || "Hong Kong"}</p>
               <p className="text-sm text-paper/70">{campaign.dateISO} · {campaign.timeLabel} · {campaign.spots} places</p>
               <p className="mt-3 text-sm text-paper/80">{campaign.description || campaign.forWhom || campaign.typeLabel}</p>
-              <span className="mt-4 inline-block rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">JOIN</span>
+              <span className="mt-4 inline-block rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">JOIN · HK$5</span>
             </div>
           </div>
         </Link>
@@ -82,9 +102,9 @@ export default function PrivatePage() {
           <article
             key={night.id}
             onClick={() => editing && setSelectedId(night.id)}
-            className={`overflow-hidden rounded-2xl border border-black/10 bg-white ${selectedId === night.id ? "ring-2 ring-ember" : ""} ${night.hidden ? "opacity-40" : ""}`}
+            className={`bb-lift overflow-hidden rounded-2xl border border-black/10 bg-white ${selectedId === night.id ? "ring-2 ring-ember" : ""} ${night.hidden ? "opacity-40" : ""}`}
           >
-            <Link href={`/private/${night.id}`} className="relative block aspect-[4/3]" onClick={(e) => editing && e.preventDefault()}>
+            <Link href={`/private/${night.id}`} className="bb-zoom-wrap relative block aspect-[4/3] overflow-hidden" onClick={(e) => editing && e.preventDefault()}>
               <Photo src={night.imageUrl} alt={night.name} onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === night.id); if (item) item.imageUrl = imageUrl; })} />
             </Link>
             <div className="px-4 py-4">
@@ -97,11 +117,31 @@ export default function PrivatePage() {
                 <span>{night.hostName || night.hostLabel}</span>
                 <span className="font-medium text-ember">{(night.spots || 0) <= 0 ? t("priv.full") : `${night.spots} places`}</span>
               </div>
-              <Link href={`/private/${night.id}`} className="mt-3 inline-block text-xs font-semibold uppercase tracking-widest">JOIN</Link>
+              <button
+                type="button"
+                className="mt-3 text-xs font-semibold uppercase tracking-widest"
+                onClick={() => {
+                  if ((night.spots || 0) <= 0) {
+                    bb.notify("FULL. No more places.");
+                    return;
+                  }
+                  setPay(night);
+                }}
+              >
+                {(night.spots || 0) <= 0 ? t("priv.full") : "JOIN · HK$5"}
+              </button>
             </div>
           </article>
         ))}
       </div>
+      <PayDialog
+        open={!!pay}
+        title={`Join · ${pay?.name || ""}`}
+        lines={[pay?.name, pay?.location, `${pay?.dateISO || ""} · ${pay?.timeLabel || ""}`, pay?.forWhom || pay?.typeLabel, `${pay?.spots ?? ""} seats left`]}
+        busy={busy}
+        onClose={() => setPay(null)}
+        onConfirm={confirmPay}
+      />
     </main>
   );
 }

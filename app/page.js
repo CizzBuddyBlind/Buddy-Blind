@@ -8,7 +8,7 @@ import { Copy, Editable, Photo } from "@/components/Bits";
 import { HostBadge } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
-import { CUISINES, iso, prettyDate, soonestTable, tablePrefs } from "@/lib/bible";
+import { CUISINES, iso, prettyDate, queryHits, soonestTable, tablePrefs } from "@/lib/bible";
 
 const FILTERS = [
   { id: "all", key: "filter.all" },
@@ -24,6 +24,7 @@ function Home() {
   const t = (key) => translate(lang, key);
   const params = useSearchParams();
   const [filter, setFilter] = useState("all");
+  const [query, setQuery] = useState("");
   const [open, setOpen] = useState(params.get("when") === "today");
   const [extra, setExtra] = useState({
     nearby: "",
@@ -35,19 +36,36 @@ function Home() {
   const shown = useMemo(() => {
     const today = iso(0);
     return venues.filter((venue) => {
-      if (filter === "tonight" && !venue.tonight && !/today|tonight|now/i.test(venue.timeLabel || "")) return false;
+      const rows = soonestTable(venue);
+      const hasToday = rows.some((row) => row.table.dateISO === today) || /today|tonight/i.test(venue.timeLabel || "");
+      const hasTonight = venue.tonight || /today|tonight|now/i.test(venue.timeLabel || "") || rows.some((row) => row.table.dateISO === today);
+      if (filter === "tonight" && !hasTonight) return false;
       if (!["all", "tonight"].includes(filter) && venue.area !== filter) return false;
       if (extra.nearby && venue.area !== extra.nearby) return false;
       if (extra.cuisine && venue.cuisine !== extra.cuisine) return false;
-      const rows = soonestTable(venue);
       if (extra.when === "today" && !rows.some((row) => row.table.dateISO === today)) return false;
       if (extra.when === "upcoming" && !rows.some((row) => row.table.dateISO > today)) return false;
       if (extra.purpose === "dating" && !(venue.tables || []).some((table) => table.tableType === "blind-date" || table.orientation === "Dating")) return false;
       if (extra.purpose === "gay" && !(venue.tables || []).some((table) => table.orientation === "Gay")) return false;
       if (extra.purpose === "lesbian" && !(venue.tables || []).some((table) => table.orientation === "Lesbian")) return false;
+      const blob = [
+        venue.name,
+        venue.cuisine,
+        venue.typeLabel,
+        venue.locationLabel,
+        venue.about,
+        venue.area,
+        venue.goodFor,
+        venue.priceTier,
+        venue.timeLabel,
+        hasTonight ? "tonight 今晚 今夜" : "",
+        hasToday ? "today 今天 今日" : "",
+        ...(venue.tables || []).flatMap((table) => [table.time, table.tableType, table.orientation, table.gender, table.ageRange, table.address, tablePrefs(table)]),
+      ].join(" ");
+      if (!queryHits(blob, query)) return false;
       return true;
     });
-  }, [venues, filter, extra]);
+  }, [venues, filter, extra, query]);
   const copy = content.copy.venues;
 
   return (
@@ -71,6 +89,14 @@ function Home() {
         />
       </section>
 
+      <div className="mb-4">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search tonight, 中菜, Central, gay, wine…"
+          className="w-full rounded-full border border-white/15 bg-transparent px-5 py-3 text-sm outline-none placeholder:text-mute focus:border-ember"
+        />
+      </div>
       <div className="flex gap-2 overflow-x-auto pb-4">
         {FILTERS.map((f) => (
           <button
@@ -162,8 +188,8 @@ function Home() {
                 </div>
               </Link>
               <div className="flex gap-2.5 px-4 pb-[18px]">
-                <button type="button" className="flex-1 rounded-full border border-white/15 py-2.5 text-[0.8rem] font-semibold" onClick={() => setFlow({ type: "invite", venueId: venue.id })}>{t("btn.invite")}</button>
-                <button type="button" className="flex-1 rounded-full bg-fg py-2.5 text-[0.8rem] font-semibold text-ink" onClick={() => setFlow({ type: "join", venueId: venue.id })}>{t("btn.join")}</button>
+                <button type="button" className="flex-1 rounded-full border border-white/15 py-2.5 text-[0.8rem] font-semibold" onClick={() => setFlow({ type: "invite", venueId: venue.id })}>{t("btn.invite")} · HK$5</button>
+                <button type="button" className="flex-1 rounded-full bg-fg py-2.5 text-[0.8rem] font-semibold text-ink" onClick={() => setFlow({ type: "join", venueId: venue.id })}>{t("btn.join")} · HK$5</button>
               </div>
             </article>
           );

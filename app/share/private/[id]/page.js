@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
+import { PayDialog, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
-import { translate } from "@/lib/i18n";
 
 export default function SharePrivatePage() {
   const { id } = useParams();
   const bb = useBB();
-  const t = (key) => translate(bb.lang, key);
   const event = bb.content.events.find((item) => item.id === id && item.kind === "private");
+  const [pay, setPay] = useState(false);
+  const [busy, setBusy] = useState(false);
   if (!bb.ready) return <main className="bb-frame py-20 text-mute">Loading…</main>;
   if (!event) {
     return (
@@ -18,20 +20,47 @@ export default function SharePrivatePage() {
       </main>
     );
   }
+  const lines = [
+    event.name,
+    event.location || "Hong Kong",
+    `${event.dateISO || ""} · ${event.timeLabel || ""}`,
+    event.forWhom || event.typeLabel,
+    event.ageRange || "",
+    `${event.spots} seats left`,
+  ];
+  async function confirm() {
+    setBusy(true);
+    const res = await bb.joinPrivate(event.id);
+    setBusy(false);
+    if (res.needLogin) {
+      rememberReturn();
+      window.location.href = "/login";
+      return;
+    }
+    if (res.error) bb.notify(res.error);
+    else {
+      bb.notify("You're in · HK$5 · +1 pt");
+      setPay(false);
+    }
+  }
   return (
-    <main className="bb-frame mx-auto max-w-lg pb-28 pt-10">
-      <p className="bb-kicker text-ember">Private event</p>
-      <h1 className="mt-3 font-serif text-4xl">{event.name}</h1>
-      <ul className="mt-4 space-y-1 text-sm text-mute">
-        <li>Host · {event.hostName || event.hostLabel}</li>
-        <li>{event.location} · {event.dateISO} · {event.timeLabel}</li>
-        <li>{event.forWhom}</li>
-        <li>{event.spots} places · max {event.capacity || 20}</li>
-        {event.ageRange && <li>{event.ageRange}</li>}
+    <main className="bb-frame mx-auto max-w-lg pb-28 pt-12">
+      <p className="text-xs uppercase tracking-[0.2em] text-ember">Come join me</p>
+      <h1 className="mt-3 font-serif text-5xl">{event.name}</h1>
+      <ul className="mt-8 space-y-2 text-sm text-mute">
+        {lines.filter(Boolean).map((line) => <li key={line}>{line}</li>)}
       </ul>
-      <p className="mt-4 text-sm">{event.description}</p>
-      <p className="mt-4 text-sm text-mute">{t("share.cta")}</p>
-      <Link href={`/private/${event.id}`} className="mt-6 inline-block rounded-full bg-char px-5 py-3 text-sm font-semibold text-paper">{t("btn.join")}</Link>
+      <p className="mt-4 text-sm leading-relaxed">{event.description}</p>
+      {!bb.session && <p className="mt-6 text-sm text-mute">No store app yet. Create a seat on this site, then pay HK$5 to join this event.</p>}
+      <button type="button" className="mt-8 rounded-full bg-fg px-6 py-3 text-sm font-semibold text-ink" onClick={() => {
+        if (!bb.session) {
+          rememberReturn();
+          window.location.href = "/login";
+          return;
+        }
+        setPay(true);
+      }}>Join · HK$5</button>
+      <PayDialog open={pay} title={`Join · ${event.name}`} lines={lines} busy={busy} onClose={() => setPay(false)} onConfirm={confirm} />
     </main>
   );
 }

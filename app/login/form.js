@@ -45,7 +45,15 @@ export default function LoginForm() {
       setError(message);
       return;
     }
-    router.push("/");
+    let next = "/";
+    try {
+      const stored = sessionStorage.getItem("bb_next") || "";
+      sessionStorage.removeItem("bb_next");
+      if (stored.startsWith("/") && !stored.startsWith("//")) next = stored;
+    } catch {
+      /* ignore */
+    }
+    router.push(next);
     router.refresh();
   }
 

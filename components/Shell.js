@@ -14,7 +14,6 @@ const NAV = [
   { href: "/quick", key: "nav.quick" },
   { href: "/private", key: "nav.private" },
   { href: "/how", key: "nav.how" },
-  { href: "/about", key: "nav.about" },
 ];
 
 function Icon({ d }) {
@@ -141,7 +140,7 @@ export function Shell({ children }) {
                     </div>
                     <Link href="/profile" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>{t("nav.profile")}</Link>
                     <Link href="/subscribe" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>{t("nav.subscribe")}</Link>
-                    <Link href="/about" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>{t("nav.about")}</Link>
+                    <Link href="/how#about" className="block px-4 py-2.5 text-sm hover:bg-white/5" onClick={() => setMenu(false)}>{t("nav.about")}</Link>
                     <button
                       type="button"
                       className="block w-full px-4 py-2.5 text-left text-sm hover:bg-white/5"

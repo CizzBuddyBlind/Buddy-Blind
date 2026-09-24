@@ -73,6 +73,72 @@ label,
   background: #f5f5f5;
   color: #0a0a0a;
 }
+.bb-card,
+.bb-lift {
+  transition: transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1), border-color 0.4s ease, box-shadow 0.55s ease;
+}
+.bb-card:hover,
+.bb-lift:hover {
+  transform: translateY(-6px);
+  border-color: rgba(232, 93, 59, 0.55);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+.bb-img img,
+.bb-zoom,
+.bb-zoom-wrap img {
+  transition: transform 0.8s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.bb-card:hover .bb-img img,
+.bb-zoom-wrap:hover .bb-zoom,
+.bb-zoom-wrap:hover img {
+  transform: scale(1.045);
+}
+.bb-row {
+  transition: background-color 0.35s ease;
+}
+.bb-row:hover {
+  background: rgb(255 255 255 / 0.03);
+}
+button,
+a,
+input,
+select,
+textarea {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, box-shadow 0.35s ease;
+}
+button:hover:not(:disabled),
+.bb-press:hover {
+  transform: translateY(-1px);
+}
+nav a:hover,
+.bb-kicker:hover {
+  color: #e85d3b;
+}
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: rgb(232 93 59 / 0.45);
+}
+.bb-sheet {
+  animation: bb-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bb-choice {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, background-color 0.25s ease;
+}
+.bb-choice:hover {
+  transform: translateY(-2px);
+  border-color: rgba(232, 93, 59, 0.8);
+}
+@keyframes bb-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
