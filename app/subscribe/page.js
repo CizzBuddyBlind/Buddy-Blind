@@ -179,10 +179,9 @@ export default function SubscribePage() {
 
   return (
     <main className="bb-frame mx-auto pb-28 pt-8 md:pb-20 md:pt-12">
-      <h1 className="max-w-4xl font-serif leading-[1.02]">
-        <span className="block text-5xl text-ember sm:text-6xl md:text-7xl">Your reason. New people.</span>
-        <span className="mt-4 block text-3xl text-white sm:text-4xl md:text-5xl">Host the vibe you care about — or join one.</span>
-        <span className="mt-2 block text-3xl text-white sm:text-4xl md:text-5xl">Guests stay blind.</span>
+      <h1 className="max-w-4xl font-serif leading-[1.05]">
+        <span className="block text-xl text-white sm:text-2xl md:text-3xl">Host the vibe you care about — or join one. Guests stay blind.</span>
+        <span className="mt-4 block text-5xl text-ember sm:text-6xl md:text-7xl">Your reason. New people.</span>
       </h1>
       <p className="mt-6 max-w-2xl text-[15px] leading-relaxed text-mute">
         Wine, work, a hike. Or whatever you care about.
