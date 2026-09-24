@@ -37,8 +37,8 @@ function Frame({ title, step, total, onBack, onClose, children }) {
   const { lang } = useBB();
   const t = (key) => translate(lang, key);
   return (
-    <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog">
-      <div className="bb-sheet max-h-[92dvh] w-full max-w-lg overflow-auto rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl">
+    <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog" onClick={onClose}>
+      <div className="bb-sheet max-h-[92dvh] w-full max-w-lg overflow-auto rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 h-px w-full bg-white/10">
           <div className="h-px bg-ember" style={{ width: `${Math.max(8, (step / total) * 100)}%` }} />
         </div>
@@ -356,8 +356,8 @@ export function JoinWizard({ venue, tableId, onClose }) {
 
   if (none) {
     return (
-      <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog">
-        <div className="bb-sheet w-full max-w-sm rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg">
+      <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog" onClick={onClose}>
+        <div className="bb-sheet w-full max-w-sm rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg" onClick={(e) => e.stopPropagation()}>
           <h2 className="font-serif text-3xl">{t("empty.inviteTitle")}</h2>
           <p className="mt-2 text-sm text-mute">{t("empty.inviteBody")}</p>
           <button type="button" className="mt-6 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => bb.setFlow({ type: "invite", venueId: venue.id })}>
@@ -420,7 +420,7 @@ export function PayDialog({ open, title, lines, onClose, onConfirm, busy }) {
   );
 }
 
-export function TodayPopup({ onJoin, onBrowse }) {
+export function TodayPopup({ onJoin, onBrowse, onDismiss }) {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
   const rows = useMemo(() => {
@@ -439,8 +439,8 @@ export function TodayPopup({ onJoin, onBrowse }) {
   }, [bb.content.venues, bb.editing]);
   if (!rows.length) return null;
   return (
-    <div className="fixed inset-0 z-[75] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center">
-      <div className="bb-sheet max-h-[88dvh] w-full max-w-md overflow-auto rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl">
+    <div className="fixed inset-0 z-[75] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" onClick={onDismiss}>
+      <div className="bb-sheet max-h-[88dvh] w-full max-w-md overflow-auto rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <p className="bb-kicker text-ember">Today</p>
         <h2 className="mt-2 font-serif text-2xl">{t("today.title")}</h2>
         <p className="mt-2 text-sm text-mute">{t("today.sub")}</p>

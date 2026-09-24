@@ -1437,8 +1437,8 @@ export function BuddyProvider({ children }) {
     <Ctx.Provider value={value}>
       {children}
       {modal && (
-        <div className="fixed inset-0 z-[90] grid place-items-center bg-black/70 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-card p-6 text-fg">
+        <div className="fixed inset-0 z-[90] grid place-items-center bg-black/70 p-4" onClick={() => closeModal(false)}>
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-card p-6 text-fg" onClick={(e) => e.stopPropagation()}>
             <h2 className="font-serif text-2xl">{modal.title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-mute">{modal.body}</p>
             <div className="mt-6 flex gap-3">

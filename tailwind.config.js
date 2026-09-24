@@ -11,8 +11,8 @@ module.exports = {
         fg: "#f5f5f5",
         mute: "#a0a0a0",
         char: "#1a1a1a",
-        ember: "#e85d3b",
-        "ember-soft": "#f07a5c",
+        ember: "#D4AF37",
+        "ember-soft": "#E4C56A",
       },
       fontFamily: {
         sans: ["var(--font-inter)", "PingFang HK", "PingFang SC", "Noto Sans HK", "Noto Sans SC", "Microsoft JhengHei", "ui-sans-serif", "system-ui", "sans-serif"],

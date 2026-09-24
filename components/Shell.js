@@ -424,6 +424,7 @@ export function Shell({ children }) {
       {bb.ready && !trialLive && path !== "/register" && path !== "/login" && path !== "/subscribe" && <TrialGate />}
       {showToday && !bb.flow && (
         <TodayPopup
+          onDismiss={dismissToday}
           onJoin={(venueId, tableId) => {
             dismissToday();
             bb.setFlow({ type: "join", venueId, tableId });
