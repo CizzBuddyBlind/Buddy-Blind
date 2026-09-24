@@ -75,7 +75,7 @@ export default function SubscribePage() {
       const { loadStripe } = await import("@stripe/stripe-js");
       const stripe = await loadStripe(sheet.publishableKey);
       if (!stripe || gone) return;
-      checkout = await stripe.initEmbeddedCheckout({
+      checkout = await stripe.createEmbeddedCheckoutPage({
         clientSecret: sheet.clientSecret,
         onComplete: () => {
           confirmSession(sheet.sessionId).then((data) => {

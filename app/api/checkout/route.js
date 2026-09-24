@@ -117,7 +117,7 @@ export async function POST(request) {
     "metadata[kind]": kind,
   });
   if (embedded) {
-    params.set("ui_mode", "embedded");
+    params.set("ui_mode", "embedded_page");
     params.set("redirect_on_completion", "if_required");
     params.set("return_url", `${base}/subscribe?session_id={CHECKOUT_SESSION_ID}`);
     params.set("subscription_data[metadata][kind]", kind);
