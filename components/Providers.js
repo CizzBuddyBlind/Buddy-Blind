@@ -127,7 +127,17 @@ export function BuddyProvider({ children }) {
         subscriptionId: savedPlan?.subscriptionId || "",
         customerId: savedPlan?.customerId || "",
       });
-      setSocial({ ...emptySocial(), ...read(SOCIAL, {}) });
+      const stored = { ...emptySocial(), ...read(SOCIAL, {}) };
+      if (!stored.buddies?.length) {
+        stored.buddies = [
+          { id: "b-mina", name: "Mina", status: "accepted", area: "Central", note: "Knows wine" },
+          { id: "b-kenji", name: "Kenji", status: "accepted", area: "CWB", note: "On time" },
+          { id: "b-alex", name: "Alex", status: "accepted", area: "TST", note: "Easy to talk to" },
+          { id: "b-sora", name: "Sora", status: "accepted", area: "Sheung Wan", note: "Good listener" },
+        ];
+        write(SOCIAL, stored);
+      }
+      setSocial(stored);
 
       let pub = local?.venues && local?.copy ? local : clone(SEED);
       const res = await loadSharedContent();

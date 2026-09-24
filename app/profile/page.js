@@ -12,6 +12,7 @@ export default function ProfilePage() {
   const [draft, setDraft] = useState(null);
   const [edit, setEdit] = useState(false);
   const [buddiesOpen, setBuddiesOpen] = useState(false);
+  const [buddy, setBuddy] = useState(null);
   const [stars, setStars] = useState(5);
   const [note, setNote] = useState("");
   if (!session) {
@@ -44,7 +45,7 @@ export default function ProfilePage() {
 
   return (
     <main className="bb-frame min-h-[100dvh] bg-ink pb-28 pt-8">
-      <div className="grid items-start gap-10 lg:grid-cols-[300px_1fr]">
+      <div className="grid items-start gap-8 md:grid-cols-2">
         <section>
           <div className="grid h-20 w-20 place-items-center rounded-full bg-card font-serif text-3xl">{initial}</div>
           <h1 className="mt-3 font-serif text-2xl">{session.handle}</h1>
@@ -73,7 +74,7 @@ export default function ProfilePage() {
           <button type="button" className="mt-5 rounded-full bg-fg px-5 py-2 text-sm font-semibold text-ink" onClick={() => setBuddiesOpen((v) => !v)}>
             Buddies
           </button>
-          {buddiesOpen && (
+          {buddiesOpen && !buddy && (
             <div className="mt-3 space-y-2">
               {!buddies.length && !pending.length && <p className="text-sm text-mute">No buddies yet.</p>}
               {pending.map((b) => (
@@ -86,11 +87,21 @@ export default function ProfilePage() {
                 </div>
               ))}
               {buddies.map((b) => (
-                <div key={b.id} className="rounded-xl border border-white/10 px-3 py-2 text-sm">
+                <button key={b.id} type="button" onClick={() => setBuddy(b)} className="block w-full rounded-xl border border-white/10 px-3 py-2 text-left text-sm">
                   <span className="mr-2 inline-grid h-7 w-7 place-items-center rounded-full bg-card text-xs">{b.name.slice(0, 1).toUpperCase()}</span>
                   {b.name}
-                </div>
+                </button>
               ))}
+            </div>
+          )}
+          {buddy && (
+            <div className="mt-3 rounded-2xl border border-white/10 bg-card p-4">
+              <button type="button" className="text-xs text-mute" onClick={() => setBuddy(null)}>Back to buddies</button>
+              <div className="mt-3 grid h-16 w-16 place-items-center rounded-full bg-black font-serif text-2xl">{buddy.name.slice(0, 1).toUpperCase()}</div>
+              <h2 className="mt-3 font-serif text-2xl">{buddy.name}</h2>
+              <p className="mt-1 text-sm text-mute">Your buddy</p>
+              {buddy.area && <p className="mt-2 text-sm">{buddy.area}</p>}
+              {buddy.note && <p className="text-sm text-mute">{buddy.note}</p>}
             </div>
           )}
           <button type="button" className="mt-4 block text-xs text-mute" onClick={() => setEdit((v) => !v)}>{edit ? "Close" : "Edit details"}</button>

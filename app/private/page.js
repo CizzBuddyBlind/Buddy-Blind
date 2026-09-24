@@ -6,7 +6,7 @@ import { Copy, Editable, Photo } from "@/components/Bits";
 import { DoneShare, PayDialog, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
-import { AGE_RANGES, queryHits } from "@/lib/bible";
+import { queryHits } from "@/lib/bible";
 
 export default function PrivatePage() {
   const bb = useBB();
@@ -16,7 +16,6 @@ export default function PrivatePage() {
   const nights = content.events.filter((e) => e.kind === "private" && (editing || !e.hidden));
   const [q, setQ] = useState("");
   const [area, setArea] = useState("");
-  const [age, setAge] = useState("");
   const [pay, setPay] = useState(null);
   const [done, setDone] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -27,10 +26,9 @@ export default function PrivatePage() {
       const blob = `${night.name} ${night.typeLabel} ${night.description || ""} ${night.forWhom || ""} ${night.hostName || ""} ${night.location || ""} ${night.ageRange || ""} ${night.timeLabel || ""}`;
       if (query && !queryHits(blob, query)) return false;
       if (area && !queryHits(`${blob} ${night.location || ""}`, area)) return false;
-      if (age && night.ageRange && night.ageRange !== age) return false;
       return true;
     });
-  }, [nights, q, area, age]);
+  }, [nights, q, area]);
 
   async function confirmPay() {
     if (!pay) return;
@@ -85,10 +83,6 @@ export default function PrivatePage() {
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("priv.search")} className="flex-1 rounded-full border border-black/10 bg-white px-4 py-3 text-sm" />
         <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Location" className="rounded-full border border-black/10 bg-white px-4 py-3 text-sm" />
-        <select value={age} onChange={(e) => setAge(e.target.value)} className="rounded-full border border-black/10 bg-white px-4 py-3 text-sm">
-          <option value="">Age</option>
-          {AGE_RANGES.map((range) => <option key={range}>{range}</option>)}
-        </select>
       </div>
       <div className="mt-4 flex flex-wrap gap-3">
         <button
@@ -110,22 +104,25 @@ export default function PrivatePage() {
         {shown.map((night) => (
           <article
             key={night.id}
-            onClick={() => editing && setSelectedId(night.id)}
             className={`bb-lift overflow-hidden rounded-2xl border border-black/10 bg-white ${selectedId === night.id ? "ring-2 ring-ember" : ""} ${night.hidden ? "opacity-40" : ""}`}
           >
-            <Link href={`/private/${night.id}`} className="bb-zoom-wrap relative block aspect-[4/3] overflow-hidden" onClick={(e) => editing && e.preventDefault()}>
-              <Photo src={night.imageUrl} alt={night.name} onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === night.id); if (item) item.imageUrl = imageUrl; })} />
+            <Link href={`/private/${night.id}`} className="block" onClick={() => editing && setSelectedId(night.id)}>
+              <div className="bb-zoom-wrap relative block aspect-[4/3] overflow-hidden">
+                <Photo src={night.imageUrl} alt={night.name} onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === night.id); if (item) item.imageUrl = imageUrl; })} />
+              </div>
+              <div className="px-4 py-4">
+                <div className="font-serif text-xl">
+                  <Editable locked={night.locked} value={night.name} onChange={(name) => update((d) => { const item = d.events.find((x) => x.id === night.id); if (item) item.name = name; })} />
+                </div>
+                <div className="mt-1 text-xs tracking-wide text-mute">{night.forWhom || night.typeLabel}</div>
+                <div className="mt-1 text-xs text-mute">{night.location || "Hong Kong"} · {night.dateISO} · {night.timeLabel}</div>
+                <div className="mt-3 flex items-center justify-between text-sm">
+                  <span>{night.hostName || night.hostLabel}</span>
+                  <span className="font-medium text-ember">{(night.spots || 0) <= 0 ? t("priv.full") : `${night.spots} places`}</span>
+                </div>
+              </div>
             </Link>
-            <div className="px-4 py-4">
-              <div className="font-serif text-xl">
-                <Editable locked={night.locked} value={night.name} onChange={(name) => update((d) => { const item = d.events.find((x) => x.id === night.id); if (item) item.name = name; })} />
-              </div>
-              <div className="mt-1 text-xs tracking-wide text-mute">{night.forWhom || night.typeLabel}</div>
-              <div className="mt-1 text-xs text-mute">{night.location || "Hong Kong"} · {night.dateISO} · {night.timeLabel}</div>
-              <div className="mt-3 flex items-center justify-between text-sm">
-                <span>{night.hostName || night.hostLabel}</span>
-                <span className="font-medium text-ember">{(night.spots || 0) <= 0 ? t("priv.full") : `${night.spots} places`}</span>
-              </div>
+            <div className="px-4 pb-4">
               <button
                 type="button"
                 className="mt-4 w-full rounded-full bg-char py-2.5 text-sm font-semibold tracking-wide text-paper"

@@ -7,7 +7,7 @@ import { useBB } from "@/components/Providers";
 import { queryHits } from "@/lib/bible";
 
 export default function QuickPage() {
-  const { content, editing, update, notify, setSelectedId, selectedId, insertEvent, payFee } = useBB();
+  const { content, editing, update, act, notify, setSelectedId, selectedId, insertEvent } = useBB();
   const [sheet, setSheet] = useState(null);
   const [area, setArea] = useState("");
   const copy = content.copy.quick;
@@ -19,31 +19,31 @@ export default function QuickPage() {
   });
 
   async function confirmSheet() {
-    const res = await payFee({ type: "quick-join", input: { id: sheet.id } });
+    const res = await act("event", sheet.id, sheet.mode);
     if (res.needLogin) {
       try { sessionStorage.setItem("bb_next", "/quick"); } catch { /* ignore */ }
       window.location.href = "/login";
       return;
     }
-    if (res.redirecting) return;
     if (res.error) notify(res.error);
-    else setSheet(null);
+    else notify("You're in.");
+    setSheet(null);
   }
 
   return (
     <main className="bb-frame pb-28 pt-8 md:pb-16">
-      <section className="mx-auto max-w-xl text-center">
-        <h1 className="bb-hero-title text-char">
-          <Copy k="quick.title" legacy={copy.title} onEnglish={(d, next) => { d.copy.quick.title = next; }} />
-          <br />
-          <Copy k="quick.accent" legacy={copy.accent} className="italic text-ember" onEnglish={(d, next) => { d.copy.quick.accent = next; }} />
-        </h1>
-        <Copy as="p" k="quick.sub" legacy={copy.sub} className="mt-3 text-[0.72rem] tracking-[0.14em] text-mute" onEnglish={(d, next) => { d.copy.quick.sub = next; }} />
-      </section>
-      <div className="mx-auto mt-6 max-w-2xl">
-        <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Tonight, Central, 中環, café…" className="w-full rounded-full border border-black/10 bg-white px-4 py-3 text-sm outline-none transition focus:border-ember" />
-      </div>
-      <div className="mx-auto mt-8 max-w-2xl space-y-3">
+      <div className="grid items-start gap-8 md:grid-cols-2">
+        <section className="text-left">
+          <h1 className="font-serif text-5xl leading-[0.95] text-char md:text-7xl">
+            <Copy k="quick.title" legacy={copy.title} onEnglish={(d, next) => { d.copy.quick.title = next; }} />
+            <br />
+            <Copy k="quick.accent" legacy={copy.accent} className="italic text-ember" onEnglish={(d, next) => { d.copy.quick.accent = next; }} />
+          </h1>
+          <Copy as="p" k="quick.sub" legacy={copy.sub} className="mt-4 text-sm tracking-[0.08em] text-mute" onEnglish={(d, next) => { d.copy.quick.sub = next; }} />
+        </section>
+        <section>
+          <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Tonight, Central, 中環, café…" className="w-full rounded-full border border-black/10 bg-white px-4 py-3 text-sm outline-none transition focus:border-ember" />
+          <div className="mt-4 space-y-3">
         {rows.map((row) => (
           <article
             key={row.id}
@@ -67,12 +67,12 @@ export default function QuickPage() {
             </button>
           </article>
         ))}
-      </div>
-      <div className="mx-auto mt-8 max-w-xl text-center">
-        <Copy as="p" k="quick.note" legacy={copy.note} className="text-sm leading-relaxed text-mute" onEnglish={(d, next) => { d.copy.quick.note = next; }} />
-        <button type="button" className="mt-4 rounded-full border border-char px-5 py-2 text-sm" onClick={() => setSheet({ id: "create", name: "a quick seat", mode: "create-new" })}>
-          I'm free now
-        </button>
+          </div>
+          <Copy as="p" k="quick.note" legacy={copy.note} className="mt-6 text-sm leading-relaxed text-mute" onEnglish={(d, next) => { d.copy.quick.note = next; }} />
+          <button type="button" className="mt-4 rounded-full border border-char px-5 py-2 text-sm" onClick={() => setSheet({ id: "create", name: "a quick seat", mode: "create-new" })}>
+            I'm free now
+          </button>
+        </section>
       </div>
       <Sheet
         open={sheet?.mode === "create-new"}
