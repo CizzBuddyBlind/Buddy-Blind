@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useBB } from "@/components/Providers";
+import { MoveBox } from "@/components/MoveBox";
 import { AGE_RANGES } from "@/lib/bible";
 import { JoinedEvents } from "@/components/PhoneApp";
 
@@ -49,14 +50,16 @@ export default function ProfilePage() {
         <section>
           <div className="grid h-20 w-20 place-items-center rounded-full bg-card font-serif text-3xl">{initial}</div>
           <h1 className="mt-3 font-serif text-2xl">{session.handle}</h1>
-          <div className="mt-4 space-y-1 text-sm text-mute">
+          <MoveBox id="profile-details" className="mt-4">
+            <div className="space-y-1 text-sm text-mute">
             <p>Age · {form.ageRange || "—"}</p>
             <p>Gender · {form.gender || "—"}</p>
             <p>Orientation · {form.orientation || "—"}</p>
             <p>Lives in · {form.neighborhood || "—"}</p>
             <p>Work · {form.occupation || "—"}</p>
             <p className="pt-1 text-fg">Buddies {buddyLabel}</p>
-          </div>
+            </div>
+          </MoveBox>
           <div className="mt-5 space-y-2">
             {reviews.map((review) => (
               <p key={review.id || review.body} className="rounded-2xl border border-white/10 bg-card px-4 py-3 text-sm">
