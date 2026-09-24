@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { SEED, SEED_ACCOUNTS } from "@/lib/defaults";
 import { loadSharedContent, saveSharedContent, supabaseReady } from "@/lib/supabase";
 import { bookingHold, iso, logEntry, normalizeContent, tableStart, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
+import { notifyRestaurant } from "@/lib/notify";
 import { putMedia } from "@/lib/media";
 
 const Ctx = createContext(null);
