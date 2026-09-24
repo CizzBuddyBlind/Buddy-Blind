@@ -75,33 +75,36 @@ export default function ProfilePage() {
             Buddies
           </button>
           {buddiesOpen && !buddy && (
-            <div className="mt-3 space-y-2">
+            <div className="mt-3">
               {!buddies.length && !pending.length && <p className="text-sm text-mute">No buddies yet.</p>}
-              {pending.map((b) => (
-                <div key={b.id} className="flex items-center justify-between rounded-xl border border-white/10 px-3 py-2 text-sm">
-                  <span>{b.name} · waiting</span>
-                  <span className="flex gap-2">
-                    <button type="button" onClick={() => bb.respondBuddy(b.id, true)}>Accept</button>
-                    <button type="button" onClick={() => bb.respondBuddy(b.id, false)}>No</button>
-                  </span>
-                </div>
-              ))}
-              {buddies.map((b) => (
-                <button key={b.id} type="button" onClick={() => setBuddy(b)} className="block w-full rounded-xl border border-white/10 px-3 py-2 text-left text-sm">
-                  <span className="mr-2 inline-grid h-7 w-7 place-items-center rounded-full bg-card text-xs">{b.name.slice(0, 1).toUpperCase()}</span>
-                  {b.name}
-                </button>
-              ))}
+              <div className="flex flex-wrap gap-2">
+                {pending.map((b) => (
+                  <button key={b.id} type="button" title={`${b.name} · waiting`} onClick={() => setBuddy(b)} className="grid h-11 w-11 place-items-center rounded-full border border-dashed border-white/25 text-sm text-mute">
+                    {b.name.slice(0, 1).toUpperCase()}
+                  </button>
+                ))}
+                {buddies.map((b) => (
+                  <button key={b.id} type="button" title={b.name} onClick={() => setBuddy(b)} className="grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-card font-serif text-lg">
+                    {b.name.slice(0, 1).toUpperCase()}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {buddy && (
             <div className="mt-3 rounded-2xl border border-white/10 bg-card p-4">
-              <button type="button" className="text-xs text-mute" onClick={() => setBuddy(null)}>Back to buddies</button>
-              <div className="mt-3 grid h-16 w-16 place-items-center rounded-full bg-black font-serif text-2xl">{buddy.name.slice(0, 1).toUpperCase()}</div>
+              <button type="button" className="text-xs text-mute" onClick={() => setBuddy(null)}>Back</button>
+              <div className="mt-3 grid h-14 w-14 place-items-center rounded-full bg-black font-serif text-2xl">{buddy.name.slice(0, 1).toUpperCase()}</div>
               <h2 className="mt-3 font-serif text-2xl">{buddy.name}</h2>
-              <p className="mt-1 text-sm text-mute">Your buddy</p>
+              <p className="mt-1 text-sm text-mute">{buddy.status === "pending" ? "Waiting" : "Your buddy"}</p>
               {buddy.area && <p className="mt-2 text-sm">{buddy.area}</p>}
               {buddy.note && <p className="text-sm text-mute">{buddy.note}</p>}
+              {buddy.status === "pending" && (
+                <div className="mt-3 flex gap-2">
+                  <button type="button" className="rounded-full bg-fg px-3 py-1 text-sm text-ink" onClick={() => { bb.respondBuddy(buddy.id, true); setBuddy(null); }}>Accept</button>
+                  <button type="button" className="rounded-full border border-white/15 px-3 py-1 text-sm" onClick={() => { bb.respondBuddy(buddy.id, false); setBuddy(null); }}>No</button>
+                </div>
+              )}
             </div>
           )}
           <button type="button" className="mt-4 block text-xs text-mute" onClick={() => setEdit((v) => !v)}>{edit ? "Close" : "Edit details"}</button>
