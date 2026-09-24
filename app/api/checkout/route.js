@@ -13,6 +13,13 @@ function baseUrl(request) {
   return process.env.NEXT_PUBLIC_BASE_URL || "https://buddyblind.com";
 }
 
+function safeReturn(value) {
+  if (typeof value !== "string") return "/";
+  const path = value.split("#")[0];
+  if (!path.startsWith("/") || path.startsWith("//") || path.includes("://")) return "/";
+  return path.slice(0, 300);
+}
+
 async function stripe(secret, path, { method = "GET", params } = {}) {
   const res = await fetch(`https://api.stripe.com${path}`, {
     method,
@@ -87,12 +94,16 @@ export async function GET(request) {
   if (!ok) {
     return Response.json({ ok: false, reason: data.error?.message || "Stripe did not confirm this checkout." });
   }
-  const kind = data.metadata?.kind === "lite" || data.metadata?.kind === "premium" ? data.metadata.kind : "";
-  const done = data.status === "complete";
+  const metaKind = data.metadata?.kind || "";
+  const kind = metaKind === "lite" || metaKind === "premium" || metaKind === "fee" ? metaKind : "";
+  const done = kind === "fee"
+    ? data.status === "complete" && data.payment_status === "paid"
+    : data.status === "complete";
   return Response.json({
     ok: done && !!kind,
     kind,
     status: data.status,
+    paymentStatus: data.payment_status || "",
     subscriptionId: idOf(data.subscription),
     customerId: idOf(data.customer),
   });
@@ -123,8 +134,10 @@ export async function POST(request) {
     params.set("subscription_data[metadata][kind]", kind);
     if (kind === "premium") params.set("subscription_data[trial_period_days]", "90");
   } else {
-    params.set("success_url", `${base}/profile?paid=1`);
-    params.set("cancel_url", `${base}/subscribe?pay=cancel`);
+    const back = safeReturn(body.returnPath);
+    const join = back.includes("?") ? "&" : "?";
+    params.set("success_url", `${base}${back}${join}paid=1&session_id={CHECKOUT_SESSION_ID}`);
+    params.set("cancel_url", `${base}${back}${join}pay=cancel`);
   }
   if (typeof body.email === "string" && body.email.includes("@")) params.set("customer_email", body.email);
 

@@ -25,16 +25,16 @@ export default function PrivateDetailPage() {
 
   async function join() {
     setBusy(true);
-    const res = await bb.joinPrivate(event.id);
+    const res = await bb.payFee({ type: "join-private", input: { id: event.id } });
     setBusy(false);
     if (res.needLogin) {
       rememberReturn();
       window.location.href = "/login";
       return;
     }
-    if (res.error) bb.notify(res.error === "FULL" ? "FULL. No more places." : res.error);
-    else bb.notify("You're in.");
-    setPay(false);
+    if (res.redirecting) return;
+    if (res.error) bb.notify(res.error);
+    else setPay(false);
   }
 
   return (

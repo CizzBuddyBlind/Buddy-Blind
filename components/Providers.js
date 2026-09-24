@@ -1036,6 +1036,102 @@ export function BuddyProvider({ children }) {
     });
   }, [pushNote, ready, session, social.notesOn]);
 
+
+  const payFee = useCallback(async (intent) => {
+    if (!session) return { needLogin: true };
+    try {
+      sessionStorage.setItem("bb_fee_pending", JSON.stringify({ intent }));
+    } catch {
+      return { error: "Couldn't hold this booking. Try a smaller photo." };
+    }
+    const here = `${window.location.pathname}${window.location.search}`;
+    let data = {};
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "fee", email: session.email || "", returnPath: here }),
+      });
+      data = await res.json();
+    } catch {
+      data = {};
+    }
+    if (!data.ok || !data.url) {
+      sessionStorage.removeItem("bb_fee_pending");
+      return { error: data.reason || "Card checkout is not ready yet." };
+    }
+    window.location.assign(data.url);
+    return { redirecting: true };
+  }, [session]);
+
+  const feeFlight = useRef(false);
+  useEffect(() => {
+    if (!ready || !session || feeFlight.current || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const strip = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("paid");
+      url.searchParams.delete("session_id");
+      url.searchParams.delete("pay");
+      const next = `${url.pathname}${url.search}`;
+      window.history.replaceState({}, "", next);
+    };
+    if (params.get("pay") === "cancel") {
+      sessionStorage.removeItem("bb_fee_pending");
+      notify("Payment cancelled. Nothing was charged.");
+      strip();
+      return;
+    }
+    if (params.get("paid") !== "1") return;
+    const sid = params.get("session_id") || "";
+    if (!sid) return;
+    if (sessionStorage.getItem("bb_fee_done") === sid) {
+      strip();
+      return;
+    }
+    const raw = sessionStorage.getItem("bb_fee_pending");
+    if (!raw) return;
+    feeFlight.current = true;
+    (async () => {
+      try {
+        const check = await fetch(`/api/checkout?session_id=${encodeURIComponent(sid)}`);
+        const data = await check.json();
+        if (!data.ok || data.kind !== "fee") {
+          notify(data.reason || "Payment was not confirmed.");
+          feeFlight.current = false;
+          return;
+        }
+        const { intent } = JSON.parse(raw);
+        let res = { error: "That booking expired." };
+        if (intent?.type === "open") res = await openTable(intent.input);
+        else if (intent?.type === "join") res = await joinTable(intent.input);
+        else if (intent?.type === "private-create") res = await createPrivate(intent.input);
+        else if (intent?.type === "join-private") res = await joinPrivate(intent.input?.id);
+        else if (intent?.type === "quick-join") res = await act("event", intent.input?.id, "join");
+        if (res?.needLogin) {
+          feeFlight.current = false;
+          return;
+        }
+        if (res?.error) {
+          notify(res.error);
+          feeFlight.current = false;
+          return;
+        }
+        sessionStorage.setItem("bb_fee_done", sid);
+        sessionStorage.removeItem("bb_fee_pending");
+        if (intent?.type === "private-create" && res?.id) {
+          window.location.href = `/private/${res.id}`;
+          return;
+        }
+        notify(intent?.type === "open" ? "Table opened." : "You're in.");
+        strip();
+      } catch {
+        notify("Payment could not be finished. If you were charged, try again from the same browser.");
+        feeFlight.current = false;
+      }
+    })();
+  }, [act, createPrivate, joinPrivate, joinTable, notify, openTable, ready, session]);
+
   const value = useMemo(
     () => ({
       ready,
@@ -1108,6 +1204,7 @@ export function BuddyProvider({ children }) {
       joinPrivate,
       sendPing,
       replyPing,
+      payFee,
     }),
     [
       ready, remote, content, session, staff, editing, preview, device, panel, dirty, toast, notify,
@@ -1116,7 +1213,7 @@ export function BuddyProvider({ children }) {
       versions, restoreVersion, act, insertEvent, removeBlock, duplicateBlock, addBlock, toggleLock,
       toggleHide, resetDraft, confirm, lang, setLang, trial, plan, planMeta, premium, setPlan, acceptTrial, cancelTrial,
       updateProfile, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
-      addReview, flow, openTable, joinTable, createPrivate, joinPrivate, sendPing, replyPing,
+      addReview, flow, openTable, joinTable, createPrivate, joinPrivate, sendPing, replyPing, payFee,
     ],
   );
 

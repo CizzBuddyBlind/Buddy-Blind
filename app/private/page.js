@@ -34,18 +34,16 @@ export default function PrivatePage() {
   async function confirmPay() {
     if (!pay) return;
     setBusy(true);
-    const res = await bb.joinPrivate(pay.id);
+    const res = await bb.payFee({ type: "join-private", input: { id: pay.id } });
     setBusy(false);
     if (res.needLogin) {
       rememberReturn();
       window.location.href = "/login";
       return;
     }
-    if (res.error) bb.notify(res.error === "FULL" ? "FULL. No more places." : res.error);
-    else {
-      bb.notify("You're in.");
-      setPay(null);
-    }
+    if (res.redirecting) return;
+    if (res.error) bb.notify(res.error);
+    else setPay(null);
   }
 
   return (

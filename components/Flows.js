@@ -116,16 +116,19 @@ export function OpenTableWizard({ venue, onClose }) {
 
   async function confirmPay() {
     setBusy(true);
-    const res = await bb.openTable({
-      venueId: venue.id,
-      branchId: branch?.id,
-      dateISO,
-      time,
-      tableType,
-      participants,
-      gender,
-      orientation,
-      ageRange,
+    const res = await bb.payFee({
+      type: "open",
+      input: {
+        venueId: venue.id,
+        branchId: branch?.id,
+        dateISO,
+        time,
+        tableType,
+        participants,
+        gender,
+        orientation,
+        ageRange,
+      },
     });
     setBusy(false);
     if (res.needLogin) {
@@ -133,12 +136,8 @@ export function OpenTableWizard({ venue, onClose }) {
       window.location.href = "/login";
       return;
     }
-    if (res.error) {
-      bb.notify(res.error);
-      return;
-    }
-    bb.notify("Table opened · +2 pts");
-    onClose();
+    if (res.redirecting) return;
+    if (res.error) bb.notify(res.error);
   }
 
   return (
@@ -261,19 +260,15 @@ export function JoinWizard({ venue, tableId, onClose }) {
 
   async function confirmPay() {
     setBusy(true);
-    const res = await bb.joinTable({ venueId: venue.id, tableId: picked || tableId });
+    const res = await bb.payFee({ type: "join", input: { venueId: venue.id, tableId: picked || tableId } });
     setBusy(false);
     if (res.needLogin) {
       rememberReturn();
       window.location.href = "/login";
       return;
     }
-    if (res.error) {
-      bb.notify(res.error);
-      return;
-    }
-    bb.notify("You're in.");
-    onClose();
+    if (res.redirecting) return;
+    if (res.error) bb.notify(res.error);
   }
 
   if (none) {
@@ -510,17 +505,20 @@ export function PrivateWizard({ venueId = "", onClose }) {
   async function publish() {
     if (!venue) return;
     setBusy(true);
-    const res = await bb.createPrivate({
-      ...form,
-      name: form.name.trim() || venue.name,
-      venueName: venue.name,
-      venueId: venue.id,
-      branchId: branch?.id || "",
-      location,
-      forWhom: [form.orientation, form.gender, form.ageRange].filter(Boolean).join(" · ") || "Anyone",
-      capacity: Math.min(20, Math.max(2, Number(form.capacity) || 2)),
-      imageUrl: form.imageUrl || venue.imageUrl,
-      gallery: photos,
+    const res = await bb.payFee({
+      type: "private-create",
+      input: {
+        ...form,
+        name: form.name.trim() || venue.name,
+        venueName: venue.name,
+        venueId: venue.id,
+        branchId: branch?.id || "",
+        location,
+        forWhom: [form.orientation, form.gender, form.ageRange].filter(Boolean).join(" · ") || "Anyone",
+        capacity: Math.min(20, Math.max(2, Number(form.capacity) || 2)),
+        imageUrl: form.imageUrl || venue.imageUrl,
+        gallery: photos,
+      },
     });
     setBusy(false);
     if (res.needLogin) {
@@ -528,13 +526,8 @@ export function PrivateWizard({ venueId = "", onClose }) {
       window.location.href = "/login";
       return;
     }
-    if (res.error) {
-      bb.notify(res.error);
-      return;
-    }
-    setPublishedId(res.id);
-    setPhase("share");
-    bb.notify("It's live.");
+    if (res.redirecting) return;
+    if (res.error) bb.notify(res.error);
   }
 
   async function shareLive() {

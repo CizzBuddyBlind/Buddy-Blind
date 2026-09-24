@@ -7,7 +7,7 @@ import { useBB } from "@/components/Providers";
 import { queryHits } from "@/lib/bible";
 
 export default function QuickPage() {
-  const { content, editing, update, act, notify, setSelectedId, selectedId, insertEvent } = useBB();
+  const { content, editing, update, notify, setSelectedId, selectedId, insertEvent, payFee } = useBB();
   const [sheet, setSheet] = useState(null);
   const [area, setArea] = useState("");
   const copy = content.copy.quick;
@@ -19,15 +19,15 @@ export default function QuickPage() {
   });
 
   async function confirmSheet() {
-    const res = await act("event", sheet.id, sheet.mode);
+    const res = await payFee({ type: "quick-join", input: { id: sheet.id } });
     if (res.needLogin) {
       try { sessionStorage.setItem("bb_next", "/quick"); } catch { /* ignore */ }
       window.location.href = "/login";
       return;
     }
+    if (res.redirecting) return;
     if (res.error) notify(res.error);
-    else notify("You're in.");
-    setSheet(null);
+    else setSheet(null);
   }
 
   return (
