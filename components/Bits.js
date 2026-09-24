@@ -105,7 +105,14 @@ export function Photo({ src, alt, onChange, className = "" }) {
     >
       <img src={src} alt={alt || ""} className="h-full w-full object-cover" />
       {editing && (
-        <label className="absolute inset-0 grid cursor-pointer place-items-center bg-black/50 text-[11px] font-semibold uppercase tracking-[0.14em] text-white opacity-0 transition hover:opacity-100">
+        <label
+          className="absolute inset-0 grid cursor-pointer place-items-center bg-black/50 text-[11px] font-semibold uppercase tracking-[0.14em] text-white opacity-0 transition hover:opacity-100"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.currentTarget.querySelector("input")?.click();
+          }}
+        >
           Drop photo · fits the frame
           <input
             type="file"

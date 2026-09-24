@@ -12,11 +12,14 @@ import { bookingHold, prettyDate, tablePrefs } from "@/lib/bible";
 export default function VenuePage() {
   const { id } = useParams();
   const bb = useBB();
-  const { content, update, setFlow, lang, editing, session } = bb;
+  const { content, update, setFlow, lang, editing, session, premium, ready } = bb;
   const t = (key) => translate(lang, key);
   const venue = content.venues.find((v) => v.id === id);
   const [photo, setPhoto] = useState(0);
   const [share, setShare] = useState(null);
+  if (!ready) {
+    return <main className="bb-frame py-20 text-center text-mute">Loading…</main>;
+  }
   if (!venue) {
     return (
       <main className="bb-frame py-20 text-center">
@@ -163,6 +166,19 @@ export default function VenuePage() {
           <div className="mt-6 flex gap-3">
             <button type="button" className="flex-1 rounded-full border border-white/15 py-3 text-sm" onClick={() => setFlow({ type: "invite", venueId: venue.id })}>{t("btn.invite")}</button>
             <button type="button" className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setFlow({ type: "join", venueId: venue.id })}>{t("btn.join")}</button>
+            <button
+              type="button"
+              className="flex-1 rounded-full border border-ember py-3 text-sm text-ember"
+              onClick={() => {
+                if (!premium) {
+                  window.location.href = "/subscribe";
+                  return;
+                }
+                setFlow({ type: "private-create", venueId: venue.id });
+              }}
+            >
+              {t("btn.host")}
+            </button>
           </div>
         </div>
       </div>

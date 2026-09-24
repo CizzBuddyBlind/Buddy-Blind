@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { fileToCover } from "./Bits";
 import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
 import {
@@ -12,6 +13,7 @@ import {
   nextDays,
   prettyDate,
   pingWindow,
+  queryHits,
   tablePrefs,
 } from "@/lib/bible";
 
@@ -430,43 +432,96 @@ export function TrialGate() {
   );
 }
 
-export function PrivateWizard({ onClose }) {
+export function PrivateWizard({ venueId = "", onClose }) {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
-  const [step, setStep] = useState(0);
+  const venues = bb.content.venues.filter((v) => bb.editing || !v.hidden);
+  const preset = venues.find((v) => v.id === venueId) || null;
+  const [pickedId, setPickedId] = useState(venueId || "");
+  const [branchId, setBranchId] = useState("");
+  const [query, setQuery] = useState("");
+  const [phase, setPhase] = useState(preset && (preset.branches || []).length <= 1 ? "details" : "venue");
   const [form, setForm] = useState({
     name: "",
-    forWhom: "Business networking",
     description: "",
-    location: "Central",
     dateISO: nextDays(7)[1],
     time: "7:00 PM",
     capacity: 8,
+    orientation: "",
+    gender: "",
     ageRange: "",
     videoUrl: "",
-    showHostPhoto: false,
+    imageUrl: preset?.imageUrl || "",
   });
+  const [uploads, setUploads] = useState([]);
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
-  const fee = adminFee(bb.session?.points || 0);
+  const [publishedId, setPublishedId] = useState("");
+  const venue = venues.find((v) => v.id === pickedId) || null;
+  const branches = venue?.branches || [];
+  const branch = branches.find((b) => b.id === branchId) || (branches.length === 1 ? branches[0] : null);
+  const fee = adminFee();
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+  const photos = [...(venue?.gallery?.length ? venue.gallery : venue?.imageUrl ? [venue.imageUrl] : []), ...uploads];
+  const location = venue
+    ? [venue.name, branch?.label, branch?.address || (!branch ? venue.locationLabel : "")].filter(Boolean).join(" · ")
+    : "";
+
+  function chooseVenue(next) {
+    setPickedId(next.id);
+    setBranchId((next.branches || []).length === 1 ? next.branches[0].id : "");
+    setForm((f) => ({ ...f, imageUrl: f.imageUrl || next.imageUrl || "" }));
+  }
 
   async function close() {
-    if (step > 0 || form.name) {
+    if (phase === "share") {
+      onClose();
+      return;
+    }
+    if (phase !== "venue" || form.name || form.description) {
       const ok = await bb.confirm(t("leave.title"), t("leave.body"));
       if (!ok) return;
     }
     onClose();
   }
 
-  async function confirmPay() {
-    if (!form.name.trim()) {
-      bb.notify("Name the event first.");
-      setStep(0);
+  async function addPhoto(file) {
+    if (!file) return;
+    try {
+      const imageUrl = await fileToCover(file);
+      setUploads((list) => [...list, imageUrl]);
+      set("imageUrl", imageUrl);
+    } catch {
+      bb.notify("That photo didn't load.");
+    }
+  }
+
+  function addVideo(file) {
+    if (!file) return;
+    if (file.size > 2_000_000) {
+      bb.notify("Keep the video under 2 MB.");
       return;
     }
+    const reader = new FileReader();
+    reader.onload = () => set("videoUrl", String(reader.result || ""));
+    reader.readAsDataURL(file);
+  }
+
+  async function publish() {
+    if (!venue) return;
     setBusy(true);
-    const res = await bb.createPrivate({ ...form, capacity: Number(form.capacity) || 8 });
+    const res = await bb.createPrivate({
+      ...form,
+      name: form.name.trim() || venue.name,
+      venueName: venue.name,
+      venueId: venue.id,
+      branchId: branch?.id || "",
+      location,
+      forWhom: [form.orientation, form.gender, form.ageRange].filter(Boolean).join(" · ") || "Anyone",
+      capacity: Math.min(20, Math.max(2, Number(form.capacity) || 2)),
+      imageUrl: form.imageUrl || venue.imageUrl,
+      gallery: photos,
+    });
     setBusy(false);
     if (res.needLogin) {
       rememberReturn();
@@ -477,23 +532,113 @@ export function PrivateWizard({ onClose }) {
       bb.notify(res.error);
       return;
     }
-    bb.notify("Private event published · +5 pts");
-    onClose();
+    setPublishedId(res.id);
+    setPhase("share");
+    bb.notify("It's live.");
+  }
+
+  async function shareLive() {
+    const path = `/share/private/${publishedId}`;
+    const lines = [form.name || venue?.name, location, `${form.dateISO} · ${form.time}`, form.description];
+    const text = shareText({ path, joined: false, lines });
+    try {
+      if (navigator.share) await navigator.share({ title: form.name || "Buddy Blind", text, url: `${window.location.origin}${path}` });
+      else await navigator.clipboard.writeText(text);
+      bb.notify("Copied. Come join me via the link.");
+    } catch {
+      window.prompt("Copy this", text);
+    }
+  }
+
+  const found = venues.filter((item) => queryHits(`${item.name} ${item.cuisine || ""} ${item.locationLabel || ""} ${item.area || ""}`, query)).slice(0, 8);
+
+  if (phase === "share") {
+    return (
+      <Frame title="It's live." step={3} total={3} onBack={onClose} onClose={onClose}>
+        <p className="font-serif text-2xl">{form.name || venue?.name}</p>
+        <p className="mt-2 text-sm text-mute">{location}</p>
+        <p className="mt-1 text-sm text-mute">{form.dateISO} · {form.time} · {form.capacity} seats</p>
+        <div className="mt-6 flex gap-2">
+          <button type="button" className="flex-1 rounded-full border border-white/15 py-3 text-sm" onClick={onClose}>Done</button>
+          <button type="button" className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={shareLive}>Share</button>
+        </div>
+      </Frame>
+    );
   }
 
   return (
-    <Frame title="Private event" step={step + 1} total={3} onBack={step === 0 ? close : () => setStep((s) => s - 1)} onClose={close}>
-      {step === 0 && (
-        <div className="space-y-2">
-          <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Event name" className="w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
-          <input value={form.forWhom} onChange={(e) => set("forWhom", e.target.value)} placeholder="Who it is for" className="w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
-          <textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="What people should expect" className="h-24 w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
-          <input value={form.location} onChange={(e) => set("location", e.target.value)} placeholder="Restaurant or area" className="w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
-          <button type="button" className="w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(1)}>{t("btn.next")}</button>
+    <Frame
+      title={phase === "venue" ? "Where?" : phase === "details" ? "The night" : "Publish"}
+      step={phase === "venue" ? 1 : phase === "details" ? 2 : 3}
+      total={3}
+      onBack={phase === "venue" || (phase === "details" && preset && branches.length <= 1) ? close : () => setPhase(phase === "pay" ? "details" : "venue")}
+      onClose={close}
+    >
+      {phase === "venue" && (
+        <div className="space-y-3">
+          {!preset && (
+            <>
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search a place" className="w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
+              <div className="space-y-2">
+                {found.map((item) => (
+                  <button key={item.id} type="button" onClick={() => chooseVenue(item)} className={`bb-choice block w-full rounded-2xl border px-4 py-3 text-left text-sm ${pickedId === item.id ? "border-ember" : "border-white/15"}`}>
+                    <span className="block">{item.name}</span>
+                    <span className="text-mute">{item.cuisine || item.typeLabel} · {item.locationLabel}</span>
+                  </button>
+                ))}
+                {query && found.length === 0 && <p className="text-sm text-mute">No place with that name.</p>}
+              </div>
+            </>
+          )}
+          {preset && <p className="font-serif text-3xl">{preset.name}</p>}
+          {branches.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              {branches.map((item) => (
+                <Choice key={item.id} on={branchId === item.id} onClick={() => setBranchId(item.id)}>{item.label}</Choice>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            disabled={!venue || (branches.length > 1 && !branchId)}
+            className="w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink disabled:opacity-40"
+            onClick={() => setPhase("details")}
+          >
+            {t("btn.next")}
+          </button>
         </div>
       )}
-      {step === 1 && (
+      {phase === "details" && venue && (
         <div className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.16em] text-mute">Venue</p>
+          <p className="font-serif text-2xl">{venue.name}</p>
+          <p className="text-sm text-mute">{location}</p>
+          {branches.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              {branches.map((item) => (
+                <Choice key={item.id} on={branchId === item.id} onClick={() => setBranchId(item.id)}>{item.label}</Choice>
+              ))}
+            </div>
+          )}
+          <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Name the night" className="w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
+          <textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="What's the night about?" className="h-24 w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
+          <p className="text-xs uppercase tracking-[0.16em] text-mute">Photos</p>
+          <div className="flex gap-2 overflow-x-auto">
+            {photos.map((src) => (
+              <button key={src} type="button" onClick={() => set("imageUrl", src)} className={`h-16 w-20 shrink-0 overflow-hidden rounded-xl border ${form.imageUrl === src ? "border-ember" : "border-white/15"}`}>
+                <img src={src} alt="" className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+          <label className="block text-xs text-mute">
+            Upload a photo
+            <input type="file" accept="image/*" className="mt-1 block text-xs" onChange={(e) => { addPhoto(e.target.files?.[0]); e.target.value = ""; }} />
+          </label>
+          <label className="block text-xs text-mute">
+            Or a short video
+            <input type="file" accept="video/*" className="mt-1 block text-xs" onChange={(e) => { addVideo(e.target.files?.[0]); e.target.value = ""; }} />
+          </label>
+          {form.videoUrl && <p className="text-xs text-ember">Video added.</p>}
           <div className="flex flex-wrap gap-2">
             {nextDays(7).map((day) => (
               <Choice key={day} on={form.dateISO === day} onClick={() => set("dateISO", day)}>{prettyDate(day, bb.lang)}</Choice>
@@ -505,31 +650,38 @@ export function PrivateWizard({ onClose }) {
             ))}
           </div>
           <label className="block text-sm text-mute">
-            People including you (max 20)
+            Seats, including you. Max 20.
             <input type="number" min={2} max={20} value={form.capacity} onChange={(e) => set("capacity", Math.min(20, Math.max(2, Number(e.target.value) || 2)))} className="mt-1 w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-fg" />
           </label>
+          <p className="text-xs uppercase tracking-[0.16em] text-mute">Who can come · optional</p>
           <div className="flex flex-wrap gap-2">
-            <Choice on={!form.ageRange} onClick={() => set("ageRange", "")}>Any age</Choice>
-            {AGE_RANGES.map((g) => (
-              <Choice key={g} on={form.ageRange === g} onClick={() => set("ageRange", g)}>{g}</Choice>
+            {["Any", "Gay", "Lesbian", "Trans"].map((item) => (
+              <Choice key={item} on={item === "Any" ? !form.orientation : form.orientation === item} onClick={() => set("orientation", item === "Any" ? "" : item)}>{item}</Choice>
             ))}
           </div>
-          <input value={form.videoUrl} onChange={(e) => set("videoUrl", e.target.value)} placeholder="Optional video URL" className="w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.showHostPhoto} onChange={(e) => set("showHostPhoto", e.target.checked)} />
-            Show my host photo on this event only
-          </label>
-          <p className="text-xs text-mute">Your normal profile stays a letter. A photo here is only for this event, and only if you tick this.</p>
-          <button type="button" className="w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(2)}>{t("btn.next")}</button>
+          <div className="flex flex-wrap gap-2">
+            {["", "Women", "Men", "Mixed"].map((item) => (
+              <Choice key={item || "any-g"} on={form.gender === item} onClick={() => set("gender", item)}>{item || "Any gender"}</Choice>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Choice on={!form.ageRange} onClick={() => set("ageRange", "")}>Any age</Choice>
+            {AGE_RANGES.map((item) => (
+              <Choice key={item} on={form.ageRange === item} onClick={() => set("ageRange", item)}>{item}</Choice>
+            ))}
+          </div>
+          <button type="button" className="w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setPhase("pay")}>{t("btn.next")}</button>
         </div>
       )}
-      {step === 2 && (
+      {phase === "pay" && (
         <div className="space-y-3 text-sm text-mute">
-          <p>{form.name || "Untitled"} · {form.forWhom}</p>
-          <p>{form.location} · {prettyDate(form.dateISO, bb.lang)} · {form.time}</p>
-          <p>{form.capacity} seats including host · {form.capacity - 1} places left</p>
+          <p className="font-serif text-2xl text-fg">{form.name || venue?.name}</p>
+          <p>{location}</p>
+          <p>{prettyDate(form.dateISO, bb.lang)} · {form.time}</p>
+          <p>{Math.min(20, Math.max(2, Number(form.capacity) || 2))} seats</p>
+          <p>{[form.orientation, form.gender, form.ageRange].filter(Boolean).join(" · ") || "Anyone"}</p>
           <p>{form.description}</p>
-          <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={confirmPay} busy={busy} />
+          <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={publish} busy={busy} />
         </div>
       )}
     </Frame>

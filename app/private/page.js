@@ -49,7 +49,7 @@ export default function PrivatePage() {
   }
 
   return (
-    <main className="bb-frame pb-28 pt-8 md:pb-16">
+    <main className="bb-private bb-frame pb-28 pt-8 md:pb-16">
       <section className="mx-auto max-w-2xl text-center">
         <div className="mb-6 flex justify-between text-mute">
           <Editable className="bb-kicker" value={copy.kickerLeft} onChange={(kickerLeft) => update((d) => { d.copy.private.kickerLeft = kickerLeft; })} />
@@ -89,12 +89,20 @@ export default function PrivatePage() {
           {AGE_RANGES.map((range) => <option key={range}>{range}</option>)}
         </select>
       </div>
-      <div className="mt-4">
-        {premium ? (
-          <button type="button" className="rounded-full bg-char px-4 py-2 text-sm text-paper" onClick={() => setFlow({ type: "private-create" })}>{t("priv.create")}</button>
-        ) : (
-          <Link href="/subscribe" className="text-sm text-ember">{t("priv.premium")}</Link>
-        )}
+      <div className="mt-4 flex flex-wrap gap-3">
+        <button
+          type="button"
+          className="rounded-full bg-char px-4 py-2 text-sm text-paper"
+          onClick={() => {
+            if (!premium) {
+              window.location.href = "/subscribe";
+              return;
+            }
+            setFlow({ type: "private-create" });
+          }}
+        >
+          {t("btn.host")}
+        </button>
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">

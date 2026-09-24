@@ -129,6 +129,23 @@ textarea:hover {
   transform: translateY(-2px);
   border-color: rgba(232, 93, 59, 0.8);
 }
+.bb-private h1:hover,
+.bb-private h2:hover,
+.bb-private h3:hover,
+.bb-private p:hover,
+.bb-private a:hover,
+.bb-private li:hover,
+.bb-private article:hover,
+.bb-private article:hover h2,
+.bb-private article:hover h3,
+.bb-private article:hover p,
+.bb-private article:hover span,
+.bb-private article:hover a,
+.bb-private article:hover button,
+.bb-private a.bb-lift:hover,
+.bb-private a.bb-lift:hover * {
+  color: #e85d3b;
+}
 @keyframes bb-rise {
   from {
     opacity: 0;

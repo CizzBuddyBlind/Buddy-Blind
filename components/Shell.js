@@ -355,7 +355,9 @@ export function Shell({ children }) {
       {bb.flow?.type === "join" && flowVenue && (
         <JoinWizard venue={flowVenue} tableId={bb.flow.tableId} onClose={() => bb.setFlow(null)} />
       )}
-      {bb.flow?.type === "private-create" && <PrivateWizard onClose={() => bb.setFlow(null)} />}
+      {bb.flow?.type === "private-create" && (
+        <PrivateWizard venueId={bb.flow.venueId || ""} onClose={() => bb.setFlow(null)} />
+      )}
     </div>
   );
 }

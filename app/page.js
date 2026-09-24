@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { Copy, Editable, Photo } from "@/components/Bits";
 import { HostBadge } from "@/components/Flows";
@@ -23,6 +23,7 @@ function Home() {
   const { content, editing, update, setSelectedId, selectedId, setFlow, lang } = bb;
   const t = (key) => translate(lang, key);
   const params = useSearchParams();
+  const router = useRouter();
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(params.get("when") === "today");
@@ -149,10 +150,14 @@ function Home() {
           return (
             <article
               key={venue.id}
-              onClick={() => editing && setSelectedId(venue.id)}
-              className={`bb-card transition ${venue.hidden ? "opacity-40" : ""} ${selectedId === venue.id ? "ring-2 ring-ember" : ""} ${venue.locked ? "ring-1 ring-white/20" : ""}`}
+              onClick={(e) => {
+                if (e.target.closest("button, input, label, textarea, select")) return;
+                if (editing) setSelectedId(venue.id);
+                router.push(`/venues/${venue.id}`);
+              }}
+              className={`bb-card cursor-pointer transition ${venue.hidden ? "opacity-40" : ""} ${selectedId === venue.id ? "ring-2 ring-ember" : ""} ${venue.locked ? "ring-1 ring-white/20" : ""}`}
             >
-              <Link href={`/venues/${venue.id}`} className="block" onClick={(e) => editing && e.preventDefault()}>
+              <Link href={`/venues/${venue.id}`} className="block" onClick={() => editing && setSelectedId(venue.id)}>
                 <div className="bb-img">
                   <Photo
                     src={venue.imageUrl}
@@ -188,8 +193,8 @@ function Home() {
                 </div>
               </Link>
               <div className="flex gap-2.5 px-4 pb-[18px]">
-                <button type="button" className="flex-1 rounded-full border border-white/15 py-2.5 text-[0.8rem] font-semibold" onClick={() => setFlow({ type: "invite", venueId: venue.id })}>{t("btn.invite")}</button>
-                <button type="button" className="flex-1 rounded-full bg-fg py-2.5 text-[0.8rem] font-semibold text-ink" onClick={() => setFlow({ type: "join", venueId: venue.id })}>{t("btn.join")}</button>
+                <button type="button" className="flex-1 rounded-full border border-white/15 py-2.5 text-[0.8rem] font-semibold" onClick={(e) => { e.stopPropagation(); setFlow({ type: "invite", venueId: venue.id }); }}>{t("btn.invite")}</button>
+                <button type="button" className="flex-1 rounded-full bg-fg py-2.5 text-[0.8rem] font-semibold text-ink" onClick={(e) => { e.stopPropagation(); setFlow({ type: "join", venueId: venue.id }); }}>{t("btn.join")}</button>
               </div>
             </article>
           );
