@@ -572,7 +572,7 @@ export function JoinedEvents() {
               </div>
             </>
           );
-          const box = "block w-36 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-card text-left";
+          const box = "block w-[calc((100%-1.5rem)/3)] shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-card text-left";
           return item.href ? (
             <Link key={`${item.href}-${item.date}`} href={item.href} className={box}>{card}</Link>
           ) : (
@@ -583,7 +583,7 @@ export function JoinedEvents() {
     </section>
   );
   return (
-    <div className="space-y-5">
+    <div className="flex h-full min-w-0 flex-col gap-6">
       {block("Today", now)}
       {block("Upcoming", later)}
     </div>

@@ -98,7 +98,7 @@ export default function ProfilePage() {
 
   return (
     <main className="bb-frame min-h-[100dvh] bg-ink pb-28 pt-10">
-      <div className="mx-auto grid w-full max-w-5xl items-stretch gap-6 md:grid-cols-2">
+      <div className="mx-auto grid w-full max-w-5xl items-stretch gap-8 md:min-h-[calc(100dvh-8rem)] md:grid-cols-2">
         <section className="flex h-full min-h-[36rem] flex-col rounded-[28px] bg-[#f6f3ee] px-6 py-8 text-ink md:px-8">
           <div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-white font-serif text-4xl shadow-sm">{initial}</div>
           <h1 className="mt-4 text-center text-3xl font-bold tracking-tight">{session.handle}</h1>
@@ -285,7 +285,7 @@ export default function ProfilePage() {
             </form>
           )}
         </section>
-        <section className="h-full">
+        <section className="h-full min-w-0">
           <JoinedEvents />
         </section>
       </div>
