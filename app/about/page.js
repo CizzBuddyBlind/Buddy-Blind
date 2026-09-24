@@ -1,6 +1,6 @@
 export default function AboutPage() {
   return (
-    <main className="bb-frame bg-ink pb-28 pt-16 text-fg md:pb-20">
+    <main className="bb-frame bg-ink pb-28 pt-10 text-fg md:pb-20">
       <p className="text-[0.72rem] uppercase tracking-[0.2em] text-ember">About us</p>
       <h1 className="mt-5 max-w-4xl font-serif leading-[1.05]">
         <span className="block text-3xl text-white sm:text-4xl md:text-5xl">The restaurant is the setting.</span>

@@ -260,6 +260,8 @@ function mySeats(bb) {
         date: event?.dateISO || booking.dateISO,
         time: event?.timeLabel || booking.time,
         place: event?.location || booking.location || "",
+        image: event?.imageUrl || "",
+        href: `/private/${booking.id}`,
         joined: event?.joined || (event?.participants || []).length || 1,
         people: (event?.participants || []).map((p) => p.handle).filter(Boolean),
         venueId: "",
@@ -274,6 +276,8 @@ function mySeats(bb) {
       date: table?.dateISO || booking.dateISO,
       time: table?.time || booking.time,
       place: table?.address || booking.location || venue?.locationLabel || "",
+      image: venue?.imageUrl || "",
+      href: (booking.venueId || venue?.id) ? `/venues/${booking.venueId || venue.id}` : "",
       joined: table?.joined || (table?.participants || []).length || 1,
       people: (table?.participants || []).map((p) => p.handle).filter(Boolean),
       venueId: booking.venueId || venue?.id || "",
@@ -291,11 +295,31 @@ function mySeats(bb) {
           date: table.dateISO,
           time: table.time,
           place: table.address || venue.locationLabel || "",
+          image: venue.imageUrl || "",
+          href: `/venues/${venue.id}`,
           joined: table.joined || (table.participants || []).length || 1,
           people: (table.participants || []).map((p) => p.handle).filter(Boolean),
           venueId: venue.id,
           tableId: table.id,
         });
+      });
+    });
+    (bb.content.events || []).forEach((event) => {
+      if (event.kind !== "private" && event.kind !== "quick") return;
+      const onIt = event.hostName === handle || (event.participants || []).some((p) => p.handle === handle);
+      if (!onIt) return;
+      const venue = (bb.content.venues || []).find((item) => item.id === event.venueId);
+      add({
+        name: event.name,
+        date: event.dateISO,
+        time: event.timeLabel,
+        place: event.location || "",
+        image: event.imageUrl || venue?.imageUrl || "",
+        href: event.kind === "private" ? `/private/${event.id}` : (event.venueId ? `/venues/${event.venueId}` : ""),
+        joined: event.joined || (event.participants || []).length || 1,
+        people: (event.participants || []).map((p) => p.handle).filter(Boolean),
+        venueId: event.venueId || "",
+        eventId: event.id,
       });
     });
   }
@@ -525,50 +549,41 @@ function ProfileTab() {
 
 export function JoinedEvents() {
   const bb = useBB();
-  const [seat, setSeat] = useState(null);
-  const [sent, setSent] = useState("");
   if (!bb.session) return null;
   const today = iso(0);
   const seats = mySeats(bb);
   const now = seats.filter((item) => item.date === today);
   const later = seats.filter((item) => item.date > today);
-  if (seat) {
-    return (
-      <div className="space-y-3 rounded-2xl border border-white/10 bg-card p-4 text-fg">
-        <button type="button" className="text-sm text-mute" onClick={() => { setSeat(null); setSent(""); }}>Back</button>
-        <h2 className="font-serif text-xl">{seat.name}</h2>
-        <p className="text-sm text-mute">{prettyDate(seat.date)} · {seat.time}</p>
-        {seat.place && <p className="text-sm text-mute">{seat.place}</p>}
-        <p className="text-sm">{seat.joined} joined</p>
-        {!!seat.people.length && <p className="text-xs text-mute">{seat.people.join(" · ")}</p>}
-        <NotifyBox
-          phase={phaseOf(seat.date, seat.time)}
-          onSend={async (choice) => {
-            const res = await bb.sendPing({ venueId: seat.venueId, tableId: seat.tableId, eventId: seat.eventId, choice });
-            setSent(res?.error || "");
-            return res;
-          }}
-        />
-        {sent && <p className="text-xs text-mute">{sent}</p>}
-      </div>
-    );
-  }
   const block = (title, items) => (
     <section>
-      <h2 className="mb-2 text-[0.7rem] uppercase tracking-[0.14em] text-mute">{title}</h2>
+      <h2 className="mb-3 text-[0.7rem] uppercase tracking-[0.14em] text-mute">{title}</h2>
       {!items.length && <p className="rounded-2xl border border-white/10 px-4 py-3 text-sm text-mute">None yet.</p>}
-      <div className="space-y-2">
-        {items.map((item) => (
-          <button key={`${item.venueId}-${item.tableId || item.eventId}`} type="button" onClick={() => setSeat(item)} className="block w-full rounded-2xl border border-white/10 bg-card px-4 py-3 text-left">
-            <span className="block text-sm">{item.name}</span>
-            <span className="block text-xs text-mute">{prettyDate(item.date)} · {item.time} · {item.joined} joined</span>
-          </button>
-        ))}
+      <div className="flex gap-3 overflow-x-auto pb-1">
+        {items.map((item) => {
+          const card = (
+            <>
+              <div className="aspect-square w-full overflow-hidden bg-black/30">
+                {item.image ? <img src={item.image} alt="" className="h-full w-full object-cover" /> : null}
+              </div>
+              <div className="p-2.5">
+                <p className="truncate text-sm">{item.name}</p>
+                <p className="mt-1 truncate text-[11px] text-mute">{item.date} · {item.time}</p>
+                {item.place && <p className="truncate text-[11px] text-mute">{item.place}</p>}
+              </div>
+            </>
+          );
+          const box = "block w-36 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-card text-left";
+          return item.href ? (
+            <Link key={`${item.href}-${item.date}`} href={item.href} className={box}>{card}</Link>
+          ) : (
+            <div key={`${item.name}-${item.date}`} className={box}>{card}</div>
+          );
+        })}
       </div>
     </section>
   );
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {block("Today", now)}
       {block("Upcoming", later)}
     </div>

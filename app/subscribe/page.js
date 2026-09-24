@@ -178,7 +178,7 @@ export default function SubscribePage() {
   }
 
   return (
-    <main className="bb-frame mx-auto pb-28 pt-12 md:pb-20 md:pt-16">
+    <main className="bb-frame mx-auto pb-28 pt-10 md:pb-20">
       <div className="mx-auto w-full max-w-5xl">
         <h1 className="font-serif leading-[1.05]">
           <span className="block text-base text-white/85 sm:text-lg">Host the vibe you care about — or join one. Guests stay blind.</span>
@@ -188,7 +188,7 @@ export default function SubscribePage() {
           Wine, work, a hike. Or whatever you care about.
         </p>
 
-        <div className="mt-10 grid items-stretch gap-3 lg:grid-cols-3">
+        <div className="mt-16 grid items-stretch gap-3 lg:grid-cols-3">
           <div className="grid h-full overflow-hidden rounded-[28px] bg-[#111] md:grid-cols-2 lg:col-span-2">
             {CARDS.filter((card) => card.id !== "premium").map((card) => (
               <PlanCard key={card.id} card={card} plan={plan} busy={busy} onPay={pay} split />

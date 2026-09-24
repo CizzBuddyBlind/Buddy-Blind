@@ -11,9 +11,9 @@ import { iso } from "@/lib/bible";
 
 const TOP = [
   { href: "/", label: "Venues" },
-  { href: "/quick", label: "Quick Meet" },
-  { href: "/private", label: "Private events" },
-  { href: "/how", label: "How it works" },
+  { href: "/quick", label: "Quick" },
+  { href: "/private", label: "Private" },
+  { href: "/how", label: "How" },
   { href: "/subscribe", label: "Premium" },
   { href: "/profile", label: "Profile" },
 ];

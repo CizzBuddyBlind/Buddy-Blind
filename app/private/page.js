@@ -48,7 +48,7 @@ export default function PrivatePage() {
   }
 
   return (
-    <main className="bb-private bb-frame pb-28 pt-8 md:pb-16">
+    <main className="bb-private bb-frame pb-28 pt-10 md:pb-16">
       <section className="mx-auto max-w-2xl text-center">
         <div className="mb-6 flex justify-between text-mute">
           <Editable className="bb-kicker" value={copy.kickerLeft} onChange={(kickerLeft) => update((d) => { d.copy.private.kickerLeft = kickerLeft; })} />

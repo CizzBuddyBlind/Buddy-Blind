@@ -54,6 +54,37 @@ function stripHeavy(node, seen = new Set()) {
   }
 }
 
+export function peopleYouCanRate(content, handle) {
+  if (!content || !handle) return [];
+  const now = Date.now();
+  const found = new Map();
+  const take = (label, eventId, dateISO, time, names) => {
+    const people = [...new Set((names || []).filter(Boolean))];
+    if (!people.includes(handle)) return;
+    const start = tableStart({ dateISO, time: time || "7:00 PM" }).getTime();
+    if (!dateISO || Number.isNaN(start) || now < start + 60 * 60 * 1000) return;
+    people.forEach((name) => {
+      if (name === handle || found.has(name)) return;
+      found.set(name, { handle: name, eventId, label });
+    });
+  };
+  (content.venues || []).forEach((venue) => {
+    (venue.tables || []).forEach((table) => {
+      take(venue.name, table.id, table.dateISO, table.time, [
+        table.hostHandle,
+        ...(table.participants || []).map((p) => p.handle),
+      ]);
+    });
+  });
+  (content.events || []).forEach((event) => {
+    take(event.name, event.id, event.dateISO, event.timeLabel, [
+      event.hostName,
+      ...(event.participants || []).map((p) => p.handle),
+    ]);
+  });
+  return [...found.values()];
+}
+
 function clone(value) {
   stripHeavy(value);
   return JSON.parse(JSON.stringify(value));
@@ -815,16 +846,38 @@ export function BuddyProvider({ children }) {
     return { ok: true };
   }, [notify, pushNote, social]);
 
-  const addReview = useCallback((stars, body) => {
+  const addReview = useCallback((stars, body, to, eventId) => {
     const text = String(body || "").trim();
-    if (!text) return;
-    const next = {
-      ...social,
-      reviews: [{ id: `r-${Date.now()}`, stars: Number(stars) || 5, body: text, from: session?.handle || "Guest", at: Date.now() }, ...(social.reviews || [])].slice(0, 20),
+    const target = String(to || "").trim();
+    if (!session) return { error: "Log in first." };
+    if (!text || !target) return { error: "Pick someone and write a line." };
+    if (target === session.handle) return { error: "You can't rate yourself." };
+    const allowed = peopleYouCanRate(publishedRef.current, session.handle);
+    const match = allowed.find((person) => person.handle === target);
+    if (!match) return { error: "You can only rate someone who sat with you." };
+    const review = {
+      id: `r-${Date.now()}`,
+      stars: Math.min(5, Math.max(1, Number(stars) || 5)),
+      body: text,
+      from: session.handle,
+      to: target,
+      eventId: eventId || match.eventId || "",
+      at: Date.now(),
     };
-    saveSocial(next);
-    notify("Review saved.");
-  }, [notify, session, social]);
+    const src = publishedRef.current;
+    const next = { ...src, peerReviews: [review, ...(src.peerReviews || [])].slice(0, 80) };
+    publishedRef.current = next;
+    setPublished(next);
+    setTimeout(() => {
+      try {
+        stripHeavy(next);
+        write(PUB, next);
+        if (supabaseReady) saveSharedContent(next).catch(() => setRemote("error"));
+      } catch { /* the comment stays on screen */ }
+    }, 0);
+    notify("Saved.");
+    return { ok: true };
+  }, [notify, session]);
 
   const applyLive = useCallback(async (base) => {
     if (editing) {

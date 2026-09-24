@@ -31,7 +31,7 @@ export default function QuickPage() {
   }
 
   return (
-    <main className="bb-frame pb-28 pt-8 md:pb-16">
+    <main className="bb-frame pb-28 pt-10 md:pb-16">
       <div className="grid items-stretch gap-10 md:grid-cols-2">
         <section className="flex flex-col justify-center py-8">
           <p className="text-xs uppercase tracking-[0.22em] text-mute">Quick meet</p>
