@@ -181,14 +181,14 @@ function Home() {
                   <p className="mt-1 text-[0.8rem] text-mute">{venue.priceTier} · {venue.hours}</p>
                   {venue.petFriendly && <p className="mt-1 text-[0.72rem] uppercase tracking-[0.12em] text-ember">{t("venue.pet")}</p>}
                   {preview && (
-                    <div className="mb-3 mt-3 rounded-xl bg-white/5 px-3 py-2 text-[0.75rem]">
+                    <div className="mb-3 mt-3 flex min-h-[7.6rem] flex-col rounded-xl bg-white/5 px-3 py-2 text-[0.75rem]">
                       <div className="flex items-center gap-2">
                         <HostBadge handle={preview.table.hostHandle} tier={preview.table.hostTier} />
                         <span>{preview.table.hostHandle} {t("host.line")}</span>
                       </div>
                       <p className="mt-2 text-mute">{prettyDate(preview.table.dateISO, lang)} · {preview.table.time} · {preview.hold.held} people · {preview.hold.places} left</p>
                       <p className="text-mute">{tablePrefs(preview.table)}</p>
-                      {more > 0 && <p className="mt-1 text-ember">+ {t("moreEvents")}</p>}
+                      <p className={`mt-auto pt-1 ${more > 0 ? "text-ember" : "invisible"}`}>+ {t("moreEvents")}</p>
                     </div>
                   )}
                 </div>
