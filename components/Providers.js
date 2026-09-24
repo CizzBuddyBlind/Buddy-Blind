@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { SEED, SEED_ACCOUNTS } from "@/lib/defaults";
 import { loadSharedContent, saveSharedContent, supabaseReady } from "@/lib/supabase";
-import { bookingHold, logEntry, normalizeContent, pingWindow, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
+import { bookingHold, iso, logEntry, normalizeContent, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
 import { channelNote, notifyRestaurant } from "@/lib/notify";
 
 const Ctx = createContext(null);
@@ -941,8 +941,10 @@ export function BuddyProvider({ children }) {
     return { ok: true };
   }, [applyLive, editing, pushNote, session]);
 
-  const sendPing = useCallback(async ({ venueId, tableId, eventId }) => {
+  const sendPing = useCallback(async ({ venueId, tableId, eventId, choice }) => {
     if (!session) return { needLogin: true };
+    const line = choice === "cant" ? "cant" : choice === "coming" ? "coming" : "";
+    if (!line) return { error: "Pick a line first." };
     const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
     const target = eventId
       ? base.events.find((e) => e.id === eventId)
@@ -952,32 +954,35 @@ export function BuddyProvider({ children }) {
       || target.hostHandle === session.handle
       || target.hostName === session.handle;
     if (!joined) return { error: "Join this table first." };
-    const mode = pingWindow(target);
-    if (!mode) return { error: "That button opens only in the 2 hours before, or the 30 minutes after the start." };
+    const others = (target.participants || []).filter((p) => p.handle && p.handle !== session.handle);
+    if (!others.length) return { error: "No one else has joined yet." };
+    const day = target.dateISO || "";
+    if (day && day < iso(0)) return { error: "That event is already over." };
     target.pings = [...(target.pings || []), {
       id: `ping-${Date.now().toString(36)}`,
       from: session.handle,
-      kind: mode,
+      kind: line,
       at: Date.now(),
       replies: [],
     }];
     const saved = await applyLive(base);
     if (!saved.ok && saved.error) return { error: saved.error };
-    pushNote(mode === "see-you" ? "See you there" : "Are you coming?", "The other people on this table will see it in Buddy Blind.");
+    pushNote("Sent", line === "coming" ? "I am coming" : "Sorry guys, I can't make it today");
     return { ok: true };
   }, [applyLive, editing, pushNote, session]);
 
   const replyPing = useCallback(async ({ venueId, tableId, eventId, pingId, choice }) => {
     if (!session) return { needLogin: true };
+    if (choice !== "see-ya" && choice !== "next-time") return { error: "Pick a line first." };
     const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
     const target = eventId
       ? base.events.find((e) => e.id === eventId)
       : base.venues.find((v) => v.id === venueId)?.tables?.find((t) => t.id === tableId);
     const ping = target?.pings?.find((p) => p.id === pingId);
     if (!ping) return { error: "That note is gone." };
-    if (!(ping.replies || []).some((r) => r.from === session.handle)) {
-      ping.replies = [...(ping.replies || []), { from: session.handle, choice, at: Date.now() }];
-    }
+    if (ping.from === session.handle) return { error: "This one is already yours." };
+    if ((ping.replies || []).some((r) => r.from === session.handle)) return { error: "Already sent." };
+    ping.replies = [...(ping.replies || []), { from: session.handle, choice, at: Date.now() }];
     const saved = await applyLive(base);
     if (!saved.ok && saved.error) return { error: saved.error };
     const socialNext = { ...emptySocial(), ...read(SOCIAL, {}) };
@@ -991,18 +996,44 @@ export function BuddyProvider({ children }) {
     const mine = session.handle;
     const additions = [];
     const seen = new Set((social.notes || []).map((n) => n.id));
+    const line = {
+      coming: "I am coming",
+      cant: "Sorry guys, I can't make it today",
+      "see-you": "See you there",
+      arrive: "Are you coming?",
+    };
+    const replyLine = {
+      "see-ya": "See ya",
+      "next-time": "No worries, see you next time",
+    };
     const collect = (ping, meta, title) => {
-      const id = `ping-note-${ping.id}`;
-      if (ping.from === mine || seen.has(id)) return;
-      if ((ping.replies || []).some((r) => r.from === mine)) return;
-      seen.add(id);
-      additions.push({
-        id,
-        title,
-        body: ping.kind === "see-you" ? `${ping.from} says see you there.` : `${ping.from} asks if you are coming.`,
-        at: ping.at || Date.now(),
-        read: false,
-        ping: { ...meta, pingId: ping.id, kind: ping.kind },
+      if (ping.from !== mine) {
+        const id = `ping-note-${ping.id}`;
+        if (!seen.has(id) && !(ping.replies || []).some((r) => r.from === mine)) {
+          seen.add(id);
+          additions.push({
+            id,
+            title,
+            body: `${ping.from} · ${line[ping.kind] || "I am coming"}`,
+            at: ping.at || Date.now(),
+            read: false,
+            ping: { ...meta, pingId: ping.id, kind: ping.kind },
+          });
+        }
+        return;
+      }
+      (ping.replies || []).forEach((reply) => {
+        const id = `ping-reply-${ping.id}-${reply.from}`;
+        if (seen.has(id)) return;
+        seen.add(id);
+        additions.push({
+          id,
+          title,
+          body: `${reply.from} · ${replyLine[reply.choice] || "See ya"}`,
+          at: reply.at || Date.now(),
+          read: false,
+          ping: { ...meta, pingId: ping.id, replyOnly: true },
+        });
       });
     };
     (content.venues || []).forEach((venue) => {
@@ -1035,102 +1066,6 @@ export function BuddyProvider({ children }) {
       pushNote("2-hour reminder", `Your Buddy Blind plan is today. ${hit.name} · ${hit.time || ""} · ${hit.location || ""}. This is the in-app reminder. SMS is not connected.`);
     });
   }, [pushNote, ready, session, social.notesOn]);
-
-
-  const payFee = useCallback(async (intent) => {
-    if (!session) return { needLogin: true };
-    try {
-      sessionStorage.setItem("bb_fee_pending", JSON.stringify({ intent }));
-    } catch {
-      return { error: "Couldn't hold this booking. Try a smaller photo." };
-    }
-    const here = `${window.location.pathname}${window.location.search}`;
-    let data = {};
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: "fee", email: session.email || "", returnPath: here }),
-      });
-      data = await res.json();
-    } catch {
-      data = {};
-    }
-    if (!data.ok || !data.url) {
-      sessionStorage.removeItem("bb_fee_pending");
-      return { error: data.reason || "Card checkout is not ready yet." };
-    }
-    window.location.assign(data.url);
-    return { redirecting: true };
-  }, [session]);
-
-  const feeFlight = useRef(false);
-  useEffect(() => {
-    if (!ready || !session || feeFlight.current || typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const strip = () => {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("paid");
-      url.searchParams.delete("session_id");
-      url.searchParams.delete("pay");
-      const next = `${url.pathname}${url.search}`;
-      window.history.replaceState({}, "", next);
-    };
-    if (params.get("pay") === "cancel") {
-      sessionStorage.removeItem("bb_fee_pending");
-      notify("Payment cancelled. Nothing was charged.");
-      strip();
-      return;
-    }
-    if (params.get("paid") !== "1") return;
-    const sid = params.get("session_id") || "";
-    if (!sid) return;
-    if (sessionStorage.getItem("bb_fee_done") === sid) {
-      strip();
-      return;
-    }
-    const raw = sessionStorage.getItem("bb_fee_pending");
-    if (!raw) return;
-    feeFlight.current = true;
-    (async () => {
-      try {
-        const check = await fetch(`/api/checkout?session_id=${encodeURIComponent(sid)}`);
-        const data = await check.json();
-        if (!data.ok || data.kind !== "fee") {
-          notify(data.reason || "Payment was not confirmed.");
-          feeFlight.current = false;
-          return;
-        }
-        const { intent } = JSON.parse(raw);
-        let res = { error: "That booking expired." };
-        if (intent?.type === "open") res = await openTable(intent.input);
-        else if (intent?.type === "join") res = await joinTable(intent.input);
-        else if (intent?.type === "private-create") res = await createPrivate(intent.input);
-        else if (intent?.type === "join-private") res = await joinPrivate(intent.input?.id);
-        else if (intent?.type === "quick-join") res = await act("event", intent.input?.id, "join");
-        if (res?.needLogin) {
-          feeFlight.current = false;
-          return;
-        }
-        if (res?.error) {
-          notify(res.error);
-          feeFlight.current = false;
-          return;
-        }
-        sessionStorage.setItem("bb_fee_done", sid);
-        sessionStorage.removeItem("bb_fee_pending");
-        if (intent?.type === "private-create" && res?.id) {
-          window.location.href = `/private/${res.id}`;
-          return;
-        }
-        notify(intent?.type === "open" ? "Table opened." : "You're in.");
-        strip();
-      } catch {
-        notify("Payment could not be finished. If you were charged, try again from the same browser.");
-        feeFlight.current = false;
-      }
-    })();
-  }, [act, createPrivate, joinPrivate, joinTable, notify, openTable, ready, session]);
 
   const value = useMemo(
     () => ({
@@ -1204,7 +1139,6 @@ export function BuddyProvider({ children }) {
       joinPrivate,
       sendPing,
       replyPing,
-      payFee,
     }),
     [
       ready, remote, content, session, staff, editing, preview, device, panel, dirty, toast, notify,
@@ -1213,7 +1147,7 @@ export function BuddyProvider({ children }) {
       versions, restoreVersion, act, insertEvent, removeBlock, duplicateBlock, addBlock, toggleLock,
       toggleHide, resetDraft, confirm, lang, setLang, trial, plan, planMeta, premium, setPlan, acceptTrial, cancelTrial,
       updateProfile, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
-      addReview, flow, openTable, joinTable, createPrivate, joinPrivate, sendPing, replyPing, payFee,
+      addReview, flow, openTable, joinTable, createPrivate, joinPrivate, sendPing, replyPing,
     ],
   );
 

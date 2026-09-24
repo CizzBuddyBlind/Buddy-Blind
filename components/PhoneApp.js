@@ -242,26 +242,152 @@ function EventsTab() {
   );
 }
 
+function mySeats(bb) {
+  const today = iso(0);
+  const seats = [];
+  const seen = new Set();
+  const add = (seat) => {
+    if (!seat.date || seat.date < today) return;
+    const key = `${seat.venueId || ""}-${seat.tableId || seat.eventId || seat.name}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    seats.push(seat);
+  };
+  (bb.session?.bookings || []).forEach((booking) => {
+    if (booking.kind === "private") {
+      const event = (bb.content.events || []).find((item) => item.id === booking.id);
+      add({
+        name: event?.name || booking.name,
+        date: event?.dateISO || booking.dateISO,
+        time: event?.timeLabel || booking.time,
+        place: event?.location || booking.location || "",
+        joined: event?.joined || (event?.participants || []).length || 1,
+        people: (event?.participants || []).map((p) => p.handle).filter(Boolean),
+        venueId: "",
+        eventId: booking.id,
+      });
+      return;
+    }
+    const venue = (bb.content.venues || []).find((item) => item.id === booking.venueId);
+    const table = venue?.tables?.find((item) => item.id === booking.id);
+    add({
+      name: venue?.name || booking.name,
+      date: table?.dateISO || booking.dateISO,
+      time: table?.time || booking.time,
+      place: table?.address || booking.location || venue?.locationLabel || "",
+      joined: table?.joined || (table?.participants || []).length || 1,
+      people: (table?.participants || []).map((p) => p.handle).filter(Boolean),
+      venueId: booking.venueId || venue?.id || "",
+      tableId: booking.id,
+    });
+  });
+  const handle = bb.session?.handle;
+  if (handle) {
+    (bb.content.venues || []).forEach((venue) => {
+      (venue.tables || []).forEach((table) => {
+        const onIt = table.hostHandle === handle || (table.participants || []).some((p) => p.handle === handle);
+        if (!onIt) return;
+        add({
+          name: venue.name,
+          date: table.dateISO,
+          time: table.time,
+          place: table.address || venue.locationLabel || "",
+          joined: table.joined || (table.participants || []).length || 1,
+          people: (table.participants || []).map((p) => p.handle).filter(Boolean),
+          venueId: venue.id,
+          tableId: table.id,
+        });
+      });
+    });
+  }
+  return seats.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+}
+
+function NotifyBox({ onSend }) {
+  const [choice, setChoice] = useState("coming");
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+  return (
+    <div className="space-y-2">
+      {[
+        ["coming", "I am coming"],
+        ["cant", "Sorry guys, I can't make it today"],
+      ].map(([id, label]) => (
+        <button key={id} type="button" onClick={() => setChoice(id)} className={`block w-full rounded-xl px-3 py-2 text-left text-sm ${choice === id ? "bg-black text-white" : "bg-neutral-100"}`}>
+          {label}
+        </button>
+      ))}
+      <button
+        type="button"
+        disabled={busy}
+        className="w-full rounded-full bg-black py-2 text-sm text-white disabled:opacity-40"
+        onClick={async () => {
+          setBusy(true);
+          setNote("");
+          const res = await onSend(choice);
+          setBusy(false);
+          setNote(res?.error || "Sent. Only the others on this table get it.");
+        }}
+      >
+        Notify
+      </button>
+      {note && <p className="text-xs text-neutral-500">{note}</p>}
+    </div>
+  );
+}
+
 function ChatTab() {
   const bb = useBB();
-  const [query, setQuery] = useState("");
-  const notes = (bb.social?.notes || []).filter((note) => queryHits(`${note.title} ${note.body}`, query));
-  return (
-    <div className="space-y-3">
-      <Search value={query} onChange={setQuery} placeholder="Search messages" />
-      {!bb.session && <p className="text-sm text-neutral-500">Log in to see your messages.</p>}
-      {bb.session && !notes.length && <p className="py-8 text-center text-sm text-neutral-500">No messages yet.</p>}
-      <div className="space-y-2">
-        {notes.map((note) => (
-          <article key={note.id} className="rounded-2xl bg-white p-3 shadow-sm">
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 className="font-medium">{note.title || "Buddy Blind"}</h2>
-              <span className="text-[10px] text-neutral-400">{note.at ? prettyDate(String(note.at).slice(0, 10)) : ""}</span>
-            </div>
-            <p className="mt-1 line-clamp-2 text-sm text-neutral-600">{note.body}</p>
-          </article>
-        ))}
+  const [open, setOpen] = useState(null);
+  const [choice, setChoice] = useState("see-ya");
+  const [note, setNote] = useState("");
+  const notes = (bb.social?.notes || []).filter((item) => item.ping || item.title === "Sent" || item.title === "You're booked" || item.title === "Table opened" || item.title === "2-hour reminder" || item.title === "Private event");
+  const current = notes.find((item) => item.id === open);
+  if (current) {
+    const canReply = current.ping && !current.ping.replyOnly && !current.replied;
+    return (
+      <div className="space-y-3">
+        <button type="button" className="text-sm text-neutral-500" onClick={() => { setOpen(null); setNote(""); }}>Back</button>
+        <h2 className="font-semibold">{current.title}</h2>
+        <p className="text-sm">{current.body}</p>
+        {canReply && (
+          <div className="space-y-2">
+            {[
+              ["see-ya", "See ya"],
+              ["next-time", "No worries, see you next time"],
+            ].map(([id, label]) => (
+              <button key={id} type="button" onClick={() => setChoice(id)} className={`block w-full rounded-xl px-3 py-2 text-left text-sm ${choice === id ? "bg-black text-white" : "bg-white ring-1 ring-black/10"}`}>
+                {label}
+              </button>
+            ))}
+            <button
+              type="button"
+              className="w-full rounded-full bg-black py-2 text-sm text-white"
+              onClick={async () => {
+                const res = await bb.replyPing({ ...current.ping, choice });
+                setNote(res?.error || "Sent. No more replies.");
+                if (!res?.error) setOpen(null);
+              }}
+            >
+              Notify
+            </button>
+          </div>
+        )}
+        {current.ping?.replyOnly && <p className="text-xs text-neutral-500">No reply on this one.</p>}
+        {note && <p className="text-xs text-neutral-500">{note}</p>}
       </div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      {!bb.session && <p className="text-sm text-neutral-500">Log in to see notifications.</p>}
+      {bb.session && !notes.length && <p className="py-8 text-center text-sm text-neutral-500">No notifications yet.</p>}
+      {notes.map((item) => (
+        <button key={item.id} type="button" onClick={() => setOpen(item.id)} className="block w-full rounded-2xl bg-white p-3 text-left shadow-sm">
+          <span className="block text-sm font-medium">{item.title}</span>
+          <span className="mt-1 block text-sm text-neutral-600">{item.body}</span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -269,14 +395,40 @@ function ChatTab() {
 function ProfileTab() {
   const bb = useBB();
   const [open, setOpen] = useState(false);
+  const [seat, setSeat] = useState(null);
+  const [sent, setSent] = useState("");
   if (!bb.session) {
     return (
       <div className="grid min-h-[50dvh] place-items-center text-center">
         <div>
           <h1 className="text-xl font-semibold">Your profile</h1>
-          <p className="mt-2 text-sm text-neutral-500">Log in to see membership and settings.</p>
+          <p className="mt-2 text-sm text-neutral-500">Log in to see the tables you joined.</p>
           <Link href="/login" className="mt-4 inline-block rounded-full bg-black px-5 py-2 text-sm text-white">Log in</Link>
         </div>
+      </div>
+    );
+  }
+  const today = iso(0);
+  const seats = mySeats(bb);
+  const now = seats.filter((item) => item.date === today);
+  const later = seats.filter((item) => item.date > today);
+  if (seat) {
+    return (
+      <div className="space-y-3">
+        <button type="button" className="text-sm text-neutral-500" onClick={() => { setSeat(null); setSent(""); }}>Back</button>
+        <h2 className="text-lg font-semibold">{seat.name}</h2>
+        <p className="text-sm text-neutral-500">{prettyDate(seat.date)} · {seat.time}</p>
+        {seat.place && <p className="text-sm text-neutral-500">{seat.place}</p>}
+        <p className="text-sm">{seat.joined} joined</p>
+        {!!seat.people.length && <p className="text-xs text-neutral-500">{seat.people.join(" · ")}</p>}
+        <NotifyBox
+          onSend={async (choice) => {
+            const res = await bb.sendPing({ venueId: seat.venueId, tableId: seat.tableId, eventId: seat.eventId, choice });
+            setSent(res?.error || "");
+            return res;
+          }}
+        />
+        {sent && <p className="text-xs text-neutral-500">{sent}</p>}
       </div>
     );
   }
@@ -286,11 +438,25 @@ function ProfileTab() {
     ["Membership", "/subscribe"],
     ["Payment methods", "/subscribe"],
     ["Language", () => bb.setLang(bb.lang === "en" ? "zh-HK" : bb.lang === "zh-HK" ? "zh" : "en")],
-    ["Notifications", () => {}],
+    ["Notifications", "/chat"],
     ["Blocked users", () => {}],
     ["Privacy", "/how"],
     ["Help", "/how"],
   ];
+  const list = (title, items) => (
+    <section className="mt-4">
+      <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">{title}</h2>
+      {!items.length && <p className="rounded-2xl bg-white px-4 py-3 text-sm text-neutral-500">None yet.</p>}
+      <div className="space-y-2">
+        {items.map((item) => (
+          <button key={`${item.venueId}-${item.tableId || item.eventId}`} type="button" onClick={() => setSeat(item)} className="block w-full rounded-2xl bg-white px-4 py-3 text-left shadow-sm">
+            <span className="block font-medium">{item.name}</span>
+            <span className="block text-xs text-neutral-500">{prettyDate(item.date)} · {item.time} · {item.joined} joined</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
   return (
     <div>
       <div className="mb-4 flex items-center gap-3">
@@ -300,7 +466,9 @@ function ProfileTab() {
           <p className="text-xs text-neutral-500">{bb.plan === "premium" ? "Premium" : bb.plan === "lite" ? "Lite" : "Free"}</p>
         </div>
       </div>
-      <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+      {list("Today", now)}
+      {list("Upcoming", later)}
+      <div className="mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
         {rows.map(([label, dest]) => (
           typeof dest === "string" ? (
             <Link key={label} href={dest} className="flex items-center justify-between border-b border-black/5 px-4 py-3 text-sm last:border-0">
@@ -325,7 +493,7 @@ function ProfileTab() {
 }
 
 export function PhoneScreen({ tab }) {
-  const title = { home: "Home", venues: "Venues", events: "Events", chat: "Chat", profile: "Profile" }[tab] || "";
+  const title = { home: "Home", venues: "Venues", events: "Events", chat: "Notifications", profile: "Profile" }[tab] || "";
   return (
     <main className="min-h-dvh bg-[#f3f3f3] px-4 pb-28 pt-4 text-[#171717]">
       <h1 className="mb-3 text-lg font-semibold">{title}</h1>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Editable, Photo } from "@/components/Bits";
-import { HostBadge, PingBox, ShareSheet } from "@/components/Flows";
+import { HostBadge, ShareSheet } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
 import { bookingHold, prettyDate, tablePrefs } from "@/lib/bible";
@@ -155,7 +155,6 @@ export default function VenuePage() {
                         <button type="button" className="rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>{t("btn.join")}</button>
                         <button type="button" className="rounded-full border border-white/15 px-4 py-2 text-xs" onClick={() => setShare({ joined, lines, path: `/share/table/${venue.id}/${table.id}` })}>{t("btn.share")}</button>
                       </div>
-                      <PingBox table={{ ...table, venueId: venue.id }} joined={joined} onSend={() => bb.sendPing({ venueId: venue.id, tableId: table.id }).then((res) => res?.error && bb.notify(res.error))} />
                     </article>
                   );
                 })}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Editable, Photo } from "@/components/Bits";
-import { PayDialog, PingBox, ShareSheet, rememberReturn } from "@/components/Flows";
+import { PayDialog, ShareSheet, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 
 export default function PrivateDetailPage() {
@@ -25,16 +25,16 @@ export default function PrivateDetailPage() {
 
   async function join() {
     setBusy(true);
-    const res = await bb.payFee({ type: "join-private", input: { id: event.id } });
+    const res = await bb.joinPrivate(event.id);
     setBusy(false);
     if (res.needLogin) {
       rememberReturn();
       window.location.href = "/login";
       return;
     }
-    if (res.redirecting) return;
-    if (res.error) bb.notify(res.error);
-    else setPay(false);
+    if (res.error) bb.notify(res.error === "FULL" ? "FULL. No more places." : res.error);
+    else bb.notify("You're in.");
+    setPay(false);
   }
 
   return (
@@ -64,11 +64,6 @@ export default function PrivateDetailPage() {
           {event.videoUrl && (
             <p className="mt-4 text-sm"><a className="underline" href={event.videoUrl} target="_blank" rel="noreferrer">Host video</a></p>
           )}
-          <PingBox
-            table={{ ...event, id: event.id, time: event.timeLabel, eventId: event.id }}
-            joined={!!(bb.session && ((event.participants || []).some((p) => p.handle === bb.session.handle) || event.hostName === bb.session.handle))}
-            onSend={() => bb.sendPing({ eventId: event.id }).then((res) => res?.error && bb.notify(res.error))}
-          />
           <div className="mt-6 flex flex-wrap gap-2">
             <button type="button" disabled={busy || full} onClick={() => setPay(true)} className="rounded-full bg-char px-5 py-3 text-sm font-semibold text-paper disabled:opacity-40">
               {full ? "Full" : "Join"}
