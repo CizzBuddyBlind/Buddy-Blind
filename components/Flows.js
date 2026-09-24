@@ -146,8 +146,8 @@ export function OpenTableWizard({ venue, onClose }) {
         path: `/share/table/${venue.id}/${res.tableId}`,
         invite: { name: venue.name, venueId: venue.id, tableId: res.tableId },
       });
-    } catch {
-      setPayError("That didn't go through. Try again.");
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "That didn't go through. Try again.");
     } finally {
       setBusy(false);
     }
@@ -298,8 +298,8 @@ export function JoinWizard({ venue, tableId, onClose }) {
         path: `/share/table/${venue.id}/${table?.id || picked || tableId}`,
         invite: { name: venue.name, venueId: venue.id, tableId: table?.id || picked || tableId },
       });
-    } catch {
-      setPayError("That didn't go through. Try again.");
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "That didn't go through. Try again.");
     } finally {
       setBusy(false);
     }

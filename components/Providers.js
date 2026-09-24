@@ -174,8 +174,9 @@ export function BuddyProvider({ children }) {
         setRemote("live");
       } else {
         try {
-          await saveSharedContent(pub);
-          setRemote("live");
+        const saved = await saveSharedContent(pub);
+        if (saved?.ok) setRemote("live");
+        else setRemote("error");
         } catch {
           setRemote("error");
         }
@@ -306,7 +307,7 @@ export function BuddyProvider({ children }) {
     setPublished(slim);
     write(PUB, slim);
     if (supabaseReady) {
-      saveSharedContent(slim).then(() => setRemote("live")).catch(() => setRemote("error"));
+      saveSharedContent(slim).then((saved) => setRemote(saved?.ok ? "live" : "error")).catch(() => setRemote("error"));
     }
     return { ok: true };
   }, []);
@@ -834,21 +835,25 @@ export function BuddyProvider({ children }) {
 
   const grantPoints = (mode) => {
     const gain = mode === "invite" ? 2 : mode === "create" ? 5 : 1;
-    const points = (session.points || 0) + gain;
+    const points = (session?.points || 0) + gain;
     const pointsMap = read(POINTS, {});
-    pointsMap[session.email] = points;
-    write(POINTS, pointsMap);
+    const book = pointsMap && typeof pointsMap === "object" ? pointsMap : {};
+    if (session?.email) book[session.email] = points;
+    write(POINTS, book);
     return points;
   };
 
   const rememberBooking = (booking, points) => {
+    if (!session?.email) return;
     const books = read(BOOKS, {});
-    books[session.email] = [...(books[session.email] || []), booking].slice(-20);
-    write(BOOKS, books);
-    persistSession({ ...session, points, bookings: books[session.email] });
+    const bag = books && typeof books === "object" ? books : {};
+    bag[session.email] = [...(bag[session.email] || []), booking].slice(-20);
+    write(BOOKS, bag);
+    persistSession({ ...session, points, bookings: bag[session.email] });
   };
 
   const openTable = useCallback(async (input) => {
+    try {
     if (!session) return { needLogin: true };
     const src = publishedRef.current;
     const found = src?.venues?.find((v) => v.id === input.venueId);
@@ -876,11 +881,12 @@ export function BuddyProvider({ children }) {
       participants: [{ handle: session.handle, role: "host" }],
       pings: [],
     };
-    const venue = { ...found, tables: [...(found.tables || []), table] };
+    const existing = Array.isArray(found.tables) ? found.tables.filter(Boolean) : [];
+    const venue = { ...found, tables: [...existing, table] };
     const hold = bookingHold(table);
     const next = {
       ...src,
-      venues: src.venues.map((v) => (v.id === venue.id ? venue : v)),
+      venues: (src.venues || []).filter(Boolean).map((v) => (v.id === venue.id ? venue : v)),
       bookingLog: [logEntry({ venue, table, hold, action: "opened", host: session.handle }), ...(src.bookingLog || [])].slice(0, 40),
     };
     publishedRef.current = next;
@@ -914,14 +920,20 @@ export function BuddyProvider({ children }) {
     }, points);
     pushNote("Table opened", `${venue.name} · ${table.time} · ${table.dateISO}.`);
     return { ok: true, tableId: table.id, venueId: venue.id };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Could not open the table." };
+    }
   }, [pushNote, session]);
 
   const joinTable = useCallback(async ({ venueId, tableId }) => {
+    try {
     if (!session) return { needLogin: true };
     const src = publishedRef.current;
     const found = src?.venues?.find((v) => v.id === venueId);
-    const current = found?.tables?.find((t) => t.id === tableId);
-    if (!found || !current) return { error: "That table is gone." };
+    if (!found) return { error: "That restaurant is not on the page." };
+    const tables = Array.isArray(found.tables) ? found.tables.filter(Boolean) : [];
+    const current = tables.find((t) => t.id === tableId);
+    if (!current) return { error: "That table is gone." };
     const before = bookingHold(current);
     if (before.closed || before.places <= 0 || before.status === "walk-in") return { error: before.reason || "That table is full." };
     const people = [...(current.participants || [])];
@@ -934,12 +946,12 @@ export function BuddyProvider({ children }) {
     const venue = {
       ...found,
       spots: Math.max(0, (found.spots || 0) - 1),
-      tables: found.tables.map((t) => (t.id === table.id ? table : t)),
+      tables: tables.map((t) => (t.id === table.id ? table : t)),
     };
     const hold = bookingHold(table);
     const next = {
       ...src,
-      venues: src.venues.map((v) => (v.id === venue.id ? venue : v)),
+      venues: (src.venues || []).filter(Boolean).map((v) => (v.id === venue.id ? venue : v)),
       bookingLog: [logEntry({ venue, table, hold, action: "joined", host: table.hostHandle }), ...(src.bookingLog || [])].slice(0, 40),
     };
     publishedRef.current = next;
@@ -973,6 +985,9 @@ export function BuddyProvider({ children }) {
     }, points);
     pushNote("You're booked", `${venue.name} · ${table.time} · ${hold.joined} people.`);
     return { ok: true };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Could not join the table." };
+    }
   }, [pushNote, session]);
 
   const createPrivate = useCallback(async (input) => {
