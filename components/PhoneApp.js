@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useBB } from "./Providers";
-import { iso, prettyDate, queryHits, soonestTable, tableStart } from "@/lib/bible";
+import { iso, prettyDate, queryHits, soonestTable } from "@/lib/bible";
 
 function hourOf(time) {
   const match = String(time || "").toUpperCase().match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/);
@@ -303,10 +303,8 @@ function mySeats(bb) {
   return seats.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
 }
 
-function happening(date, time) {
-  const start = tableStart({ dateISO: date, time }).getTime();
-  const now = Date.now();
-  return now >= start && now <= start + 4 * 60 * 60 * 1000;
+function happening(date) {
+  return date === iso(0);
 }
 
 function NotifyBox({ live, onSend }) {
@@ -325,7 +323,7 @@ function NotifyBox({ live, onSend }) {
   const picked = options.some(([id]) => id === choice) ? choice : options[0][0];
   return (
     <div className="space-y-2">
-      <p className="text-xs text-neutral-500">{live ? "It's on now." : "Before it starts."}</p>
+      <p className="text-xs text-neutral-500">{live ? "Event day." : "Before the day."}</p>
       {options.map(([id, label]) => (
         <button key={id} type="button" onClick={() => setChoice(id)} className={`block w-full rounded-xl px-3 py-2 text-left text-sm ${picked === id ? "bg-black text-white" : "bg-neutral-100"}`}>
           {label}
@@ -446,7 +444,7 @@ function ProfileTab() {
         <p className="text-sm">{seat.joined} joined</p>
         {!!seat.people.length && <p className="text-xs text-neutral-500">{seat.people.join(" · ")}</p>}
         <NotifyBox
-          live={happening(seat.date, seat.time)}
+          live={happening(seat.date)}
           onSend={async (choice) => {
             const res = await bb.sendPing({ venueId: seat.venueId, tableId: seat.tableId, eventId: seat.eventId, choice });
             setSent(res?.error || "");
