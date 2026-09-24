@@ -63,19 +63,17 @@ export default function PrivatePage() {
       </section>
 
       {campaign && (
-        <Link href={`/private/${campaign.id}`} className="bb-lift mt-8 block overflow-hidden rounded-3xl bg-char text-paper">
-          <div className="grid md:grid-cols-2">
-            <div className="relative min-h-[220px]">
-              <Photo src={campaign.imageUrl} alt={campaign.name} onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === campaign.id); if (item) item.imageUrl = imageUrl; })} />
-            </div>
-            <div className="p-6">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-ember">{t("priv.campaign")}</p>
-              <h2 className="mt-2 font-serif text-3xl">{campaign.name}</h2>
-              <p className="mt-2 text-sm text-paper/70">{campaign.hostName || campaign.hostLabel} · {campaign.location || "Hong Kong"}</p>
-              <p className="text-sm text-paper/70">{campaign.dateISO} · {campaign.timeLabel} · {campaign.spots} places</p>
-              <p className="mt-3 text-sm text-paper/80">{campaign.description || campaign.forWhom || campaign.typeLabel}</p>
-              <span className="mt-4 inline-block rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">JOIN</span>
-            </div>
+        <Link href={`/private/${campaign.id}`} className="bb-feature mt-8 grid h-[300px] w-full shrink-0 grid-cols-1 overflow-hidden rounded-3xl bg-char text-paper md:h-[340px] md:grid-cols-2">
+          <div className="relative h-[140px] md:h-full">
+            <Photo src={campaign.imageUrl} alt={campaign.name} className="absolute inset-0" onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === campaign.id); if (item) item.imageUrl = imageUrl; })} />
+          </div>
+          <div className="flex h-full flex-col justify-center overflow-hidden p-6 md:p-8">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-ember">{t("priv.campaign")}</p>
+            <h2 className="mt-2 font-serif text-3xl">{campaign.name}</h2>
+            <p className="mt-2 text-sm text-paper/70">{campaign.hostName || campaign.hostLabel} · {campaign.location || "Hong Kong"}</p>
+            <p className="text-sm text-paper/70">{campaign.dateISO} · {campaign.timeLabel} · {campaign.spots} places</p>
+            <p className="mt-3 line-clamp-2 text-sm text-paper/80">{campaign.description || campaign.forWhom || campaign.typeLabel}</p>
+            <span className="mt-4 inline-flex w-fit rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">JOIN</span>
           </div>
         </Link>
       )}

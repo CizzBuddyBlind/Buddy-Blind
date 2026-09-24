@@ -77,6 +77,15 @@ label,
 .bb-lift {
   transition: transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1), border-color 0.4s ease, box-shadow 0.55s ease;
 }
+.bb-feature {
+  flex: none;
+  height: 300px;
+}
+@media (min-width: 768px) {
+  .bb-feature {
+    height: 340px;
+  }
+}
 .bb-card:hover,
 .bb-lift:hover {
   transform: translateY(-6px);
