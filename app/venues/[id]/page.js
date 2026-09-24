@@ -12,7 +12,7 @@ import { bookingHold, prettyDate, tablePrefs } from "@/lib/bible";
 export default function VenuePage() {
   const { id } = useParams();
   const bb = useBB();
-  const { content, update, setFlow, lang, editing, session, premium, ready } = bb;
+  const { content, update, setFlow, lang, editing, session, ready } = bb;
   const t = (key) => translate(lang, key);
   const venue = content.venues.find((v) => v.id === id);
   const [photo, setPhoto] = useState(0);
@@ -169,8 +169,8 @@ export default function VenuePage() {
               type="button"
               className="flex-1 rounded-full border border-ember py-3 text-sm text-ember"
               onClick={() => {
-                if (!premium) {
-                  window.location.href = "/subscribe";
+                if (!bb.session) {
+                  window.location.href = "/login";
                   return;
                 }
                 setFlow({ type: "private-create", venueId: venue.id });

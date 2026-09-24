@@ -917,7 +917,6 @@ export function BuddyProvider({ children }) {
 
   const createPrivate = useCallback(async (input) => {
     if (!session) return { needLogin: true };
-    if (!premium) return { error: "Premium trial required to host a private event." };
     const capacity = Math.min(20, Math.max(2, Number(input.capacity) || 8));
     const item = {
       id: `priv-${Date.now().toString(36)}`,
@@ -953,7 +952,7 @@ export function BuddyProvider({ children }) {
     if (!saved?.ok) return saved;
     pushNote("Private event", `${item.name} is live for Premium members. ${capacity - 1} places.`);
     return { ok: true, id: item.id };
-  }, [insertEvent, premium, pushNote, session]);
+  }, [insertEvent, pushNote, session]);
 
   const joinPrivate = useCallback(async (id) => {
     if (!session) return { needLogin: true };

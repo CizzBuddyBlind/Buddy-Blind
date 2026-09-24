@@ -11,7 +11,7 @@ import { queryHits } from "@/lib/bible";
 export default function PrivatePage() {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
-  const { content, editing, update, setSelectedId, selectedId, setFlow, premium } = bb;
+  const { content, editing, update, setSelectedId, selectedId, setFlow } = bb;
   const copy = content.copy.private;
   const nights = content.events.filter((e) => e.kind === "private" && (editing || !e.hidden));
   const [q, setQ] = useState("");
@@ -89,8 +89,8 @@ export default function PrivatePage() {
           type="button"
           className="rounded-full bg-char px-4 py-2 text-sm text-paper"
           onClick={() => {
-            if (!premium) {
-              window.location.href = "/subscribe";
+            if (!bb.session) {
+              window.location.href = "/login";
               return;
             }
             setFlow({ type: "private-create" });
