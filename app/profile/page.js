@@ -99,49 +99,50 @@ export default function ProfilePage() {
   return (
     <main className="bb-frame min-h-[100dvh] bg-ink pb-28 pt-10">
       <div className="grid items-start gap-8 md:grid-cols-2">
-        <section>
-          <div className="grid h-20 w-20 place-items-center rounded-full bg-card font-serif text-3xl">{initial}</div>
-          <h1 className="mt-4 text-3xl font-bold tracking-tight">{session.handle}</h1>
-          {form.showIdentity && who && <p className="mt-2 text-sm text-mute">{who}</p>}
-          {form.showPlace && where && <p className="text-sm text-mute">{where}</p>}
-          <div className="mt-6 grid grid-cols-3 gap-2">
+        <section className="rounded-[32px] bg-[#f3f2f6] px-6 py-8 text-black">
+          <div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-white font-serif text-4xl shadow-sm">{initial}</div>
+          <h1 className="mt-4 text-center text-3xl font-bold tracking-tight">{session.handle}</h1>
+          {form.showIdentity && who && <p className="mt-2 text-center text-sm text-black/40">{who}</p>}
+          {form.showPlace && where && <p className="text-center text-sm text-black/40">{where}</p>}
+          <div className="mt-6 grid grid-cols-3 gap-3">
             {[
-              ["info", "Info"],
-              ["buddies", `${buddies.length} buddies`],
-              ["review", "Review"],
-            ].map(([id, label]) => (
+              ["info", String(stats.joined + stats.invited + stats.quick + stats.privJoin + stats.privHost).padStart(2, "0"), "Info"],
+              ["buddies", String(buddies.length).padStart(2, "0"), "Buddies"],
+              ["review", String(received.length).padStart(2, "0"), "Review"],
+            ].map(([id, num, label]) => (
               <button
                 key={id}
                 type="button"
                 onClick={() => openPanel(id)}
-                className={`grid min-h-[4.5rem] place-items-center rounded-2xl border px-2 text-center text-sm ${panel === id ? "border-ember text-ember" : "border-white/15"}`}
+                className={`flex min-h-[96px] flex-col items-center justify-center rounded-[22px] ${panel === id ? "bg-[#c4b5fd] text-white" : "bg-[#eceaf2] text-black"}`}
               >
-                {label}
+                <span className="text-3xl font-bold leading-none">{num}</span>
+                <span className={`mt-1 text-sm ${panel === id ? "text-white/90" : "text-black/40"}`}>{label}</span>
               </button>
             ))}
           </div>
 
           {panel === "info" && (
-            <div className="mt-3 space-y-2 rounded-2xl border border-white/10 px-4 py-3 text-sm">
-              <p>Joined · {stats.joined}</p>
-              <p>Invited · {stats.invited}</p>
-              <p>Quick meet · {stats.quick}</p>
-              <p>Private joined · {stats.privJoin}</p>
-              <p>Private hosted · {stats.privHost}</p>
+            <div className="mt-4 rounded-3xl bg-white px-5 py-4 text-left text-sm shadow-sm">
+              <p className="flex justify-between text-black/70"><span>Joined</span><span>{stats.joined}</span></p>
+              <p className="mt-2 flex justify-between text-black/70"><span>Invited</span><span>{stats.invited}</span></p>
+              <p className="mt-2 flex justify-between text-black/70"><span>Quick meet</span><span>{stats.quick}</span></p>
+              <p className="mt-2 flex justify-between text-black/70"><span>Private joined</span><span>{stats.privJoin}</span></p>
+              <p className="mt-2 flex justify-between text-black/70"><span>Private hosted</span><span>{stats.privHost}</span></p>
             </div>
           )}
 
           {panel === "buddies" && !buddy && (
             <div className="mt-3">
-              {!buddies.length && !pending.length && <p className="text-sm text-mute">No buddies yet.</p>}
+              {!buddies.length && !pending.length && <p className="text-sm text-black/40">No buddies yet.</p>}
               <div className="flex flex-wrap gap-2">
                 {pending.map((b) => (
-                  <button key={b.id} type="button" title={`${b.name} · waiting`} onClick={() => setBuddy(b)} className="grid h-11 w-11 place-items-center rounded-full border border-dashed border-white/25 text-sm text-mute">
+                  <button key={b.id} type="button" title={`${b.name} · waiting`} onClick={() => setBuddy(b)} className="grid h-11 w-11 place-items-center rounded-full border border-dashed border-black/20 text-sm text-black/40">
                     {b.name.slice(0, 1).toUpperCase()}
                   </button>
                 ))}
                 {buddies.map((b) => (
-                  <button key={b.id} type="button" title={b.name} onClick={() => setBuddy(b)} className="grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-card font-serif text-lg">
+                  <button key={b.id} type="button" title={b.name} onClick={() => setBuddy(b)} className="grid h-11 w-11 place-items-center rounded-full border border-black/10 bg-white font-serif text-lg">
                     {b.name.slice(0, 1).toUpperCase()}
                   </button>
                 ))}
@@ -149,11 +150,11 @@ export default function ProfilePage() {
             </div>
           )}
           {panel === "buddies" && buddy && (
-            <div className="mt-3 rounded-2xl border border-white/10 bg-card p-4">
-              <button type="button" className="text-xs text-mute" onClick={() => setBuddy(null)}>Back</button>
-              <div className="mt-3 grid h-14 w-14 place-items-center rounded-full bg-black font-serif text-2xl">{buddy.name.slice(0, 1).toUpperCase()}</div>
-              <h2 className="mt-3 font-serif text-2xl">{buddy.name}</h2>
-              <p className="mt-1 text-sm text-mute">{buddy.status === "pending" ? "Waiting" : "Your buddy"}</p>
+            <div className="mt-3 rounded-3xl bg-white p-4 text-left shadow-sm">
+              <button type="button" className="text-xs text-black/40" onClick={() => setBuddy(null)}>Back</button>
+              <div className="mt-3 grid h-14 w-14 place-items-center rounded-full bg-[#eceaf2] font-serif text-2xl">{buddy.name.slice(0, 1).toUpperCase()}</div>
+              <h2 className="mt-3 text-2xl font-bold">{buddy.name}</h2>
+              <p className="mt-1 text-sm text-black/40">{buddy.status === "pending" ? "Waiting" : "Your buddy"}</p>
               {buddy.area && <p className="mt-2 text-sm">{buddy.area}</p>}
               {buddy.note && <p className="text-sm text-mute">{buddy.note}</p>}
               {buddy.status === "pending" && (
@@ -168,18 +169,18 @@ export default function ProfilePage() {
           {panel === "review" && (
             <div className="mt-3">
               <div className="mb-3 flex justify-end">
-                <button type="button" onClick={() => { setRateOpen((open) => !open); setTarget(null); setNote(""); }} className="rounded-full border border-white/20 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em]">
+                <button type="button" onClick={() => { setRateOpen((open) => !open); setTarget(null); setNote(""); }} className="rounded-full bg-[#eceaf2] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-black/70">
                   Rate someone
                 </button>
               </div>
               {rateOpen && (
-                <div className="mb-3 rounded-2xl border border-white/10 p-4">
+                <div className="mb-3 rounded-3xl bg-white p-4 text-left shadow-sm">
                   {!target && (
                     <>
-                      {!canRate.length && <p className="text-sm text-mute">No one to rate yet. It opens an hour after you sit down together.</p>}
+                      {!canRate.length && <p className="text-sm text-black/40">No one to rate yet. It opens an hour after you sit down together.</p>}
                       <div className="flex flex-wrap gap-2">
                         {canRate.map((person) => (
-                          <button key={person.handle} type="button" onClick={() => setTarget(person)} className="rounded-full border border-white/15 px-4 py-2 text-sm">
+                          <button key={person.handle} type="button" onClick={() => setTarget(person)} className="rounded-full bg-[#eceaf2] px-4 py-2 text-sm">
                             {person.handle} · {person.label}
                           </button>
                         ))}
@@ -207,61 +208,61 @@ export default function ProfilePage() {
                           <button key={n} type="button" onClick={() => setStars(n)} className={`text-lg ${n <= stars ? "text-ember" : "text-white/25"}`}>★</button>
                         ))}
                       </div>
-                      <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="A short line" className="w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-sm" />
+                      <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="A short line" className="w-full rounded-xl border border-black/10 bg-[#f3f2f6] px-3 py-2 text-sm text-black" />
                       <div className="flex gap-2">
-                        <button type="button" className="rounded-full border border-white/15 px-4 py-2 text-sm" onClick={() => setTarget(null)}>Back</button>
-                        <button type="submit" className="rounded-full bg-fg px-4 py-2 text-sm font-semibold text-ink">Save</button>
+                        <button type="button" className="rounded-full bg-[#eceaf2] px-4 py-2 text-sm" onClick={() => setTarget(null)}>Back</button>
+                        <button type="submit" className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white">Save</button>
                       </div>
                     </form>
                   )}
                 </div>
               )}
               <div className="space-y-3">
-                {!shown.length && <p className="text-sm text-mute">No comments yet.</p>}
+                {!shown.length && <p className="text-sm text-black/40">No comments yet.</p>}
                 {shown.map((review) => (
-                  <article key={review.id} className="rounded-2xl border border-white/10 px-5 py-4">
+                  <article key={review.id} className="rounded-3xl bg-white px-5 py-4 text-left shadow-sm">
                     <div className="flex items-start justify-between gap-4">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-white/80">{review.from}</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]">{review.from}</p>
                       <p className="text-sm tracking-widest text-ember">
                         {"★★★★★".slice(0, review.stars || 0)}
-                        <span className="text-white/25">{"☆☆☆☆☆".slice(review.stars || 0)}</span>
+                        <span className="text-black/20">{"☆☆☆☆☆".slice(review.stars || 0)}</span>
                       </p>
                     </div>
-                    <p className="mt-3 text-[15px] leading-relaxed text-white/85">{review.body}</p>
+                    <p className="mt-3 text-[15px] leading-relaxed text-black/80">{review.body}</p>
                   </article>
                 ))}
               </div>
               {received.length > 3 && (
                 <div className="mt-4 flex justify-end gap-2">
                   {page > 0 && (
-                    <button type="button" aria-label="Previous comments" onClick={() => setPage((n) => Math.max(0, n - 1))} className="grid h-10 w-10 place-items-center rounded-full border border-white/15">‹</button>
+                    <button type="button" aria-label="Previous comments" onClick={() => setPage((n) => Math.max(0, n - 1))} className="grid h-10 w-10 place-items-center rounded-full bg-white text-black shadow-sm">‹</button>
                   )}
                   {(page + 1) * 3 < received.length && (
-                    <button type="button" aria-label="Next comments" onClick={() => setPage((n) => n + 1)} className="grid h-10 w-10 place-items-center rounded-full border border-white/15">›</button>
+                    <button type="button" aria-label="Next comments" onClick={() => setPage((n) => n + 1)} className="grid h-10 w-10 place-items-center rounded-full bg-white text-black shadow-sm">›</button>
                   )}
                 </div>
               )}
             </div>
           )}
 
-          <button type="button" className="mt-4 block text-xs text-mute" onClick={() => setEdit((v) => !v)}>{edit ? "Close" : "Edit details"}</button>
+          <button type="button" className="mt-4 block text-xs text-black/40" onClick={() => setEdit((v) => !v)}>{edit ? "Close" : "Edit details"}</button>
           {edit && (
-            <form className="mt-3 space-y-2" onSubmit={(e) => { e.preventDefault(); bb.updateProfile(form); setDraft(null); setEdit(false); }}>
-              <label className="block text-xs text-mute">Username
-                <input value={form.handle} onChange={(e) => setDraft({ ...form, handle: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-3 py-2 text-sm text-fg" />
+            <form className="mt-3 space-y-2 text-left" onSubmit={(e) => { e.preventDefault(); bb.updateProfile(form); setDraft(null); setEdit(false); }}>
+              <label className="block text-xs text-black/40">Username
+                <input value={form.handle} onChange={(e) => setDraft({ ...form, handle: e.target.value })} className="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm text-black" />
               </label>
-              <label className="block text-xs text-mute">Gender
-                <select value={form.gender} onChange={(e) => setDraft({ ...form, gender: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-3 py-2 text-sm text-fg">
+              <label className="block text-xs text-black/40">Gender
+                <select value={form.gender} onChange={(e) => setDraft({ ...form, gender: e.target.value })} className="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm text-black">
                   {["Woman", "Man", "Non-binary"].map((item) => <option key={item}>{item}</option>)}
                 </select>
               </label>
-              <label className="block text-xs text-mute">Orientation
-                <select value={form.orientation} onChange={(e) => setDraft({ ...form, orientation: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-3 py-2 text-sm text-fg">
+              <label className="block text-xs text-black/40">Orientation
+                <select value={form.orientation} onChange={(e) => setDraft({ ...form, orientation: e.target.value })} className="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm text-black">
                   {["Straight", "Gay", "Lesbian", "Bi", "Trans"].map((item) => <option key={item}>{item}</option>)}
                 </select>
               </label>
-              <label className="block text-xs text-mute">Age range
-                <select value={form.ageRange} onChange={(e) => setDraft({ ...form, ageRange: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-3 py-2 text-sm text-fg">
+              <label className="block text-xs text-black/40">Age range
+                <select value={form.ageRange} onChange={(e) => setDraft({ ...form, ageRange: e.target.value })} className="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm text-black">
                   {!AGE_RANGES.includes(form.ageRange) && form.ageRange && <option>{form.ageRange}</option>}
                   {AGE_RANGES.map((range) => <option key={range}>{range}</option>)}
                 </select>
@@ -270,17 +271,17 @@ export default function ProfilePage() {
                 <input type="checkbox" checked={form.showIdentity} onChange={(e) => setDraft({ ...form, showIdentity: e.target.checked })} />
                 Show gender, age, and orientation
               </label>
-              <label className="block text-xs text-mute">Lives in
-                <input value={form.neighborhood} onChange={(e) => setDraft({ ...form, neighborhood: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-3 py-2 text-sm text-fg" />
+              <label className="block text-xs text-black/40">Lives in
+                <input value={form.neighborhood} onChange={(e) => setDraft({ ...form, neighborhood: e.target.value })} className="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm text-black" />
               </label>
-              <label className="block text-xs text-mute">Work
-                <input value={form.occupation} onChange={(e) => setDraft({ ...form, occupation: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-3 py-2 text-sm text-fg" />
+              <label className="block text-xs text-black/40">Work
+                <input value={form.occupation} onChange={(e) => setDraft({ ...form, occupation: e.target.value })} className="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm text-black" />
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.showPlace} onChange={(e) => setDraft({ ...form, showPlace: e.target.checked })} />
                 Show where I live and work
               </label>
-              <button type="submit" className="rounded-full bg-fg px-4 py-2 text-sm font-semibold text-ink">Save</button>
+              <button type="submit" className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white">Save</button>
             </form>
           )}
         </section>
