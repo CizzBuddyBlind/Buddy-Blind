@@ -7,7 +7,7 @@ import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
 import { JoinWizard, LangSwitch, OpenTableWizard, PrivateWizard, TodayPopup, TrialGate } from "./Flows";
 import { RestaurantAdmin } from "./RestaurantAdmin";
-import { iso } from "@/lib/bible";
+import { iso, tierFromPoints } from "@/lib/bible";
 
 const TOP = [
   { href: "/venues", label: "Venues" },
@@ -17,6 +17,16 @@ const TOP = [
   { href: "/subscribe", label: "Plan" },
   { href: "/profile", label: "Profile" },
 ];
+
+function accountMetal(session, thresholds) {
+  if (!session) return "border border-white/20 bg-white text-black";
+  const points = Number(session.points) || 0;
+  if (points <= 0) return "border border-white/20 bg-neutral-800 text-amber-100";
+  const tier = tierFromPoints(points, thresholds);
+  if (tier === "gold") return "bg-[#E6C15A] text-[#1a1408]";
+  if (tier === "silver") return "bg-[#E4E7EC] text-[#1a1408]";
+  return "bg-[#C68642] text-[#1a1208]";
+}
 
 function initials(session) {
   const name = String(session?.handle || session?.username || "").trim();
@@ -170,7 +180,7 @@ export function Shell({ children }) {
                   type="button"
                   aria-label="Account"
                   onClick={() => { setMenu((v) => !v); setNotesOpen(false); }}
-                  className="grid h-9 w-9 place-items-center rounded-full border border-black/15 bg-white text-sm font-semibold"
+                  className={`grid h-9 w-9 place-items-center rounded-full text-sm font-semibold ${accountMetal(bb.session, bb.content?.pointThresholds)}`}
                 >
                   {mark || (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -243,6 +253,18 @@ export function Shell({ children }) {
           </header>
 
           <div className={bb.editing ? "md:pl-16" : ""}>{children}</div>
+          <footer className={`mb-20 border-t px-5 py-8 md:mb-0 ${light ? "border-black/10 text-black/50" : "border-white/10 text-white/45"} ${bb.editing ? "md:pl-16" : ""}`}>
+            <div className="bb-frame flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs">© {new Date().getFullYear()} Buddy Blind · Hong Kong</p>
+              <nav className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
+                <Link href="/terms">Terms & Conditions</Link>
+                <Link href="/privacy">Privacy Policy</Link>
+                <Link href="/cookies">Cookies</Link>
+                <Link href="/accessibility">Accessibility</Link>
+                <Link href="/guidelines">Community Guidelines</Link>
+              </nav>
+            </div>
+          </footer>
 
           <nav className={`fixed inset-x-0 bottom-0 z-40 md:hidden ${light ? "bg-paper text-char" : "bg-[#0c0c0c] text-white"}`}>
             <div className="grid grid-cols-5 items-end px-2 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-2">
