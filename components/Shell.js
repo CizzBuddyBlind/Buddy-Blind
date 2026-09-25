@@ -107,6 +107,27 @@ export function Shell({ children }) {
     setShowToday(false);
   }
 
+  if (path === "/m" || path.startsWith("/m/")) {
+    return (
+      <div className="min-h-dvh bg-ink text-fg">
+        {children}
+        {bb.toast && (
+          <div className="fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-[70] -translate-x-1/2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-ink shadow-xl">
+            {bb.toast}
+          </div>
+        )}
+        {bb.flow?.type === "invite" && flowVenue && <OpenTableWizard venue={flowVenue} onClose={() => bb.setFlow(null)} />}
+        {bb.flow?.type === "quick-invite" && flowVenue && <OpenTableWizard venue={flowVenue} todayOnly onClose={() => bb.setFlow(null)} />}
+        {bb.flow?.type === "join" && flowVenue && (
+          <JoinWizard venue={flowVenue} tableId={bb.flow.tableId} onClose={() => bb.setFlow(null)} />
+        )}
+        {bb.flow?.type === "private-create" && (
+          <PrivateWizard venueId={bb.flow.venueId || ""} onClose={() => bb.setFlow(null)} />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={light ? "min-h-dvh bg-paper text-char" : "min-h-dvh bg-ink text-fg"}>
       {bb.staff && bb.preview && (
