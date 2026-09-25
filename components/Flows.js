@@ -27,7 +27,7 @@ export function HostBadge({ handle = "?", tier = "", size = "host" }) {
   const letter = String(handle || "?").slice(0, 1).toUpperCase();
   const box = size === "joiner" ? "h-4 w-4 text-[8px]" : size === "feature" ? "h-9 w-9 text-sm" : "h-5 w-5 text-[10px]";
   return (
-    <span className={`grid shrink-0 place-items-center rounded-full font-serif font-semibold ${box} ${paint.className}`} title={`${handle} · ${paint.tier}`}>
+    <span className={`grid shrink-0 place-items-center rounded-full font-serif font-semibold ${box} ${paint.className}`} style={paint.style} title={`${handle} · ${paint.tier}`}>
       {letter}
     </span>
   );

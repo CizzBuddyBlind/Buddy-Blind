@@ -19,8 +19,9 @@ const TOP = [
 ];
 
 function accountStyle(session, thresholds) {
-  if (!session) return "bg-white text-black";
-  return badgePaint(session.points, thresholds, "dark").className;
+  if (!session) return { className: "bg-white text-black", style: { backgroundColor: "#ffffff", color: "#111111" } };
+  const paint = badgePaint(session.points, thresholds, "dark");
+  return { className: paint.className, style: paint.style };
 }
 
 function initials(session) {
@@ -190,7 +191,8 @@ export function Shell({ children }) {
                   type="button"
                   aria-label="Account"
                   onClick={() => { setMenu((v) => !v); setNotesOpen(false); }}
-                  className={`relative z-40 grid h-9 w-9 place-items-center rounded-full text-sm font-semibold ${accountStyle(bb.session, bb.content?.pointThresholds)}`}
+                  className={`relative z-40 grid h-9 w-9 place-items-center rounded-full text-sm font-semibold ${accountStyle(bb.session, bb.content?.pointThresholds).className}`}
+                  style={accountStyle(bb.session, bb.content?.pointThresholds).style}
                 >
                   {mark || (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">

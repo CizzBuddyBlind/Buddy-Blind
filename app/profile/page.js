@@ -104,7 +104,7 @@ export default function ProfilePage() {
     <main className="bb-frame min-h-[100dvh] bg-ink pb-28 md:pb-8">
       <div className="grid items-start gap-8 md:block">
         <section className="flex flex-col overflow-y-auto rounded-[28px] bg-[#141414] px-6 py-8 text-[#f5f5f5] ring-1 ring-white/10 md:fixed md:left-[15.28vw] md:top-[18.44vh] md:h-[71.75vh] md:w-[30.76vw] md:px-8">
-          <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-4xl ${paint.className}`}>{initial}</div>
+          <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-4xl ${paint.className}`} style={paint.style}>{initial}</div>
           <h1 className="mt-4 text-center text-3xl font-bold tracking-tight">{session.handle}</h1>
           {form.showIdentity && who && <p className="mt-2 text-center text-sm text-white/45">{who}</p>}
           {form.showPlace && where && <p className="text-center text-sm text-white/45">{where}</p>}
