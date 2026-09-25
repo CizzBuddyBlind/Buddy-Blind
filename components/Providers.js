@@ -173,6 +173,10 @@ export function BuddyProvider({ children }) {
       const local = read(PUB, SEED);
       const dr = read(DRAFT, null);
       const ses = read(SES, null);
+      if (ses?.email) {
+        const pointsMap = read(POINTS, {});
+        if (pointsMap[ses.email] != null) ses.points = pointsMap[ses.email];
+      }
       setSession(ses);
       setUsers(read(USERS, []));
       setRevoked(read(REVOKED, []));

@@ -52,7 +52,7 @@ export default function PrivatePage() {
       <section className="mx-auto max-w-2xl text-center">
         <div className="mb-6 flex justify-between text-mute">
           <Editable className="bb-kicker" value={copy.kickerLeft} onChange={(kickerLeft) => update((d) => { d.copy.private.kickerLeft = kickerLeft; })} />
-          <Editable className="bb-kicker text-ember" value={copy.kickerRight} onChange={(kickerRight) => update((d) => { d.copy.private.kickerRight = kickerRight; })} />
+          <Editable className="bb-kicker" value={copy.kickerRight} onChange={(kickerRight) => update((d) => { d.copy.private.kickerRight = kickerRight; })} />
         </div>
         <h1 className="bb-hero-title text-char">
           <Copy k="private.title" legacy={copy.title} onEnglish={(d, next) => { d.copy.private.title = next; }} />

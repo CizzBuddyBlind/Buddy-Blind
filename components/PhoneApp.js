@@ -583,7 +583,8 @@ export function JoinedEvents() {
     </section>
   );
   return (
-    <div className="flex h-full min-w-0 flex-col gap-6">
+    <div className="flex h-full min-w-0 flex-col justify-center gap-8 md:pt-6">
+      <p className="text-sm text-white/70">Seats you joined</p>
       {block("Today", now)}
       {block("Upcoming", later)}
     </div>

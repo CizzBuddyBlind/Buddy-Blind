@@ -18,14 +18,14 @@ const TOP = [
   { href: "/profile", label: "Profile" },
 ];
 
-function accountMetal(session, thresholds) {
-  if (!session) return "border border-white/20 bg-white text-black";
+function accountStyle(session, thresholds) {
+  if (!session) return { backgroundColor: "#ffffff", color: "#111111" };
   const points = Number(session.points) || 0;
-  if (points <= 0) return "border border-white/20 bg-neutral-800 text-amber-100";
+  if (points <= 0) return { backgroundColor: "#262626", color: "#f6e7c1" };
   const tier = tierFromPoints(points, thresholds);
-  if (tier === "gold") return "bg-[#E6C15A] text-[#1a1408]";
-  if (tier === "silver") return "bg-[#E4E7EC] text-[#1a1408]";
-  return "bg-[#C68642] text-[#1a1208]";
+  if (tier === "gold") return { backgroundColor: "#E6C15A", color: "#1a1408" };
+  if (tier === "silver") return { backgroundColor: "#E4E7EC", color: "#1a1408" };
+  return { backgroundColor: "#C68642", color: "#1a1208" };
 }
 
 function initials(session) {
@@ -164,6 +164,21 @@ export function Shell({ children }) {
                 })}
               </nav>
               <div className="relative flex items-center gap-3">
+                {(menu || notesOpen) && (
+                  <button type="button" aria-label="Close menu" className="fixed inset-0 z-30 cursor-default" onClick={() => { setMenu(false); setNotesOpen(false); }} />
+                )}
+                <button
+                  type="button"
+                  aria-label="Language"
+                  onClick={() => {
+                    const order = ["en", "zh-HK", "zh"];
+                    const index = order.indexOf(bb.lang);
+                    bb.setLang(order[(index + 1) % order.length] || "en");
+                  }}
+                  className="relative z-40 grid h-9 min-w-9 place-items-center rounded-full border border-white/20 px-2 text-xs font-semibold text-white"
+                >
+                  {bb.lang === "zh-HK" ? "繁" : bb.lang === "zh" ? "简" : "EN"}
+                </button>
                 <button
                   type="button"
                   aria-label="Notifications"
@@ -172,7 +187,7 @@ export function Shell({ children }) {
                     setMenu(false);
                     bb.markNotesRead?.();
                   }}
-                  className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-white text-sm font-medium text-black"
+                  className="relative z-40 grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-white text-sm font-medium text-black"
                 >
                   {(bb.social?.notes || []).filter((note) => !note.read).length}
                 </button>
@@ -180,7 +195,8 @@ export function Shell({ children }) {
                   type="button"
                   aria-label="Account"
                   onClick={() => { setMenu((v) => !v); setNotesOpen(false); }}
-                  className={`grid h-9 w-9 place-items-center rounded-full text-sm font-semibold ${accountMetal(bb.session, bb.content?.pointThresholds)}`}
+                  className="relative z-40 grid h-9 w-9 place-items-center rounded-full text-sm font-semibold"
+                  style={accountStyle(bb.session, bb.content?.pointThresholds)}
                 >
                   {mark || (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">

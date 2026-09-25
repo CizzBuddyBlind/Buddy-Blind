@@ -44,9 +44,9 @@ const STEPS = [
 ];
 
 const BADGES = [
-  { letter: "B", name: "Bronze", note: "5%", circle: "bg-[#C68642] text-[#1a1208]" },
-  { letter: "S", name: "Silver", note: "10%", circle: "bg-[#E4E7EC] text-[#1a1408]" },
-  { letter: "G", name: "Gold", note: "15%", circle: "bg-[#E6C15A] text-[#1a1408]" },
+  { letter: "B", name: "Bronze", points: "1 point", note: "5%", circle: "bg-[#C68642] text-[#1a1208]" },
+  { letter: "S", name: "Silver", points: "100 points", note: "10%", circle: "bg-[#E4E7EC] text-[#1a1408]" },
+  { letter: "G", name: "Gold", points: "500 points", note: "15%", circle: "bg-[#E6C15A] text-[#1a1408]" },
 ];
 
 export default function HowPage() {
@@ -73,7 +73,7 @@ export default function HowPage() {
                       <span className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg font-semibold ring-1 ring-black/15 ${badge.circle}`}>{badge.letter}</span>
                       <span>
                         <span className="block text-sm text-white">{badge.name}</span>
-                        <span className="block text-xs text-white/45">{badge.note}</span>
+                        <span className="block text-xs text-white/45">{badge.points} · {badge.note}</span>
                       </span>
                     </div>
                   ))}

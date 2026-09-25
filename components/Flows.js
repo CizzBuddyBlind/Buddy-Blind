@@ -42,11 +42,11 @@ export function HostBadge({ handle = "?", tier = "", size = "host" }) {
   );
 }
 
-function Frame({ title, step, total, onBack, onClose, children }) {
+function Frame({ title, step, total, onBack, onClose, backdropClose = false, children }) {
   const { lang } = useBB();
   const t = (key) => translate(lang, key);
   return (
-    <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog" onClick={onClose}>
+    <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog" onClick={backdropClose ? onClose : undefined}>
       <div className="bb-sheet max-h-[92dvh] w-full max-w-lg overflow-auto rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 h-px w-full bg-white/10">
           <div className="h-px bg-ember" style={{ width: `${Math.max(8, (step / total) * 100)}%` }} />
@@ -664,7 +664,7 @@ export function PrivateWizard({ venueId = "", onClose }) {
   if (phase === "share") {
     const lines = [location, `${form.dateISO} · ${form.time} · ${form.capacity} seats`, form.description].filter(Boolean);
     return (
-      <Frame title="It's live." step={3} total={3} onBack={onClose} onClose={onClose}>
+      <Frame title="It's live." step={3} total={3} onBack={onClose} onClose={onClose} backdropClose>
         <p className="font-serif text-2xl">{form.name || venue?.name}</p>
         <ul className="mt-4 space-y-1 text-sm text-mute">
           {lines.map((line) => <li key={line}>{line}</li>)}
@@ -893,7 +893,7 @@ export function DoneShare({ title, lines, path, invite, onClose }) {
     }
   }
   return (
-    <Frame title="You're in." step={1} total={1} onBack={onClose} onClose={onClose}>
+    <Frame title="You're in." step={1} total={1} onBack={onClose} onClose={onClose} backdropClose>
       <p className="font-serif text-2xl">{title}</p>
       <ul className="mt-4 space-y-1 text-sm text-mute">
         {(lines || []).filter(Boolean).map((line) => <li key={line}>{line}</li>)}
