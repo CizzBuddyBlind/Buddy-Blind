@@ -55,11 +55,12 @@ async function chargeSavedCard(secret, body) {
   const method = await savedCard(secret, customer);
   if (!method) return Response.json({ ok: false, reason: "No card yet. Start Premium and save one." });
   const price = await stripe(secret, `/v1/prices/${encodeURIComponent(PRICES.fee)}`);
-  const amount = price.data?.unit_amount;
-  const currency = price.data?.currency || "hkd";
-  if (!price.ok || !amount) {
+  if (!price.ok || !price.data?.unit_amount) {
     return Response.json({ ok: false, reason: price.data?.error?.message || "The HK$5 price is not set in Stripe." });
   }
+  const points = Math.max(0, Math.min(100000, Number(body.points) || 0));
+  const amount = points >= 500 ? Math.round(price.data.unit_amount * 0.8) : points >= 300 ? Math.round(price.data.unit_amount * 0.9) : points >= 100 ? Math.round(price.data.unit_amount * 0.95) : price.data.unit_amount;
+  const currency = price.data?.currency || "hkd";
   const params = new URLSearchParams({
     amount: String(amount),
     currency,

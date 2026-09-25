@@ -8,6 +8,7 @@ import {
   AGE_RANGES,
   TIMES,
   adminFee,
+  badgePaint,
   bookingHold,
   iso,
   nextDays,
@@ -15,28 +16,24 @@ import {
   pingWindow,
   queryHits,
   tablePrefs,
-  tierFromPoints,
 } from "@/lib/bible";
 
 export function HostBadge({ handle = "?", tier = "", size = "host" }) {
   const bb = useBB();
   const mine = bb.session?.handle && bb.session.handle === handle;
-  const points = mine ? Number(bb.session.points) || 0 : null;
-  const shown = mine
-    ? (points > 0 ? tierFromPoints(points, bb.content?.pointThresholds) : "plain")
-    : (tier || "plain");
+  const shown = mine ? badgePaint(bb.session?.points, bb.content?.pointThresholds) : null;
   const letter = String(handle || "?").slice(0, 1).toUpperCase();
-  const metal = shown === "gold"
-    ? "bg-[#E6C15A] text-[#1a1408]"
-    : shown === "silver"
-      ? "bg-[#E4E7EC] text-[#1a1408]"
-      : shown === "bronze"
-        ? "bg-[#C68642] text-[#1a1208]"
-        : "bg-neutral-800 text-amber-100";
+  const paint = shown?.style || (tier === "gold"
+    ? { backgroundColor: "#E6C15A", color: "#1a1408" }
+    : tier === "silver"
+      ? { backgroundColor: "#E4E7EC", color: "#1a1408" }
+      : tier === "bronze"
+        ? { backgroundColor: "#C68642", color: "#1a1208" }
+        : { backgroundColor: "#262626", color: "#f6e7c1" });
   const box = size === "joiner" ? "h-4 w-4 text-[8px]" : size === "feature" ? "h-9 w-9 text-sm" : "h-5 w-5 text-[10px]";
-  const label = shown === "gold" ? "Gold" : shown === "silver" ? "Silver" : shown === "bronze" ? "Bronze" : "No points yet";
+  const label = shown?.tier && shown.tier !== "plain" ? shown.tier : tier || "plain";
   return (
-    <span className={`grid shrink-0 place-items-center rounded-full font-serif font-semibold ring-1 ring-black/20 ${box} ${metal}`} title={`${handle} · ${label}`}>
+    <span className={`grid shrink-0 place-items-center rounded-full font-serif font-semibold ${box}`} style={paint} title={`${handle} · ${label}`}>
       {letter}
     </span>
   );
@@ -96,6 +93,7 @@ function useFeeCheckout(onPaid) {
           action: "charge-fee",
           email: bb.session.email || "",
           customerId: bb.planMeta?.customerId || "",
+          points: Number(bb.session.points) || 0,
         }),
       });
       const data = await res.json();
@@ -122,6 +120,7 @@ function PayStep({ fee, checked, setChecked, onConfirm, busy, error }) {
     <div className="space-y-3 text-sm">
       <div className="rounded-xl border border-white/10 p-3">
         <div className="flex justify-between"><span>{t("pay.admin")}</span><span>HK${fee.base.toFixed(2)}</span></div>
+        {fee.percent > 0 && <div className="mt-2 flex justify-between text-mute"><span>{fee.percent}% off</span><span>−HK${fee.off.toFixed(2)}</span></div>}
         <p className="mt-2 text-xs text-mute">{t("pay.fixed")}</p>
         <div className="mt-2 flex justify-between font-semibold"><span>{t("pay.total")}</span><span>HK${fee.total.toFixed(2)}</span></div>
       </div>
@@ -323,7 +322,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
   const row = tables.find((item) => item.table.id === picked) || tables.find((item) => item.table.id === tableId);
   const bookable = tables.filter((item) => !item.hold.closed && item.hold.places > 0);
   const none = !tableId && bookable.length === 0;
-  const fee = adminFee();
+  const fee = adminFee(bb.session?.points, bb.content?.pointThresholds);
   const pay = useFeeCheckout(finish);
 
   async function close() {
@@ -417,6 +416,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
 }
 
 export function PayDialog({ open, title, lines, onClose, onConfirm, busy }) {
+  const bb = useBB();
   const [checked, setChecked] = useState(false);
   if (!open) return null;
   return (
@@ -424,7 +424,7 @@ export function PayDialog({ open, title, lines, onClose, onConfirm, busy }) {
       <div className="mb-4 space-y-1 text-sm text-mute">
         {lines.filter(Boolean).map((line) => <p key={line}>{line}</p>)}
       </div>
-      <PayStep fee={adminFee()} checked={checked} setChecked={setChecked} onConfirm={onConfirm} busy={busy} />
+      <PayStep fee={adminFee(bb.session?.points, bb.content?.pointThresholds)} checked={checked} setChecked={setChecked} onConfirm={onConfirm} busy={busy} />
     </Frame>
   );
 }
@@ -551,7 +551,7 @@ export function PrivateWizard({ venueId = "", onClose }) {
   const venue = venues.find((v) => v.id === pickedId) || null;
   const branches = venue?.branches || [];
   const branch = branches.find((b) => b.id === branchId) || (branches.length === 1 ? branches[0] : null);
-  const fee = adminFee();
+  const fee = adminFee(bb.session?.points, bb.content?.pointThresholds);
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
   const venuePhotos = venue?.gallery?.length ? venue.gallery : venue?.imageUrl ? [venue.imageUrl] : [];
   const chosenVenue = useVenuePhotos ? venuePhotos.filter((src) => pickedVenue.includes(src)) : [];

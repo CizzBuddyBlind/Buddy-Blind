@@ -33,7 +33,10 @@ export function RestaurantAdmin() {
       <label className="block">Name
         <input value={venue.name} onChange={(e) => patch({ name: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2" />
       </label>
-      <label className="block">Address
+      <label className="block">Neighbourhood
+        <input value={venue.neighbourhood || ""} onChange={(e) => patch({ neighbourhood: e.target.value, locationLabel: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2" />
+      </label>
+      <label className="block">Full address
         <input value={venue.address || ""} onChange={(e) => patch({ address: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2" />
       </label>
       <label className="block">Cuisine
@@ -47,13 +50,18 @@ export function RestaurantAdmin() {
       <label className="block">Phone
         <input value={venue.phone || ""} onChange={(e) => patch({ phone: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2" />
       </label>
-      <label className="block">Preferred contact
-        <select value={venue.contactMethod || "email"} onChange={(e) => patch({ contactMethod: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2">
-          <option value="sms">SMS</option>
-          <option value="whatsapp">WhatsApp</option>
-          <option value="email">Email</option>
-        </select>
-      </label>
+      <div className="block">Preferred contact
+        <div className="mt-1 flex gap-2">
+          {[
+            ["sms", "SMS"],
+            ["whatsapp", "WhatsApp"],
+          ].map(([id, label]) => (
+            <button key={id} type="button" onClick={() => patch({ contactMethod: id })} className={`rounded-full px-3 py-1 ${venue.contactMethod === id ? "bg-white font-semibold text-black" : "border border-white/15"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       <label className="block">Hours
         <input value={venue.hours || ""} onChange={(e) => patch({ hours: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2" />
       </label>
@@ -99,10 +107,13 @@ export function RestaurantAdmin() {
       </button>
       <div className="border-t border-white/10 pt-3">
         <p className="bb-kicker text-mute">Point badges</p>
-        <p className="text-mute">Silver and Gold thresholds. Exact points stay private. They do not change the HK$5 administration fee.</p>
+        <p className="text-mute">Bronze 100 · 5%. Silver 300 · 10%. Gold 500 · 20%. The discount is on the HK$5 fee only.</p>
         <div className="mt-2 flex gap-2">
+          <label>Bronze
+            <input type="number" value={bb.content.pointThresholds?.bronze || 100} onChange={(e) => bb.update((d) => { d.pointThresholds.bronze = Number(e.target.value) || 100; })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2" />
+          </label>
           <label>Silver
-            <input type="number" value={bb.content.pointThresholds?.silver || 100} onChange={(e) => bb.update((d) => { d.pointThresholds.silver = Number(e.target.value) || 100; })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2" />
+            <input type="number" value={bb.content.pointThresholds?.silver || 300} onChange={(e) => bb.update((d) => { d.pointThresholds.silver = Number(e.target.value) || 300; })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2" />
           </label>
           <label>Gold
             <input type="number" value={bb.content.pointThresholds?.gold || 500} onChange={(e) => bb.update((d) => { d.pointThresholds.gold = Number(e.target.value) || 500; })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2" />

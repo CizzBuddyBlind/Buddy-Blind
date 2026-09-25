@@ -7,7 +7,7 @@ import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
 import { JoinWizard, LangSwitch, OpenTableWizard, PrivateWizard, TodayPopup, TrialGate } from "./Flows";
 import { RestaurantAdmin } from "./RestaurantAdmin";
-import { iso, tierFromPoints } from "@/lib/bible";
+import { iso, badgePaint } from "@/lib/bible";
 
 const TOP = [
   { href: "/venues", label: "Venues" },
@@ -20,12 +20,7 @@ const TOP = [
 
 function accountStyle(session, thresholds) {
   if (!session) return { backgroundColor: "#ffffff", color: "#111111" };
-  const points = Number(session.points) || 0;
-  if (points <= 0) return { backgroundColor: "#262626", color: "#f6e7c1" };
-  const tier = tierFromPoints(points, thresholds);
-  if (tier === "gold") return { backgroundColor: "#E6C15A", color: "#1a1408" };
-  if (tier === "silver") return { backgroundColor: "#E4E7EC", color: "#1a1408" };
-  return { backgroundColor: "#C68642", color: "#1a1208" };
+  return badgePaint(session.points, thresholds, "dark").style;
 }
 
 function initials(session) {
@@ -260,7 +255,7 @@ export function Shell({ children }) {
                       <Link href="/login" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>{t("nav.login")}</Link>
                     )}
                     <Link href="/subscribe" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>Upgrade plan</Link>
-                    {bb.staff && <Link href="/admin" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>Restaurants</Link>}
+                    {bb.session?.role === "admin" && <Link href="/admin" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>Restaurants</Link>}
                     <Link href="/about" className="block px-4 py-2.5 text-sm" onClick={() => setMenu(false)}>About us</Link>
                   </div>
                 )}

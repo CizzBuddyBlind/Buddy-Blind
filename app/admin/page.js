@@ -1,10 +1,57 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useBB } from "@/components/Providers";
 import { fileToCover } from "@/components/Bits";
+import { CUISINES } from "@/lib/bible";
 
-const EMPTY = { name: "", cuisine: "", location: "", phone: "", email: "", contact: "", about: "", photos: [] };
+const EMPTY = {
+  name: "",
+  cuisine: "Western",
+  neighbourhood: "",
+  address: "",
+  phone: "",
+  email: "",
+  contactMethod: "whatsapp",
+  about: "",
+  photos: [],
+};
+
+function ContactPick({ value, onChange }) {
+  return (
+    <div className="flex gap-2">
+      {[
+        ["sms", "SMS"],
+        ["whatsapp", "WhatsApp"],
+      ].map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onChange(id)}
+          className={`rounded-full px-4 py-2 text-sm ${value === id ? "bg-white font-semibold text-black" : "border border-white/20 text-white/70"}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function restaurantFields(form) {
+  return {
+    name: form.name.trim(),
+    cuisine: form.cuisine.trim() || "Western",
+    typeLabel: form.cuisine.trim() || "Restaurant",
+    neighbourhood: form.neighbourhood.trim(),
+    locationLabel: form.neighbourhood.trim(),
+    address: form.address.trim(),
+    phone: form.phone.trim(),
+    email: form.email.trim(),
+    contactMethod: form.contactMethod === "sms" ? "sms" : "whatsapp",
+    about: form.about.trim(),
+  };
+}
 
 export default function AdminPage() {
   const bb = useBB();
@@ -12,11 +59,12 @@ export default function AdminPage() {
   const [busy, setBusy] = useState(false);
   const venues = bb.content?.venues || [];
 
-  if (!bb.staff) {
+  if (!bb.ready) return null;
+  if (bb.session?.role !== "admin") {
     return (
       <main className="bb-frame py-20">
         <h1 className="font-serif text-4xl">Restaurants</h1>
-        <p className="mt-3 text-sm text-mute">Log in as an admin to add or remove a restaurant.</p>
+        <p className="mt-3 text-sm text-mute">Log in with an admin account to add or edit a restaurant.</p>
       </main>
     );
   }
@@ -30,15 +78,13 @@ export default function AdminPage() {
     if (!form.name.trim()) return;
     setBusy(true);
     const id = form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `venue-${Date.now().toString(36)}`;
+    const fields = restaurantFields(form);
     bb.update((draft) => {
       draft.venues = draft.venues.filter((venue) => venue.id !== id);
       draft.venues.unshift({
         id,
-        name: form.name.trim(),
-        cuisine: form.cuisine.trim(),
-        typeLabel: form.cuisine.trim() || "Restaurant",
-        locationLabel: form.location.trim(),
-        priceTier: "",
+        ...fields,
+        priceTier: "$$",
         priceLabel: "",
         hours: "",
         timeLabel: "",
@@ -49,11 +95,7 @@ export default function AdminPage() {
         hidden: false,
         imageUrl: form.photos[0] || "",
         gallery: form.photos,
-        imageAlt: form.name.trim(),
-        about: form.about.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim(),
-        contact: form.contact.trim(),
+        imageAlt: fields.name,
       });
     });
     await bb.publish();
@@ -74,11 +116,14 @@ export default function AdminPage() {
       <h1 className="mt-3 font-serif text-5xl">Restaurants</h1>
       <form onSubmit={add} className="mt-8 grid max-w-xl gap-3">
         <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Restaurant name" className="rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm" required />
-        <input value={form.cuisine} onChange={(e) => set("cuisine", e.target.value)} placeholder="Cuisine" className="rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm" />
-        <input value={form.location} onChange={(e) => set("location", e.target.value)} placeholder="Neighbourhood · street" className="rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm" />
-        <input value={form.contact} onChange={(e) => set("contact", e.target.value)} placeholder="Contact name" className="rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm" />
-        <input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="Phone" className="rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm" />
+        <select value={form.cuisine} onChange={(e) => set("cuisine", e.target.value)} className="rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm">
+          {CUISINES.map((item) => <option key={item}>{item}</option>)}
+        </select>
+        <input value={form.neighbourhood} onChange={(e) => set("neighbourhood", e.target.value)} placeholder="Neighbourhood" className="rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm" />
+        <input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Full address" className="rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm" />
         <input value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="Email" className="rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm" />
+        <input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="Phone" className="rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm" />
+        <ContactPick value={form.contactMethod} onChange={(contactMethod) => set("contactMethod", contactMethod)} />
         <textarea value={form.about} onChange={(e) => set("about", e.target.value)} placeholder="Description" rows={4} className="rounded-xl border border-white/15 bg-transparent px-4 py-3 text-sm" />
         <label className="text-sm text-mute">
           Photos
@@ -91,7 +136,7 @@ export default function AdminPage() {
         </label>
         {form.photos.length > 0 && (
           <div className="flex gap-2 overflow-x-auto">
-            {form.photos.map((src) => <img key={src.slice(0, 40)} src={src} alt="" className="h-16 w-20 rounded-lg object-cover" />)}
+            {form.photos.map((src) => <img key={src.slice(0, 48)} src={src} alt="" className="h-16 w-20 rounded-lg object-cover" />)}
           </div>
         )}
         <button type="submit" disabled={busy} className="rounded-full bg-white py-3 text-sm font-semibold text-black disabled:opacity-60">
@@ -100,11 +145,11 @@ export default function AdminPage() {
       </form>
       <ul className="mt-10 max-w-xl divide-y divide-white/10">
         {venues.map((venue) => (
-          <li key={venue.id} className="flex items-center justify-between gap-4 py-3">
-            <div>
+          <li key={venue.id} className="flex items-center gap-4 py-3">
+            <Link href={`/admin/${venue.id}`} className="min-w-0 flex-1">
               <p>{venue.name}</p>
-              <p className="text-xs text-mute">{venue.locationLabel}{venue.email ? ` · ${venue.email}` : ""}</p>
-            </div>
+              <p className="truncate text-xs text-mute">{venue.neighbourhood || venue.locationLabel}{venue.address ? ` · ${venue.address}` : ""}</p>
+            </Link>
             <button type="button" onClick={() => remove(venue.id)} className="text-xs uppercase tracking-[0.14em] text-ember">Delete</button>
           </li>
         ))}
