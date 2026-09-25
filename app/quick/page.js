@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Copy, Editable, Photo } from "@/components/Bits";
 import { PayDialog } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
@@ -21,6 +22,7 @@ function placeOf(row, venues) {
   });
   const branch = (venue?.branches || []).find((item) => item.address) || venue?.branches?.[0];
   return {
+    id: venue?.id || "",
     name: venue?.name || row.name,
     address: branch?.address || venue?.address || venue?.locationLabel || "",
     cuisine: venue?.cuisine || row.typeLabel || "",
@@ -41,6 +43,7 @@ function nearestArea(lat, lng) {
 }
 
 export default function QuickPage() {
+  const router = useRouter();
   const { content, editing, update, act, notify, setSelectedId, selectedId, setFlow } = useBB();
   const [sheet, setSheet] = useState(null);
   const [area, setArea] = useState("");
@@ -115,8 +118,12 @@ export default function QuickPage() {
           return (
           <article
             key={row.id}
-            onClick={() => editing && setSelectedId(row.id)}
-            className={`bb-lift flex items-center gap-3 rounded-2xl border border-black/10 bg-white p-3 ${selectedId === row.id ? "ring-2 ring-ember" : ""} ${row.hidden ? "opacity-40" : ""}`}
+            onClick={(e) => {
+              if (e.target.closest("button, input, textarea, a")) return;
+              if (editing) setSelectedId(row.id);
+              if (placeInfo.id) router.push(`/venues/${placeInfo.id}`);
+            }}
+            className={`bb-lift flex cursor-pointer items-center gap-3 rounded-2xl border border-black/10 bg-white p-3 ${selectedId === row.id ? "ring-2 ring-ember" : ""} ${row.hidden ? "opacity-40" : ""}`}
           >
             <div className="bb-zoom-wrap h-16 w-16 shrink-0 overflow-hidden rounded-xl">
               <Photo src={row.imageUrl} alt={row.name} onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === row.id); if (item) item.imageUrl = imageUrl; })} />

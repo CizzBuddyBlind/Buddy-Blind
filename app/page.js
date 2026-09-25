@@ -121,7 +121,7 @@ export default function HomePage() {
           <Link href="/register" className="mt-8 inline-flex items-center rounded-full bg-white px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-ink">
             Join Buddy →
           </Link>
-          <div className="mt-16 grid grid-cols-3 gap-4 border-t border-white/15 pt-8">
+          <div className="mt-28 grid grid-cols-3 gap-4 border-t border-white/15 pt-8 md:mt-36">
             <div>
               <p className="bb-figure text-4xl text-white">{events}</p>
               <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">Total events</p>
@@ -145,7 +145,7 @@ export default function HomePage() {
           {featured ? (
             <article className="overflow-hidden rounded-[28px] border border-white/10 bg-[#121212]">
               <Link href={featured.href} className="relative block">
-                <img src={featured.image} alt="" className="aspect-[16/10] w-full object-cover" />
+                <img src={featured.image} alt="" className="aspect-[4/5] w-full object-cover" />
                 <div className="absolute left-4 top-4 flex flex-wrap gap-2">
                   <span className="rounded-full bg-black/70 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-white">
                     {[featured.area, featured.time].filter(Boolean).join(" · ")}
