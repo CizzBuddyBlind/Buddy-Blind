@@ -13,6 +13,20 @@ const NEAR = [
   { q: "sai kung", lat: 22.382, lng: 114.273 },
 ];
 
+function placeOf(row, venues) {
+  const key = String(row.name || "").toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, " ").trim();
+  const venue = (venues || []).find((item) => {
+    const name = String(item.name || "").toLowerCase();
+    return name === key || name.startsWith(key) || key.startsWith(name) || name.includes(key);
+  });
+  const branch = (venue?.branches || []).find((item) => item.address) || venue?.branches?.[0];
+  return {
+    name: venue?.name || row.name,
+    address: branch?.address || venue?.address || venue?.locationLabel || "",
+    cuisine: venue?.cuisine || row.typeLabel || "",
+  };
+}
+
 function nearestArea(lat, lng) {
   let best = NEAR[0];
   let bestDist = Infinity;
@@ -78,7 +92,7 @@ export default function QuickPage() {
 
   return (
     <main className="bb-frame pb-28 pt-10 md:pb-16">
-      <div className="grid items-stretch gap-10 md:grid-cols-2">
+      <div className="mx-auto grid w-full max-w-5xl items-stretch gap-10 md:grid-cols-2">
         <section className="flex flex-col justify-center py-8">
           <p className="text-xs uppercase tracking-[0.22em] text-mute">Quick meet</p>
           <h1 className="mt-4 font-serif text-5xl leading-[0.95] text-char md:text-6xl">
@@ -87,7 +101,7 @@ export default function QuickPage() {
             <Copy k="quick.accent" legacy={copy.accent} className="italic text-ember" onEnglish={(d, next) => { d.copy.quick.accent = next; }} />
           </h1>
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-mute">A seat nearby. A time. No bio, no swipe. If you're free, sit down.</p>
-          <ul className="mt-6 space-y-2 text-sm">
+          <ul className="mt-6 space-y-2 text-sm text-ember">
             <li>Nearby, today</li>
             <li>Coffee, lunch, or a drink</li>
             <li>Join a seat, or open one</li>
@@ -96,7 +110,9 @@ export default function QuickPage() {
         <section>
           <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Tonight, Central, 中環, café…" className="w-full rounded-full border border-black/10 bg-white px-4 py-3 text-sm outline-none transition focus:border-ember" />
           <div className="mt-4 space-y-3">
-        {rows.map((row) => (
+        {rows.map((row) => {
+          const placeInfo = placeOf(row, venues);
+          return (
           <article
             key={row.id}
             onClick={() => editing && setSelectedId(row.id)}
@@ -107,18 +123,18 @@ export default function QuickPage() {
             </div>
             <div className="min-w-0 flex-1 text-left">
               <div className="font-medium">
-                <Editable locked={row.locked} value={row.name} onChange={(name) => update((d) => { const item = d.events.find((x) => x.id === row.id); if (item) item.name = name; })} />
+                <Editable locked={row.locked} value={placeInfo.name} onChange={(name) => update((d) => { const item = d.events.find((x) => x.id === row.id); if (item) item.name = name; })} />
               </div>
-              <div className="truncate text-xs text-mute">
-                <Editable locked={row.locked} value={row.timeLabel} onChange={(timeLabel) => update((d) => { const item = d.events.find((x) => x.id === row.id); if (item) item.timeLabel = timeLabel; })} />
-              </div>
-              <div className="text-xs text-mute">{row.detail} · {row.spots} left</div>
+              <div className="text-xs text-mute">{placeInfo.address}</div>
+              <div className="text-xs text-mute">{placeInfo.cuisine}</div>
+              <div className="text-xs text-mute">{row.timeLabel} · {row.spots} left</div>
             </div>
-            <button type="button" className="rounded-full bg-char px-4 py-2 text-xs font-semibold text-paper" onClick={() => setSheet({ id: row.id, name: row.name, mode: "join", detail: row.timeLabel })}>
+            <button type="button" className="shrink-0 rounded-full bg-char px-4 py-2 text-xs font-semibold text-paper" onClick={() => setSheet({ id: row.id, name: placeInfo.name, mode: "join", detail: `${placeInfo.address} · ${placeInfo.cuisine}` })}>
               JOIN
             </button>
           </article>
-        ))}
+          );
+        })}
           </div>
           <Copy as="p" k="quick.note" legacy={copy.note} className="mt-6 text-sm leading-relaxed text-mute" onEnglish={(d, next) => { d.copy.quick.note = next; }} />
           <button type="button" className="mt-4 rounded-full border border-char px-5 py-2 text-sm" onClick={() => { setFree((v) => !v); setAsk(false); }}>
