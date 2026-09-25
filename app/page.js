@@ -121,7 +121,7 @@ export default function HomePage() {
           <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/50">
             Hong Kong · Tonight · {rows.length} blind boxes / {hosts} hosts / {scenes} scenes
           </p>
-          <h1 className="mt-8 font-serif text-white">
+          <h1 className="mt-16 font-serif text-white md:mt-[5.4rem]">
             <span>You don't know</span>
             <span className="italic">who you'll meet.</span>
             <span className="italic text-ember">That's the point.</span>
@@ -134,7 +134,7 @@ export default function HomePage() {
           <Link href="/register" className="mt-5 inline-flex items-center rounded-full bg-white px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-ink">
             Join Buddy →
           </Link>
-          <div className="mt-8 grid grid-cols-3 gap-4 border-t border-white/15 pt-5">
+          <div className="mt-16 grid grid-cols-3 gap-4 border-t border-white/15 pt-5 md:mt-[5.4rem]">
             <div>
               <p className="bb-figure text-4xl text-white">{events}</p>
               <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">Total events</p>
