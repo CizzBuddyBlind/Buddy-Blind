@@ -18,23 +18,26 @@ import {
   tierFromPoints,
 } from "@/lib/bible";
 
-export function HostBadge({ handle = "?", tier = "bronze", size = "host" }) {
+export function HostBadge({ handle = "?", tier = "", size = "host" }) {
   const bb = useBB();
   const mine = bb.session?.handle && bb.session.handle === handle;
-  const shown = mine ? tierFromPoints(bb.session.points || 0, bb.content?.pointThresholds) : tier || "bronze";
+  const points = mine ? Number(bb.session.points) || 0 : null;
+  const shown = mine
+    ? (points > 0 ? tierFromPoints(points, bb.content?.pointThresholds) : "plain")
+    : (tier || "plain");
   const letter = String(handle || "?").slice(0, 1).toUpperCase();
-  const metal = shown === "gold" ? "bg-amber-300 text-ink" : shown === "silver" ? "bg-zinc-200 text-ink" : "bg-amber-700 text-white";
-  const label = shown === "gold" ? "Gold" : shown === "silver" ? "Silver" : "Bronze";
+  const metal = shown === "gold"
+    ? "bg-[#E6C15A] text-[#1a1408]"
+    : shown === "silver"
+      ? "bg-[#E4E7EC] text-[#1a1408]"
+      : shown === "bronze"
+        ? "bg-[#C68642] text-[#1a1208]"
+        : "bg-neutral-800 text-amber-100";
   const box = size === "joiner" ? "h-4 w-4 text-[8px]" : size === "feature" ? "h-9 w-9 text-sm" : "h-5 w-5 text-[10px]";
-  const pip = size === "joiner" ? "-top-1 px-0.5 text-[6px]" : size === "feature" ? "-top-1 px-1 text-[8px]" : "-top-1.5 px-0.5 text-[7px]";
+  const label = shown === "gold" ? "Gold" : shown === "silver" ? "Silver" : shown === "bronze" ? "Bronze" : "No points yet";
   return (
-    <span className={`relative inline-grid shrink-0 place-items-center ${size === "feature" ? "h-10 w-9" : size === "joiner" ? "h-5 w-4" : "h-6 w-5"}`} title={`${handle} · ${label}`}>
-      <span className={`absolute left-1/2 z-10 -translate-x-1/2 rounded-full font-bold uppercase leading-none ${pip} ${metal}`}>
-        {label.slice(0, 1)}
-      </span>
-      <span className={`grid place-items-center rounded-full bg-neutral-800 font-serif text-amber-100 ring-1 ring-white/30 ${box}`}>
-        {letter}
-      </span>
+    <span className={`grid shrink-0 place-items-center rounded-full font-serif font-semibold ring-1 ring-black/20 ${box} ${metal}`} title={`${handle} · ${label}`}>
+      {letter}
     </span>
   );
 }
