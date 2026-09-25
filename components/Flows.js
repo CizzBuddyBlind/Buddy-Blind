@@ -21,19 +21,13 @@ import {
 export function HostBadge({ handle = "?", tier = "", size = "host" }) {
   const bb = useBB();
   const mine = bb.session?.handle && bb.session.handle === handle;
-  const shown = mine ? badgePaint(bb.session?.points, bb.content?.pointThresholds) : null;
+  const paint = mine
+    ? badgePaint(bb.session?.points, bb.content?.pointThresholds, "dark")
+    : badgePaint(tier === "gold" ? 500 : tier === "silver" ? 300 : tier === "bronze" ? 1 : 0, null, "dark");
   const letter = String(handle || "?").slice(0, 1).toUpperCase();
-  const paint = shown?.style || (tier === "gold"
-    ? { backgroundColor: "#E6C15A", color: "#1a1408" }
-    : tier === "silver"
-      ? { backgroundColor: "#E4E7EC", color: "#1a1408" }
-      : tier === "bronze"
-        ? { backgroundColor: "#C68642", color: "#1a1208" }
-        : { backgroundColor: "#262626", color: "#f6e7c1" });
   const box = size === "joiner" ? "h-4 w-4 text-[8px]" : size === "feature" ? "h-9 w-9 text-sm" : "h-5 w-5 text-[10px]";
-  const label = shown?.tier && shown.tier !== "plain" ? shown.tier : tier || "plain";
   return (
-    <span className={`grid shrink-0 place-items-center rounded-full font-serif font-semibold ${box}`} style={paint} title={`${handle} · ${label}`}>
+    <span className={`grid shrink-0 place-items-center rounded-full font-serif font-semibold ${box} ${paint.className}`} title={`${handle} · ${paint.tier}`}>
       {letter}
     </span>
   );

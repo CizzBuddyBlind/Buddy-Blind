@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
-import { JoinWizard, LangSwitch, OpenTableWizard, PrivateWizard, TodayPopup, TrialGate } from "./Flows";
+import { JoinWizard, OpenTableWizard, PrivateWizard, TodayPopup, TrialGate } from "./Flows";
 import { RestaurantAdmin } from "./RestaurantAdmin";
 import { iso, badgePaint } from "@/lib/bible";
 
@@ -19,8 +19,8 @@ const TOP = [
 ];
 
 function accountStyle(session, thresholds) {
-  if (!session) return { backgroundColor: "#ffffff", color: "#111111" };
-  return badgePaint(session.points, thresholds, "dark").style;
+  if (!session) return "bg-white text-black";
+  return badgePaint(session.points, thresholds, "dark").className;
 }
 
 function initials(session) {
@@ -190,8 +190,7 @@ export function Shell({ children }) {
                   type="button"
                   aria-label="Account"
                   onClick={() => { setMenu((v) => !v); setNotesOpen(false); }}
-                  className="relative z-40 grid h-9 w-9 place-items-center rounded-full text-sm font-semibold"
-                  style={accountStyle(bb.session, bb.content?.pointThresholds)}
+                  className={`relative z-40 grid h-9 w-9 place-items-center rounded-full text-sm font-semibold ${accountStyle(bb.session, bb.content?.pointThresholds)}`}
                 >
                   {mark || (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -237,9 +236,6 @@ export function Shell({ children }) {
                         <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ember">{mark}</div>
                       </div>
                     )}
-                    <div className="border-b border-black/10 px-3 py-2">
-                      <LangSwitch light />
-                    </div>
                     {bb.session ? (
                       <button
                         type="button"

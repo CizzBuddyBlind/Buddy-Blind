@@ -175,7 +175,9 @@ export function BuddyProvider({ children }) {
       const ses = read(SES, null);
       if (ses?.email) {
         const pointsMap = read(POINTS, {});
-        if (pointsMap[ses.email] != null) ses.points = pointsMap[ses.email];
+        const mapped = Number(pointsMap[ses.email]);
+        const seeded = SEED_ACCOUNTS.find((account) => account.email === ses.email)?.points || 0;
+        ses.points = Math.max(Number(ses.points) || 0, Number.isFinite(mapped) ? mapped : 0, Number(seeded) || 0);
       }
       setSession(ses);
       setUsers(read(USERS, []));
@@ -410,7 +412,7 @@ export function BuddyProvider({ children }) {
         username: found.username,
         role: found.role,
         handle: extra.handle || found.handle,
-        points: pointsMap[found.email] ?? found.points,
+        points: Math.max(Number(found.points) || 0, Number(pointsMap[found.email]) || 0),
         neighborhood: extra.neighborhood || found.neighborhood,
         ageRange: extra.ageRange || found.ageRange,
         occupation: extra.occupation || found.occupation,
@@ -560,9 +562,9 @@ export function BuddyProvider({ children }) {
         if (!saved.ok && saved.error) notify(saved.error);
       }
       const gain = mode === "invite" ? 2 : mode === "create" ? 5 : 1;
-      const points = (session.points || 0) + gain;
-      const booking = { id, name: item.name, kind, mode, at: Date.now() };
       const pointsMap = read(POINTS, {});
+      const points = Math.max(Number(session.points) || 0, Number(pointsMap[session.email]) || 0) + gain;
+      const booking = { id, name: item.name, kind, mode, at: Date.now() };
       pointsMap[session.email] = points;
       write(POINTS, pointsMap);
       const books = read(BOOKS, {});
@@ -628,8 +630,8 @@ export function BuddyProvider({ children }) {
         const saved = await pushLive(base);
         if (!saved.ok && saved.error) notify(saved.error);
       }
-      const points = (session.points || 0) + pointsGain;
       const pointsMap = read(POINTS, {});
+      const points = Math.max(Number(session.points) || 0, Number(pointsMap[session.email]) || 0) + pointsGain;
       pointsMap[session.email] = points;
       write(POINTS, pointsMap);
       const books = read(BOOKS, {});
@@ -905,9 +907,10 @@ export function BuddyProvider({ children }) {
 
   const grantPoints = (mode) => {
     const gain = mode === "invite" ? 2 : mode === "create" ? 5 : 1;
-    const points = (session?.points || 0) + gain;
     const pointsMap = read(POINTS, {});
     const book = pointsMap && typeof pointsMap === "object" ? pointsMap : {};
+    const current = Math.max(Number(session?.points) || 0, Number(book[session?.email]) || 0);
+    const points = current + gain;
     if (session?.email) book[session.email] = points;
     write(POINTS, book);
     return points;
