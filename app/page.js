@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { DoneShare, PayDialog, rememberReturn } from "@/components/Flows";
+import { DoneShare, HostBadge, PayDialog, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { bookingHold, iso, tableStart } from "@/lib/bible";
 
@@ -30,6 +30,12 @@ function upcoming(content) {
         about: venue.about || "",
         time: table.time || venue.timeLabel || "",
         spots: hold.places,
+        dateISO: table.dateISO,
+        host: table.hostHandle,
+        tier: table.hostTier,
+        seats: hold.original || table.capacity,
+        reason: table.tableType === "blind-date" ? "blind date" : venue.cuisine || "dinner",
+        hostAbout: venue.about || "",
         href: `/venues/${venue.id}`,
       });
     });
@@ -53,11 +59,25 @@ function upcoming(content) {
       about: event.description || event.forWhom || "",
       time: event.timeLabel || "",
       spots: Number.isFinite(spots) ? spots : null,
+      dateISO: event.dateISO || "",
+      host: event.hostName || event.hostHandle || "",
+      tier: event.hostTier || "bronze",
+      seats: event.capacity || event.spots,
+      reason: event.typeLabel || event.forWhom || event.name,
+      hostAbout: event.aboutHost || event.description || "",
       href: `/private/${event.id}`,
     });
   });
   rows.sort((a, b) => b.joined - a.joined || a.when - b.when);
   return rows;
+}
+
+function exactDate(isoDate) {
+  if (!isoDate) return "";
+  const d = new Date(`${isoDate}T12:00:00`);
+  const wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
+  const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"][d.getMonth()];
+  return `${wd}, ${d.getDate()} ${mon}`;
 }
 
 export default function HomePage() {
@@ -107,11 +127,10 @@ export default function HomePage() {
           <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/50">
             Hong Kong · Tonight · {rows.length} blind boxes / {hosts} hosts / {scenes} scenes
           </p>
-          <h1 className="mt-8 font-serif text-[2.7rem] leading-[0.95] text-white sm:text-6xl lg:text-7xl">
-            You don't know
-            <br />
-            who <span className="italic">you'll meet.</span>
-            <span className="mt-3 block italic text-ember">That's the point.</span>
+          <h1 className="mt-8 font-serif text-[2rem] leading-[1.12] text-white sm:text-[2.35rem]">
+            <span className="block">You don't know</span>
+            <span className="block italic">who you'll meet.</span>
+            <span className="block italic text-ember">That's the point.</span>
           </h1>
           <p className="mt-6 max-w-md text-sm leading-relaxed text-white/70">
             Restaurants provide the scene. Private events create the reason.
@@ -145,7 +164,7 @@ export default function HomePage() {
           {featured ? (
             <article className="overflow-hidden rounded-[28px] border border-white/10 bg-[#121212]">
               <Link href={featured.href} className="relative block">
-                <img src={featured.image} alt="" className="aspect-[4/5] w-full object-cover" />
+                <img src={featured.image} alt="" className="aspect-[16/9] w-full object-cover" />
                 <div className="absolute left-4 top-4 flex flex-wrap gap-2">
                   <span className="rounded-full bg-black/70 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-white">
                     {[featured.area, featured.time].filter(Boolean).join(" · ")}
@@ -157,10 +176,20 @@ export default function HomePage() {
                   )}
                 </div>
               </Link>
-              <div className="px-5 pb-5 pt-4">
+              <div className="px-5 pb-6 pt-5">
                 <h2 className="font-serif text-3xl text-white">{featured.name}</h2>
-                {featured.meta && <p className="mt-2 text-[0.68rem] uppercase tracking-[0.12em] text-white/45">{featured.meta}</p>}
-                {featured.about && <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-white/70">{featured.about}</p>}
+                <p className="mt-2 text-sm text-white/70">
+                  {[exactDate(featured.dateISO), featured.time].filter(Boolean).join(" · ")}
+                </p>
+                <p className="mt-4 text-sm uppercase leading-relaxed tracking-[0.04em] text-white/80">
+                  Join a {featured.reason} and meet new friends — no pitches, just presence.
+                </p>
+                <div className="mt-4 flex items-start gap-3">
+                  <HostBadge handle={featured.host || "?"} tier={featured.tier} />
+                  <p className="text-sm leading-relaxed text-white/70">
+                    Hi, come join us.{featured.seats ? ` A ${featured.seats}-seat table.` : ""} {featured.hostAbout}
+                  </p>
+                </div>
                 <button type="button" onClick={joinFeatured} className="mt-5 w-full rounded-full bg-white py-3 text-xs font-semibold uppercase tracking-[0.16em] text-ink">
                   Join
                 </button>

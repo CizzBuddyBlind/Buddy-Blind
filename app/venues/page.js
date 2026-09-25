@@ -8,7 +8,7 @@ import { Copy, Editable, Photo } from "@/components/Bits";
 import { HostBadge } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
-import { CUISINES, iso, prettyDate, queryHits, soonestTable, tablePrefs } from "@/lib/bible";
+import { CUISINES, iso, queryHits, soonestTable, tablePrefs } from "@/lib/bible";
 
 const FILTERS = [
   { id: "all", key: "filter.all" },
@@ -181,18 +181,19 @@ function Home() {
                   <p className="mt-1 text-[0.8rem] text-mute">{venue.priceTier} · {venue.hours}</p>
                   {venue.petFriendly && <p className="mt-1 text-[0.72rem] uppercase tracking-[0.12em] text-ember">{t("venue.pet")}</p>}
                   {preview ? (
-                    <div className="mb-3 mt-auto flex min-h-[7.6rem] flex-col rounded-xl bg-white/5 px-3 py-2 pt-3 text-[0.75rem]">
-                      <div className="flex items-center gap-2">
-                        <HostBadge handle={preview.table.hostHandle} tier={preview.table.hostTier} />
-                        <span>{preview.table.hostHandle} {t("host.line")}</span>
+                    <div className="mb-2 mt-3 flex items-start gap-2 text-[0.75rem]">
+                      <HostBadge handle={preview.table.hostHandle} tier={preview.table.hostTier} />
+                      <div className="min-w-0">
+                        <p className="text-mute">{(() => {
+                          const d = new Date(`${preview.table.dateISO}T12:00:00`);
+                          const wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
+                          const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"][d.getMonth()];
+                          return `${wd}, ${d.getDate()} ${mon}`;
+                        })()} • {preview.table.time} • {preview.hold.joined} people • {preview.hold.places} left</p>
+                        <p className="text-mute">{preview.table.tableType === "blind-date" ? "Blind date" : "Meet friends"}{more > 0 ? " + More" : ""}</p>
                       </div>
-                      <p className="mt-2 text-mute">{prettyDate(preview.table.dateISO, lang)} · {preview.table.time} · {preview.hold.held} people · {preview.hold.places} left</p>
-                      <p className="text-mute">{tablePrefs(preview.table)}</p>
-                      <p className={`mt-auto pt-1 ${more > 0 ? "text-ember" : "invisible"}`}>+ {t("moreEvents")}</p>
                     </div>
-                  ) : (
-                    <div className="mb-3 mt-auto min-h-[7.6rem]" />
-                  )}
+                  ) : null}
                 </div>
               </Link>
               <div className="mt-auto flex gap-2.5 px-4 pb-[18px] pt-2">
