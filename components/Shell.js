@@ -14,7 +14,7 @@ const TOP = [
   { href: "/quick", label: "Quick" },
   { href: "/private", label: "Private" },
   { href: "/how", label: "How" },
-  { href: "/subscribe", label: "Premium" },
+  { href: "/subscribe", label: "Plan" },
   { href: "/profile", label: "Profile" },
 ];
 

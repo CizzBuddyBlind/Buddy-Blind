@@ -180,11 +180,14 @@ export default function SubscribePage() {
   return (
     <main className="bb-frame mx-auto flex min-h-[calc(100dvh-4rem)] flex-col pb-28 pt-10 md:pb-0">
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
-        <h1 className="font-serif leading-[1.05]">
-          <span className="block text-base text-white/85 sm:text-lg">Host the vibe you care about — or join one. Guests stay blind.</span>
-          <span className="mt-6 block text-4xl text-ember sm:text-5xl md:text-6xl">Your reason. <span className="italic">New people.</span></span>
+        <p className="bb-kicker text-white/55">Subscription</p>
+        <h1 className="mt-5 font-serif text-4xl leading-[1.05] text-ember sm:text-5xl md:text-6xl">
+          Your reason. <span className="italic">New people.</span>
         </h1>
-        <p className="mt-8 max-w-xl text-sm leading-relaxed text-mute">
+        <p className="mt-6 max-w-xl text-sm leading-relaxed text-mute">
+          Host the vibe you care about — or join one. Guests stay blind.
+        </p>
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-mute">
           Wine, work, a hike. Or whatever you care about.
         </p>
 

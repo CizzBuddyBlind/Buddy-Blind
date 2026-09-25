@@ -53,8 +53,9 @@ export default function HowPage() {
   return (
     <main className="bb-frame bg-ink pb-28 pt-10 text-fg md:pb-20">
       <div className="mx-auto w-full max-w-5xl">
-      <h1 className="max-w-4xl font-serif text-[3.4rem] leading-[0.95] text-white sm:text-6xl md:text-7xl">
-        How it works
+      <p className="bb-kicker text-white/55">How it works</p>
+      <h1 className="mt-5 max-w-4xl font-serif text-[3.4rem] leading-[0.95] text-white sm:text-6xl md:text-7xl">
+        See venue, see vibe
         <br />
         <span className="italic text-ember">Take a seat.</span>
       </h1>
