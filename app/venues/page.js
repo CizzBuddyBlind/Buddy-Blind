@@ -190,7 +190,22 @@ function Home() {
                           const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"][d.getMonth()];
                           return `${wd}, ${d.getDate()} ${mon}`;
                         })()} • {preview.table.time} • {preview.hold.joined} people • {preview.hold.places} left</p>
-                        <p className="text-mute">{preview.table.tableType === "blind-date" ? "Blind date" : "Meet friends"}{more > 0 ? " + More" : ""}</p>
+                        <p className="mt-1 flex items-center gap-2 text-mute">
+                          <span>{preview.table.tableType === "blind-date" ? "Blind date" : "Meet friends"}{more > 0 ? " + More" : ""}</span>
+                          {(() => {
+                            const host = preview.table.hostHandle;
+                            const joiners = (preview.table.participants || []).filter((p) => p && p.handle && p.handle !== host && p.role !== "host");
+                            if (!joiners.length) return null;
+                            return (
+                              <span className="ml-auto flex items-center">
+                                {joiners.slice(0, 3).map((person) => (
+                                  <span key={person.handle} className="-ml-1 first:ml-0"><HostBadge handle={person.handle} tier={person.tier || "bronze"} /></span>
+                                ))}
+                                {joiners.length > 3 && <span className="ml-1 text-xs text-ember">+</span>}
+                              </span>
+                            );
+                          })()}
+                        </p>
                       </div>
                     </div>
                   ) : null}

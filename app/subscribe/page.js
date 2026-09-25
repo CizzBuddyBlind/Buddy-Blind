@@ -182,9 +182,9 @@ export default function SubscribePage() {
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
         <h1 className="font-serif leading-[1.05]">
           <span className="block text-base text-white/85 sm:text-lg">Host the vibe you care about — or join one. Guests stay blind.</span>
-          <span className="mt-3 block text-4xl text-ember sm:text-5xl md:text-6xl">Your reason. New people.</span>
+          <span className="mt-6 block text-4xl text-ember sm:text-5xl md:text-6xl">Your reason. <span className="italic">New people.</span></span>
         </h1>
-        <p className="mt-4 max-w-xl text-sm leading-relaxed text-mute">
+        <p className="mt-8 max-w-xl text-sm leading-relaxed text-mute">
           Wine, work, a hike. Or whatever you care about.
         </p>
 

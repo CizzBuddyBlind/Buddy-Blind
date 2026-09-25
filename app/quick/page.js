@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Editable, Photo } from "@/components/Bits";
-import { PayDialog } from "@/components/Flows";
+import { HostBadge, PayDialog } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { queryHits } from "@/lib/bible";
 
@@ -129,8 +129,11 @@ export default function QuickPage() {
               <Photo src={row.imageUrl} alt={row.name} onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === row.id); if (item) item.imageUrl = imageUrl; })} />
             </div>
             <div className="min-w-0 flex-1 text-left">
-              <div className="font-medium">
-                <Editable locked={row.locked} value={placeInfo.name} onChange={(name) => update((d) => { const item = d.events.find((x) => x.id === row.id); if (item) item.name = name; })} />
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 font-medium">
+                  <Editable locked={row.locked} value={placeInfo.name} onChange={(name) => update((d) => { const item = d.events.find((x) => x.id === row.id); if (item) item.name = name; })} />
+                </div>
+                <HostBadge handle={row.hostName || "CJ"} tier={row.hostTier || "gold"} />
               </div>
               <div className="text-xs text-mute">{placeInfo.address}</div>
               <div className="text-xs text-mute">{placeInfo.cuisine}</div>
