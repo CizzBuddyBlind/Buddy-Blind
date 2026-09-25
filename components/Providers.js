@@ -1087,6 +1087,7 @@ export function BuddyProvider({ children }) {
       typeLabel: input.forWhom || input.orientation || "Private",
       hostLabel: `Blind with ${session.handle}`,
       hostName: session.handle,
+      hostTier: tierFromPoints(session.points || 0, src.pointThresholds),
       upcomingLabel: `${capacity - 1} places`,
       spots: capacity - 1,
       joined: 1,

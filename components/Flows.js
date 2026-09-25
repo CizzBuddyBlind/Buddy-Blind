@@ -15,12 +15,16 @@ import {
   pingWindow,
   queryHits,
   tablePrefs,
+  tierFromPoints,
 } from "@/lib/bible";
 
 export function HostBadge({ handle = "?", tier = "bronze" }) {
+  const bb = useBB();
+  const mine = bb.session?.handle && bb.session.handle === handle;
+  const shown = mine ? tierFromPoints(bb.session.points || 0, bb.content?.pointThresholds) : tier || "bronze";
   const letter = String(handle || "?").slice(0, 1).toUpperCase();
-  const metal = tier === "gold" ? "bg-amber-300 text-ink" : tier === "silver" ? "bg-zinc-200 text-ink" : "bg-amber-700 text-white";
-  const label = tier === "gold" ? "Gold" : tier === "silver" ? "Silver" : "Bronze";
+  const metal = shown === "gold" ? "bg-amber-300 text-ink" : shown === "silver" ? "bg-zinc-200 text-ink" : "bg-amber-700 text-white";
+  const label = shown === "gold" ? "Gold" : shown === "silver" ? "Silver" : "Bronze";
   return (
     <span className="relative inline-grid h-9 w-9 shrink-0 place-items-center" title={label}>
       <span className={`absolute -top-1 left-1/2 z-10 -translate-x-1/2 rounded-full px-1 text-[8px] font-bold uppercase leading-3 ${metal}`}>

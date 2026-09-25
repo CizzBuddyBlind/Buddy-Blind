@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useBB, peopleYouCanRate } from "@/components/Providers";
-import { AGE_RANGES } from "@/lib/bible";
+import { AGE_RANGES, tierFromPoints } from "@/lib/bible";
 import { JoinedEvents } from "@/components/PhoneApp";
 
 function historyOf(session, content) {
@@ -96,14 +96,23 @@ export default function ProfilePage() {
     setPage(0);
   }
 
+  const tier = tierFromPoints(session.points || 0, bb.content.pointThresholds);
+  const tierClass = tier === "gold" ? "bg-amber-300 text-ink" : tier === "silver" ? "bg-zinc-200 text-ink" : "bg-amber-700 text-white";
+
   return (
     <main className="bb-frame min-h-[100dvh] bg-ink pb-28 md:pb-8">
       <div className="grid items-start gap-8 md:block">
         <section className="flex flex-col overflow-y-auto rounded-[28px] bg-[#141414] px-6 py-8 text-[#f5f5f5] ring-1 ring-white/10 md:fixed md:left-[15.28vw] md:top-[18.44vh] md:h-[71.75vh] md:w-[30.76vw] md:px-8">
-          <div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-[#f5f5f5] font-serif text-4xl text-[#0a0a0a]">{initial}</div>
+          <div className="relative mx-auto h-24 w-24">
+            <div className="grid h-24 w-24 place-items-center rounded-full bg-[#f5f5f5] font-serif text-4xl text-[#0a0a0a]">{initial}</div>
+            <span className={`absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${tierClass}`}>
+              {tier}
+            </span>
+          </div>
           <h1 className="mt-4 text-center text-3xl font-bold tracking-tight">{session.handle}</h1>
           {form.showIdentity && who && <p className="mt-2 text-center text-sm text-white/45">{who}</p>}
           {form.showPlace && where && <p className="text-center text-sm text-white/45">{where}</p>}
+          <p className="mt-1 text-center text-sm text-white/70">{session.points || 0} points</p>
           <div className="mt-6 grid grid-cols-3 gap-3">
             {[
               ["info", String(stats.joined + stats.invited + stats.quick + stats.privJoin + stats.privHost).padStart(2, "0"), "Info"],

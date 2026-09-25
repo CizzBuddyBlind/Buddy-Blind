@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Editable, Photo, fileToCover } from "@/components/Bits";
-import { DoneShare, PayDialog, ShareSheet, rememberReturn } from "@/components/Flows";
+import { DoneShare, HostBadge, PayDialog, ShareSheet, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { privateEditOpen, privateLockDate } from "@/lib/bible";
 import { getMedia } from "@/lib/media";
@@ -49,7 +49,6 @@ export default function PrivateDetailPage() {
   ];
   const slide = slides[shot] || slides[0];
   const host = event.hostProfile || { handle: event.hostName || "Host" };
-  const initial = String(host.handle || "H").trim().slice(0, 1).toUpperCase();
   const buddyLabel = Number(host.buddies) >= 15 ? "15+" : host.buddies != null ? String(host.buddies) : "";
   const full = (event.spots || 0) <= 0;
   const hostHandle = event.hostName || event.hostProfile?.handle || "";
@@ -215,7 +214,7 @@ export default function PrivateDetailPage() {
           <Editable as="p" className="mt-6 text-base leading-relaxed" value={event.description || ""} onChange={(description) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.description = description; })} />
           <div className="mt-8 border-t border-black/10 pt-6">
             <div className="flex items-center gap-3">
-              <div className="grid h-14 w-14 place-items-center rounded-full bg-char font-serif text-xl text-paper">{initial}</div>
+              <HostBadge handle={host.handle} tier={event.hostTier || "bronze"} />
               <div>
                 <p className="font-serif text-xl">{host.handle}</p>
                 <p className="text-xs uppercase tracking-[0.14em] text-mute">Host</p>
