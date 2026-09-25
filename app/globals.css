@@ -197,3 +197,15 @@ h1 *, h2 *, h3 *,
 .bb-word, .bb-figure {
   font-family: var(--font-playfair), Georgia, "PMingLiU", "Songti SC", serif;
 }
+.bb-home-hero {
+  container-type: inline-size;
+}
+.bb-home-hero h1 {
+  line-height: 0.92;
+}
+.bb-home-hero h1 span {
+  display: block;
+  white-space: nowrap;
+  font-size: 14.6cqi;
+  letter-spacing: -0.03em;
+}

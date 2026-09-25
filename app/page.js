@@ -117,14 +117,14 @@ export default function HomePage() {
   return (
     <main className="bb-frame pb-28 pt-6 md:pb-16 md:pt-8">
       <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
-        <section className="@container lg:sticky lg:top-16 lg:flex lg:h-[calc(100dvh-4rem)] lg:flex-col lg:justify-center">
+        <section className="bb-home-hero lg:sticky lg:top-16 lg:flex lg:h-[calc(100dvh-4rem)] lg:flex-col lg:justify-center">
           <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/50">
             Hong Kong · Tonight · {rows.length} blind boxes / {hosts} hosts / {scenes} scenes
           </p>
-          <h1 className="mt-5 font-serif leading-[1.08] text-white">
-            <span className="block whitespace-nowrap text-[12cqi]">You don't know</span>
-            <span className="block whitespace-nowrap text-[12cqi] italic">who you'll meet.</span>
-            <span className="block whitespace-nowrap text-[12cqi] italic text-ember">That's the point.</span>
+          <h1 className="mt-5 font-serif text-white">
+            <span>You don't know</span>
+            <span className="italic">who you'll meet.</span>
+            <span className="italic text-ember">That's the point.</span>
           </h1>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-white/70">
             Restaurants provide the scene. Private events create the reason.
