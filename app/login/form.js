@@ -37,7 +37,8 @@ export default function LoginForm() {
       setError(message);
       return;
     }
-    let next = "/";
+    const fromApp = params.get("from") === "app";
+    let next = fromApp ? "/m?tab=profile" : "/";
     try {
       const stored = sessionStorage.getItem("bb_next") || "";
       sessionStorage.removeItem("bb_next");

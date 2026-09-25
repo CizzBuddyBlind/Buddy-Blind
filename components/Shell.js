@@ -96,6 +96,11 @@ export function Shell({ children }) {
   const selectedKind = bb.content.venues.some((v) => v.id === bb.selectedId) ? "venue" : "event";
   const flowVenue = bb.content.venues.find((v) => v.id === bb.flow?.venueId);
 
+  const [appFlow, setAppFlow] = useState(false);
+  useEffect(() => {
+    const from = new URLSearchParams(window.location.search).get("from");
+    setAppFlow(from === "app" && (path === "/login" || path === "/register"));
+  }, [path]);
   useEffect(() => {
     if (!bb.ready || path !== "/" || !trialLive || bb.editing || bb.flow) return;
     const key = `bb_today_${iso(0)}`;
@@ -124,6 +129,15 @@ export function Shell({ children }) {
         {bb.flow?.type === "private-create" && (
           <PrivateWizard venueId={bb.flow.venueId || ""} onClose={() => bb.setFlow(null)} />
         )}
+      </div>
+    );
+  }
+
+  if (appFlow) {
+    return (
+      <div className="min-h-dvh bg-ink text-fg">
+        <a href="/m?tab=profile" className="bb-word block px-5 pt-[max(1.25rem,env(safe-area-inset-top))] text-sm tracking-[0.16em]">BUDDY BLIND</a>
+        {children}
       </div>
     );
   }

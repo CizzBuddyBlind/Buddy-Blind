@@ -57,6 +57,21 @@ function upcoming(content) {
   return rows;
 }
 
+function Joiners({ people, host }) {
+  const list = (people || []).filter((person) => person?.handle && person.handle !== host && person.role !== "host");
+  if (!list.length) return null;
+  return (
+    <span className="inline-flex items-center">
+      {list.slice(0, 3).map((person) => (
+        <span key={person.handle} className="-ml-1 first:ml-0">
+          <HostBadge handle={person.handle} tier={person.tier || "bronze"} size="joiner" />
+        </span>
+      ))}
+      {list.length > 3 && <span className="ml-1 text-[10px]">+</span>}
+    </span>
+  );
+}
+
 function Icon({ tab }) {
   const common = { width: 20, height: 20, viewBox: "0 0 24 24", "aria-hidden": true };
   if (tab === "venues") return <svg {...common} fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="6" y="6" width="12" height="12" rx="2.5" /></svg>;
@@ -82,6 +97,11 @@ export function StoreApp() {
   const unread = (bb.social?.notes || []).filter((n) => !n.read).length;
 
   useEffect(() => {
+    const next = new URLSearchParams(window.location.search).get("tab");
+    if (next) setTab(next);
+  }, []);
+
+  useEffect(() => {
     if (bb.session?.role === "admin" || bb.session?.role === "founder") {
       bb.logout();
       bb.notify("Admin login stays on the website.");
@@ -101,10 +121,22 @@ export function StoreApp() {
   return (
     <div className={`bb-store ${light && !venueId && !eventId ? "bg-paper text-char" : "bg-ink text-fg"}`}>
       <header className="z-20 flex shrink-0 items-center justify-between bg-[#f4f1ea] px-[4.5vw] py-3 text-char">
-        <button type="button" className="font-serif text-[clamp(0.95rem,3.8vw,1.15rem)] uppercase tracking-[0.22em]" onClick={() => go("home")}>
-          Buddy Blind
+        <button type="button" onClick={() => go("home")}>
+          <span className="bb-word text-[0.95rem] tracking-[0.16em]">BUDDY BLIND</span>
         </button>
         <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            aria-label="Language"
+            onClick={() => {
+              const order = ["en", "zh-HK", "zh"];
+              const index = order.indexOf(bb.lang);
+              bb.setLang(order[(index + 1) % order.length] || "en");
+            }}
+            className="grid h-9 min-w-9 place-items-center rounded-full border border-black/20 px-2 text-xs font-semibold"
+          >
+            {bb.lang === "zh-HK" ? "繁" : bb.lang === "zh" ? "简" : "EN"}
+          </button>
           <button type="button" className="grid h-9 w-9 place-items-center rounded-full bg-black text-sm font-semibold text-white" onClick={() => { setNotes((v) => !v); setMenu(false); }}>
             {unread || 0}
           </button>
@@ -151,7 +183,7 @@ export function StoreApp() {
         {!venueId && !eventId && tab === "quick" && <Quick onOpen={setVenueId} />}
         {!venueId && !eventId && tab === "how" && <How />}
         {!venueId && !eventId && tab === "private" && <Private onOpen={setEventId} />}
-        {!venueId && !eventId && tab === "profile" && <Profile onOpenVenue={setVenueId} onOpenEvent={setEventId} />}
+        {!venueId && !eventId && tab === "profile" && <Profile onLogin={() => setAuth(true)} onOpenVenue={setVenueId} onOpenEvent={setEventId} />}
       </div>
 
       <nav
@@ -190,15 +222,19 @@ export function StoreApp() {
             e.preventDefault();
             const fail = bb.login(id, password);
             if (fail) setError(fail);
-            else { setAuth(false); setError(""); setPassword(""); }
+            else { setAuth(false); setError(""); setPassword(""); go("profile"); }
           }}
         >
-          <p className="font-serif text-2xl">Log in</p>
+          <h2 className="font-serif text-2xl">Log in</h2>
           <input value={id} onChange={(e) => setId(e.target.value)} placeholder="Email or username" className="mt-4 w-full rounded-xl border border-black/10 px-3 py-3 text-base" />
           <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" className="mt-2 w-full rounded-xl border border-black/10 px-3 py-3 text-base" />
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
           <button type="submit" className="mt-4 w-full rounded-full bg-black py-3 text-sm font-semibold text-white">Log in</button>
-          <a href="/register" className="mt-3 block text-center text-sm">Create an account</a>
+          <a
+            href="/register?from=app"
+            className="mt-3 block text-center text-sm"
+            onClick={() => { try { sessionStorage.setItem("bb_next", "/m?tab=profile"); } catch { /* ignore */ } }}
+          >Create an account</a>
         </form>
       )}
     </div>
@@ -254,6 +290,10 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
           </button>
           <div className="px-4 py-4">
             <h2 className="font-serif text-[clamp(1.6rem,7vw,2rem)] leading-none">{featured.name}</h2>
+            <div className="mt-3 flex items-center gap-2">
+              <HostBadge handle={featured.host || "C"} tier={featured.tier || "bronze"} />
+              <Joiners people={featured.kind === "table" ? featured.table.participants : featured.event.participants} host={featured.host} />
+            </div>
             <p className="mt-3 text-sm leading-relaxed text-white/70">
               {featured.kind === "private" ? (featured.event.description || featured.event.forWhom) : featured.venue.about}
             </p>
@@ -334,9 +374,15 @@ function Venues({ onOpen }) {
                 <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-white">{venue.spots || next?.hold.places || 0} spots</span>
                 <span className="absolute bottom-2 left-2 rounded-full bg-white px-2.5 py-1 text-[9px] font-semibold uppercase text-black">{next?.table.time || venue.timeLabel}</span>
               </div>
-              <p className="mt-2 font-serif text-[clamp(1rem,4.2vw,1.2rem)] leading-tight">{venue.name}</p>
+              <h2 className="mt-2 font-serif text-[clamp(1rem,4.2vw,1.2rem)] leading-tight">{venue.name}</h2>
               <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-white/55">{venue.typeLabel}</p>
               <p className="text-[11px] text-white/50">{venue.locationLabel}</p>
+              {next && (
+                <span className="mt-2 flex items-center gap-1.5">
+                  <HostBadge handle={next.table.hostHandle || "C"} tier={next.table.hostTier || "bronze"} />
+                  <Joiners people={next.table.participants} host={next.table.hostHandle} />
+                </span>
+              )}
               <p className="text-[11px] text-white/45">{venue.priceLabel}</p>
             </button>
           );
@@ -467,8 +513,25 @@ function How() {
               </span>
             </div>
             <div className={`pb-6 ${index ? "border-t border-white/10 pt-5" : ""}`}>
-              <p className="font-serif text-[clamp(1.15rem,5vw,1.35rem)]"><span className="mr-2 text-sm text-ember">{n}</span>{title}</p>
+              <h2 className="font-serif text-[1.35rem] leading-tight text-white"><span className="mr-2 text-sm not-italic text-ember">{n}</span>{title}</h2>
               <p className="mt-2 text-sm leading-relaxed text-white/55">{body}</p>
+              {n === "08" && (
+                <div className="mt-4 flex flex-wrap gap-4">
+                  {[
+                    ["B", "Bronze", "100 points", "5%", "bb-metal-bronze"],
+                    ["S", "Silver", "300 points", "10%", "bb-metal-silver"],
+                    ["G", "Gold", "500 points", "20%", "bb-metal-gold"],
+                  ].map(([letter, name, points, note, circle]) => (
+                    <div key={letter} className="flex items-center gap-2">
+                      <span className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg font-semibold ring-1 ring-black/15 ${circle}`}>{letter}</span>
+                      <span>
+                        <span className="block text-sm text-white">{name}</span>
+                        <span className="block text-xs text-white/45">{points} · {note}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </li>
         ))}
@@ -515,10 +578,13 @@ function Private({ onOpen }) {
               <Photo src={eventPhotos(night)[0] || ""} fallback={eventPoster(night)} alt="" />
             </div>
             <div className="px-3 py-3">
-              <p className="font-serif text-[clamp(1rem,4vw,1.15rem)] leading-tight">{night.name}</p>
+              <h2 className="font-serif text-[clamp(1rem,4vw,1.15rem)] leading-tight">{night.name}</h2>
               <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-black/45">{night.typeLabel}</p>
               <p className="mt-1 text-xs text-black/55">{night.upcomingLabel || `${night.spots} places`}</p>
-              <p className="mt-2 text-xs text-ember">{night.hostLabel || night.hostName}</p>
+              <span className="mt-2 flex items-center gap-1.5">
+                <HostBadge handle={night.hostName || "Host"} tier={night.hostTier || "bronze"} />
+                <Joiners people={night.participants} host={night.hostName} />
+              </span>
             </div>
           </button>
         ))}
@@ -559,7 +625,7 @@ function PrivateDetail({ id, onBack }) {
   );
 }
 
-function Profile({ onOpenVenue, onOpenEvent }) {
+function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   const bb = useBB();
   const [panel, setPanel] = useState("info");
   if (!bb.session) {
@@ -567,7 +633,7 @@ function Profile({ onOpenVenue, onOpenEvent }) {
       <section className="px-[6vw] py-16 text-center">
         <h1 className="font-serif text-3xl">Your seat.</h1>
         <p className="mt-2 text-sm text-white/55">Log in to see today, upcoming, and your buddies.</p>
-        <a href="/register" className="mt-6 inline-block rounded-full bg-white px-6 py-3 text-sm font-semibold text-black">Join Buddy</a>
+        <button type="button" onClick={onLogin} className="mt-6 inline-block rounded-full bg-white px-6 py-3 text-sm font-semibold text-black">Log in</button>
       </section>
     );
   }

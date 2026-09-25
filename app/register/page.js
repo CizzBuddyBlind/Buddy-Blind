@@ -79,7 +79,8 @@ export default function RegisterPage() {
         setError(message);
         return;
       }
-      router.push("/subscribe?trial=1");
+      const fromApp = new URLSearchParams(window.location.search).get("from") === "app";
+      router.push(fromApp ? "/m?tab=profile" : "/subscribe?trial=1");
       router.refresh();
     } catch {
       setError(t("reg.bad"));
