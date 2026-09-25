@@ -126,13 +126,13 @@ export default function HomePage() {
             <span className="italic">who you'll meet.</span>
             <span className="italic text-ember">That's the point.</span>
           </h1>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-white/70">
+          <p className="mt-10 max-w-md text-sm leading-relaxed text-white/70">
             Restaurants provide the scene. Private events create the reason.
             <br />
             You bring curiosity.
           </p>
-          <Link href="/register" className="mt-5 inline-flex items-center rounded-full bg-white px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-ink">
-            Join Buddy →
+          <Link href="/quick" className="mt-8 inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-ink">
+            Want a Quick Meet?
           </Link>
           <div className="mt-16 grid grid-cols-3 gap-4 border-t border-white/15 pt-5 md:mt-[5.4rem]">
             <div>
