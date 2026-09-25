@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Editable, Photo, fileToCover } from "@/components/Bits";
 import { DoneShare, HostBadge, PayDialog, ShareSheet, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
-import { privateEditOpen, privateLockDate } from "@/lib/bible";
+import { eventPhotos, eventPoster, privateEditOpen, privateLockDate } from "@/lib/bible";
 import { getMedia } from "@/lib/media";
 
 export default function PrivateDetailPage() {
@@ -42,9 +42,11 @@ export default function PrivateDetailPage() {
       </main>
     );
   }
-  const photos = event.gallery?.length ? event.gallery : event.imageUrl ? [event.imageUrl] : [];
+  const photos = eventPhotos(event);
+  const poster = eventPoster(event);
+  const photoSlides = (photos.length ? photos : poster ? [poster] : []).map((src) => ({ type: "photo", src, fallback: poster }));
   const slides = [
-    ...photos.map((src) => ({ type: "photo", src })),
+    ...photoSlides,
     ...(event.videoUrl ? [{ type: "video", src: event.videoUrl }] : []),
   ];
   const slide = slides[shot] || slides[0];
@@ -151,7 +153,7 @@ export default function PrivateDetailPage() {
   }
 
   return (
-    <main className="bb-private bb-frame pb-28 pt-6 md:pb-16">
+    <main className="bb-frame pb-28 pt-6 md:pb-16">
       <Link href="/private" className="text-xs uppercase tracking-[0.16em] text-mute">Go back</Link>
       <div className="mt-4 grid items-start gap-8 md:grid-cols-2">
         <div>
@@ -160,7 +162,7 @@ export default function PrivateDetailPage() {
               {slide?.type === "video" ? (
                 <video key={slide.src} src={slide.src.startsWith("idb:") ? media[slide.src] || "" : slide.src} className="absolute inset-0 h-full w-full object-cover" autoPlay muted loop playsInline />
               ) : (
-                <Photo src={slide?.src?.startsWith("idb:") ? media[slide.src] || "" : slide?.src || ""} alt={event.name} />
+                <Photo src={slide?.src || ""} fallback={slide?.fallback || poster} alt={event.name} />
               )}
             </div>
             {slides.length > 1 && (
@@ -197,7 +199,7 @@ export default function PrivateDetailPage() {
                       }}
                     />
                   ) : (
-                    <img src={item.src.startsWith("idb:") ? media[item.src] || "" : item.src} alt="" className="h-full w-full object-cover" />
+                    <Photo src={item.src} fallback={item.fallback || poster} alt="" />
                   )}
                 </button>
               ))}

@@ -123,8 +123,7 @@ textarea {
   filter: none;
   transition: none;
 }
-nav a:hover,
-.bb-kicker:hover {
+nav a:hover {
   color: #D4AF37;
 }
 input:hover,
@@ -167,21 +166,8 @@ button.bb-metal-gold,
   transform: translateY(-2px);
   border-color: rgba(212, 175, 55, 0.85);
 }
-.bb-private h1:hover,
-.bb-private h2:hover,
-.bb-private h3:hover,
-.bb-private p:hover,
-.bb-private a:hover,
-.bb-private li:hover,
-.bb-private article:hover,
-.bb-private article:hover h2,
-.bb-private article:hover h3,
-.bb-private article:hover p,
-.bb-private article:hover span,
-.bb-private article:hover a,
-.bb-private article:hover button,
-.bb-private a.bb-lift:hover,
-.bb-private a.bb-lift:hover * {
+.bb-private .bb-night-copy:hover,
+.bb-private .bb-night-copy:hover .bb-night-line {
   color: #D4AF37;
 }
 @keyframes bb-rise {

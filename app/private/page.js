@@ -6,7 +6,7 @@ import { Copy, Editable, Photo } from "@/components/Bits";
 import { DoneShare, HostBadge, PayDialog, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
-import { queryHits } from "@/lib/bible";
+import { eventPhotos, eventPoster, queryHits } from "@/lib/bible";
 
 export default function PrivatePage() {
   const bb = useBB();
@@ -65,17 +65,19 @@ export default function PrivatePage() {
       {campaign && (
         <Link href={`/private/${campaign.id}`} className="bb-feature mt-8 grid h-[300px] w-full shrink-0 grid-cols-1 overflow-hidden rounded-3xl bg-char text-paper md:h-[340px] md:grid-cols-2">
           <div className="relative h-[140px] md:h-full">
-            <Photo src={campaign.gallery?.[0] || campaign.imageUrl} alt={campaign.name} className="absolute inset-0" onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === campaign.id); if (item) item.imageUrl = imageUrl; })} />
+            <Photo src={eventPhotos(campaign)[0] || ""} fallback={eventPoster(campaign)} alt={campaign.name} className="absolute inset-0" onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === campaign.id); if (item) item.imageUrl = imageUrl; })} />
           </div>
           <div className="flex h-full flex-col justify-center overflow-hidden p-6 md:p-8">
             <p className="text-[10px] uppercase tracking-[0.16em] text-ember">{t("priv.campaign")}</p>
-            <h2 className="mt-2 font-serif text-3xl">{campaign.name}</h2>
+            <div className="bb-night-copy">
+              <h2 className="bb-night-line mt-2 font-serif text-3xl">{campaign.name}</h2>
+              <p className="bb-night-line mt-3 text-sm text-paper/70">{campaign.dateISO} · {campaign.timeLabel} · {campaign.spots} places</p>
+              <p className="bb-night-line mt-3 line-clamp-2 text-sm text-paper/80">{campaign.description || campaign.forWhom || campaign.typeLabel}</p>
+            </div>
             <p className="mt-2 flex items-center gap-2 text-sm text-paper/70">
               <HostBadge handle={campaign.hostName || "Host"} tier={campaign.hostTier || "bronze"} />
               <span>{campaign.hostName || campaign.hostLabel}</span>
             </p>
-            <p className="text-sm text-paper/70">{campaign.dateISO} · {campaign.timeLabel} · {campaign.spots} places</p>
-            <p className="mt-3 line-clamp-2 text-sm text-paper/80">{campaign.description || campaign.forWhom || campaign.typeLabel}</p>
             <span className="mt-4 inline-flex w-fit rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">JOIN</span>
           </div>
         </Link>
@@ -109,21 +111,21 @@ export default function PrivatePage() {
           >
             <Link href={`/private/${night.id}`} className="block" onClick={() => editing && setSelectedId(night.id)}>
               <div className="bb-zoom-wrap relative block aspect-[4/3] overflow-hidden">
-                <Photo src={night.gallery?.[0] || night.imageUrl} alt={night.name} onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === night.id); if (item) item.imageUrl = imageUrl; })} />
+                <Photo src={eventPhotos(night)[0] || ""} fallback={eventPoster(night)} alt={night.name} onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === night.id); if (item) item.imageUrl = imageUrl; })} />
               </div>
-              <div className="px-4 py-4">
-                <div className="font-serif text-xl">
+              <div className="bb-night-copy px-4 pt-4">
+                <div className="bb-night-line font-serif text-xl">
                   <Editable locked={night.locked} value={night.name} onChange={(name) => update((d) => { const item = d.events.find((x) => x.id === night.id); if (item) item.name = name; })} />
                 </div>
-                <div className="mt-1 text-xs tracking-wide text-mute">{night.forWhom || night.typeLabel}</div>
-                <div className="mt-1 text-xs text-mute">{night.location || "Hong Kong"} · {night.dateISO} · {night.timeLabel}</div>
-                <div className="mt-3 flex items-center justify-between gap-2 text-sm">
+                <div className="bb-night-line mt-1 text-xs tracking-wide text-mute">{night.forWhom || night.typeLabel}</div>
+                <div className="bb-night-line mt-1 text-xs text-mute">{night.location || "Hong Kong"} · {night.dateISO} · {night.timeLabel}</div>
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-2 px-4 pb-4 text-sm">
                   <span className="flex min-w-0 items-center gap-2">
                     <HostBadge handle={night.hostName || "Host"} tier={night.hostTier || "bronze"} />
                     <span className="truncate">{night.hostName || night.hostLabel}</span>
                   </span>
-                  <span className="shrink-0 font-medium text-ember">{(night.spots || 0) <= 0 ? t("priv.full") : `${night.spots} places`}</span>
-                </div>
+                  <span className="bb-night-copy shrink-0 font-medium">{(night.spots || 0) <= 0 ? t("priv.full") : `${night.spots} places`}</span>
               </div>
             </Link>
             <div className="px-4 pb-4">

@@ -81,28 +81,29 @@ export function fileToCover(file) {
   });
 }
 
-export function Photo({ src, alt, onChange, className = "" }) {
+export function Photo({ src, fallback = "", alt, onChange, className = "" }) {
   const { editing } = useBB();
   const [shown, setShown] = useState("");
   useEffect(() => {
     let cancel = false;
-    if (!src) {
-      setShown("");
-      return undefined;
+    async function load(value) {
+      if (!value) return "";
+      if (!String(value).startsWith("idb:")) return value;
+      try {
+        return (await getMedia(String(value).slice(4))) || "";
+      } catch {
+        return "";
+      }
     }
-    if (!String(src).startsWith("idb:")) {
-      setShown(src);
-      return undefined;
-    }
-    getMedia(String(src).slice(4)).then((url) => {
-      if (!cancel) setShown(url || "");
-    }).catch(() => {
-      if (!cancel) setShown("");
-    });
+    (async () => {
+      const primary = await load(src);
+      const next = primary || await load(fallback);
+      if (!cancel) setShown(next || "");
+    })();
     return () => {
       cancel = true;
     };
-  }, [src]);
+  }, [src, fallback]);
   async function take(file) {
     if (!file || !onChange) return;
     try {

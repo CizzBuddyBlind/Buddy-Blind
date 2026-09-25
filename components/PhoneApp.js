@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useBB } from "./Providers";
-import { iso, prettyDate, queryHits, soonestTable, tableStart } from "@/lib/bible";
+import { Photo as Cover } from "./Bits";
+import { eventPoster, iso, prettyDate, queryHits, soonestTable, tableStart } from "@/lib/bible";
 
 function hourOf(time) {
   const match = String(time || "").toUpperCase().match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/);
@@ -260,7 +261,8 @@ function mySeats(bb) {
         date: event?.dateISO || booking.dateISO,
         time: event?.timeLabel || booking.time,
         place: event?.location || booking.location || "",
-        image: event?.imageUrl || "",
+        image: event?.gallery?.[0] || event?.imageUrl || "",
+        fallback: eventPoster(event) || "",
         href: `/private/${booking.id}`,
         joined: event?.joined || (event?.participants || []).length || 1,
         people: (event?.participants || []).map((p) => p.handle).filter(Boolean),
@@ -277,6 +279,7 @@ function mySeats(bb) {
       time: table?.time || booking.time,
       place: table?.address || booking.location || venue?.locationLabel || "",
       image: venue?.imageUrl || "",
+      fallback: "",
       href: (booking.venueId || venue?.id) ? `/venues/${booking.venueId || venue.id}` : "",
       joined: table?.joined || (table?.participants || []).length || 1,
       people: (table?.participants || []).map((p) => p.handle).filter(Boolean),
@@ -296,6 +299,7 @@ function mySeats(bb) {
           time: table.time,
           place: table.address || venue.locationLabel || "",
           image: venue.imageUrl || "",
+          fallback: "",
           href: `/venues/${venue.id}`,
           joined: table.joined || (table.participants || []).length || 1,
           people: (table.participants || []).map((p) => p.handle).filter(Boolean),
@@ -314,7 +318,8 @@ function mySeats(bb) {
         date: event.dateISO,
         time: event.timeLabel,
         place: event.location || "",
-        image: event.imageUrl || venue?.imageUrl || "",
+        image: event.gallery?.[0] || event.imageUrl || venue?.imageUrl || "",
+        fallback: eventPoster(event) || venue?.imageUrl || "",
         href: event.kind === "private" ? `/private/${event.id}` : (event.venueId ? `/venues/${event.venueId}` : ""),
         joined: event.joined || (event.participants || []).length || 1,
         people: (event.participants || []).map((p) => p.handle).filter(Boolean),
@@ -562,8 +567,8 @@ export function JoinedEvents() {
         {items.map((item) => {
           const card = (
             <>
-              <div className="aspect-square w-full overflow-hidden bg-black/30">
-                {item.image ? <img src={item.image} alt="" className="h-full w-full object-cover" /> : null}
+              <div className="relative aspect-square w-full overflow-hidden bg-black/30">
+                <Cover src={item.image} fallback={item.fallback} alt="" />
               </div>
               <div className="p-2.5">
                 <p className="truncate text-sm">{item.name}</p>
@@ -584,7 +589,7 @@ export function JoinedEvents() {
   );
   return (
     <div className="flex h-full min-w-0 flex-col justify-center gap-8 md:pt-6">
-      <p className="text-sm text-white/70">Seats you joined</p>
+      <p className="text-[0.7rem] uppercase tracking-[0.14em] text-mute">Seats you joined</p>
       {block("Today", now)}
       {block("Upcoming", later)}
     </div>
