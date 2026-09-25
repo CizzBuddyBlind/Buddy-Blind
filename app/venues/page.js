@@ -199,7 +199,7 @@ function Home() {
                             return (
                               <span className="ml-auto flex items-center">
                                 {joiners.slice(0, 3).map((person) => (
-                                  <span key={person.handle} className="-ml-1 first:ml-0"><HostBadge handle={person.handle} tier={person.tier || "bronze"} /></span>
+                                  <span key={person.handle} className="-ml-1 first:ml-0"><HostBadge handle={person.handle} tier={person.tier || "bronze"} size="joiner" /></span>
                                 ))}
                                 {joiners.length > 3 && <span className="ml-1 text-xs text-ember">+</span>}
                               </span>

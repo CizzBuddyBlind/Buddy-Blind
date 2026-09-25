@@ -163,7 +163,21 @@ export default function VenuePage() {
                         <HostBadge handle={table.hostHandle} tier={table.hostTier} />
                         <div className="min-w-0 flex-1">
                           <p className="text-sm">{prettyDate(table.dateISO, lang)} · {table.time}</p>
-                          <p className="text-xs text-mute">{tablePrefs(table) || "Meet friends"} · {hold.places} left</p>
+                          <p className="mt-1 flex items-center gap-2 text-xs text-mute">
+                            <span>{tablePrefs(table) || "Meet friends"} · {hold.places} left</span>
+                            {(() => {
+                              const joiners = people.filter((p) => p && p.handle && p.handle !== table.hostHandle && p.role !== "host");
+                              if (!joiners.length) return null;
+                              return (
+                                <span className="ml-auto flex items-center">
+                                  {joiners.slice(0, 3).map((person) => (
+                                    <span key={person.handle} className="-ml-1 first:ml-0"><HostBadge handle={person.handle} tier={person.tier || "bronze"} size="joiner" /></span>
+                                  ))}
+                                  {joiners.length > 3 && <span className="ml-1 text-ember">+</span>}
+                                </span>
+                              );
+                            })()}
+                          </p>
                         </div>
                         <button
                           type="button"

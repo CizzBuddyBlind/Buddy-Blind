@@ -328,7 +328,7 @@ export function BuddyProvider({ children }) {
       }
       if (Array.isArray(event.gallery)) {
         event.gallery = await Promise.all(event.gallery.map(async (src, index) => {
-          if (typeof src === "string" && src.startsWith("data:") && src.length > 120000) {
+          if (typeof src === "string" && src.startsWith("data:")) {
             const key = `${event.id}:p${index}`;
             await putMedia(key, src);
             if (event.imageUrl === src) event.imageUrl = `idb:${key}`;
@@ -336,6 +336,10 @@ export function BuddyProvider({ children }) {
           }
           return src;
         }));
+      }
+      if (typeof event.imageUrl === "string" && event.imageUrl.startsWith("data:")) {
+        await putMedia(`${event.id}:cover`, event.imageUrl);
+        event.imageUrl = `idb:${event.id}:cover`;
       }
     }
     publishedRef.current = slim;
@@ -1065,7 +1069,7 @@ export function BuddyProvider({ children }) {
         videoUrl = `idb:${id}:video`;
       }
       gallery = await Promise.all(gallery.map(async (src, index) => {
-        if (typeof src === "string" && src.startsWith("data:") && src.length > 120000) {
+        if (typeof src === "string" && src.startsWith("data:")) {
           const key = `${id}:p${index}`;
           await putMedia(key, src);
           if (src === imageUrl) imageUrl = `idb:${key}`;
@@ -1073,7 +1077,7 @@ export function BuddyProvider({ children }) {
         }
         return src;
       }));
-      if (imageUrl.startsWith("data:") && imageUrl.length > 120000) {
+      if (imageUrl.startsWith("data:")) {
         await putMedia(`${id}:cover`, imageUrl);
         imageUrl = `idb:${id}:cover`;
       }

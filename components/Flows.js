@@ -18,19 +18,21 @@ import {
   tierFromPoints,
 } from "@/lib/bible";
 
-export function HostBadge({ handle = "?", tier = "bronze" }) {
+export function HostBadge({ handle = "?", tier = "bronze", size = "host" }) {
   const bb = useBB();
   const mine = bb.session?.handle && bb.session.handle === handle;
   const shown = mine ? tierFromPoints(bb.session.points || 0, bb.content?.pointThresholds) : tier || "bronze";
   const letter = String(handle || "?").slice(0, 1).toUpperCase();
   const metal = shown === "gold" ? "bg-amber-300 text-ink" : shown === "silver" ? "bg-zinc-200 text-ink" : "bg-amber-700 text-white";
   const label = shown === "gold" ? "Gold" : shown === "silver" ? "Silver" : "Bronze";
+  const box = size === "joiner" ? "h-4 w-4 text-[8px]" : size === "feature" ? "h-9 w-9 text-sm" : "h-5 w-5 text-[10px]";
+  const pip = size === "joiner" ? "-top-1 px-0.5 text-[6px]" : size === "feature" ? "-top-1 px-1 text-[8px]" : "-top-1.5 px-0.5 text-[7px]";
   return (
-    <span className="relative inline-grid h-9 w-9 shrink-0 place-items-center" title={label}>
-      <span className={`absolute -top-1 left-1/2 z-10 -translate-x-1/2 rounded-full px-1 text-[8px] font-bold uppercase leading-3 ${metal}`}>
+    <span className={`relative inline-grid shrink-0 place-items-center ${size === "feature" ? "h-10 w-9" : size === "joiner" ? "h-5 w-4" : "h-6 w-5"}`} title={`${handle} · ${label}`}>
+      <span className={`absolute left-1/2 z-10 -translate-x-1/2 rounded-full font-bold uppercase leading-none ${pip} ${metal}`}>
         {label.slice(0, 1)}
       </span>
-      <span className="grid h-8 w-8 place-items-center rounded-full bg-neutral-800 font-serif text-sm text-amber-100 ring-1 ring-white/30">
+      <span className={`grid place-items-center rounded-full bg-neutral-800 font-serif text-amber-100 ring-1 ring-white/30 ${box}`}>
         {letter}
       </span>
     </span>
@@ -537,6 +539,7 @@ export function PrivateWizard({ venueId = "", onClose }) {
     imageUrl: "",
   });
   const [uploads, setUploads] = useState([]);
+  const photoPick = useRef(null);
   const [useVenuePhotos, setUseVenuePhotos] = useState(false);
   const [pickedVenue, setPickedVenue] = useState([]);
   const [checked, setChecked] = useState(false);
@@ -769,13 +772,11 @@ export function PrivateWizard({ venueId = "", onClose }) {
               ))}
             </div>
           )}
-          <label className="block">
-            <span className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm">Upload your photos</span>
-            <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => {
-              [...(e.target.files || [])].forEach((file) => addPhoto(file));
-              e.target.value = "";
-            }} />
-          </label>
+          <button type="button" onClick={() => photoPick.current?.click()} className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm">Upload your photos</button>
+          <input ref={photoPick} type="file" accept="image/jpeg,image/png,image/webp,image/*" multiple className="hidden" onChange={(e) => {
+            [...(e.target.files || [])].forEach((file) => addPhoto(file));
+            e.target.value = "";
+          }} />
           <label className="block">
             <span className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm">Upload a video</span>
             <input type="file" accept="video/*" className="sr-only" onChange={(e) => { addVideo(e.target.files?.[0]); e.target.value = ""; }} />

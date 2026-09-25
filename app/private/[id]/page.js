@@ -63,7 +63,7 @@ export default function PrivateDetailPage() {
     setDraft({
       description: event.description || "",
       aboutHost: event.aboutHost || "",
-      photos: photos.slice(0, 6),
+      photos: photos.filter(Boolean).slice(0, 6),
       videoUrl: event.videoUrl || "",
     });
     setEditingNight(true);
@@ -216,7 +216,7 @@ export default function PrivateDetailPage() {
             <div className="flex items-center gap-3">
               <HostBadge handle={host.handle} tier={event.hostTier || "bronze"} />
               <div>
-                <p className="font-serif text-xl">{host.handle}</p>
+                <p className="font-serif text-xl">{event.hostName || host.handle}</p>
                 <p className="text-xs uppercase tracking-[0.14em] text-mute">Host</p>
               </div>
             </div>
@@ -265,9 +265,9 @@ export default function PrivateDetailPage() {
                 ))}
               </div>
               <div className="flex flex-wrap gap-2">
-                <label className={`rounded-full border border-black/15 px-4 py-2 text-sm ${draft.photos.length >= 6 ? "opacity-40" : ""}`}>
+                <label className={`cursor-pointer rounded-full border border-black/15 px-4 py-2 text-sm ${draft.photos.length >= 6 ? "pointer-events-none opacity-40" : ""}`}>
                   Add photo
-                  <input type="file" accept="image/*" className="sr-only" disabled={draft.photos.length >= 6} onChange={(e) => { addEditPhoto(e.target.files?.[0]); e.target.value = ""; }} />
+                  <input type="file" accept="image/jpeg,image/png,image/webp,image/*" className="hidden" disabled={draft.photos.length >= 6} onChange={(e) => { addEditPhoto(e.target.files?.[0]); e.target.value = ""; }} />
                 </label>
                 <label className="rounded-full border border-black/15 px-4 py-2 text-sm">
                   {draft.videoUrl ? "Replace video" : "Add video"}

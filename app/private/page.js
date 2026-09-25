@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Copy, Editable, Photo } from "@/components/Bits";
-import { DoneShare, PayDialog, rememberReturn } from "@/components/Flows";
+import { DoneShare, HostBadge, PayDialog, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
 import { queryHits } from "@/lib/bible";
@@ -70,7 +70,10 @@ export default function PrivatePage() {
           <div className="flex h-full flex-col justify-center overflow-hidden p-6 md:p-8">
             <p className="text-[10px] uppercase tracking-[0.16em] text-ember">{t("priv.campaign")}</p>
             <h2 className="mt-2 font-serif text-3xl">{campaign.name}</h2>
-            <p className="mt-2 text-sm text-paper/70">{campaign.hostName || campaign.hostLabel} · {campaign.location || "Hong Kong"}</p>
+            <p className="mt-2 flex items-center gap-2 text-sm text-paper/70">
+              <HostBadge handle={campaign.hostName || "Host"} tier={campaign.hostTier || "bronze"} />
+              <span>{campaign.hostName || campaign.hostLabel}</span>
+            </p>
             <p className="text-sm text-paper/70">{campaign.dateISO} · {campaign.timeLabel} · {campaign.spots} places</p>
             <p className="mt-3 line-clamp-2 text-sm text-paper/80">{campaign.description || campaign.forWhom || campaign.typeLabel}</p>
             <span className="mt-4 inline-flex w-fit rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">JOIN</span>
@@ -114,9 +117,12 @@ export default function PrivatePage() {
                 </div>
                 <div className="mt-1 text-xs tracking-wide text-mute">{night.forWhom || night.typeLabel}</div>
                 <div className="mt-1 text-xs text-mute">{night.location || "Hong Kong"} · {night.dateISO} · {night.timeLabel}</div>
-                <div className="mt-3 flex items-center justify-between text-sm">
-                  <span>{night.hostName || night.hostLabel}</span>
-                  <span className="font-medium text-ember">{(night.spots || 0) <= 0 ? t("priv.full") : `${night.spots} places`}</span>
+                <div className="mt-3 flex items-center justify-between gap-2 text-sm">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <HostBadge handle={night.hostName || "Host"} tier={night.hostTier || "bronze"} />
+                    <span className="truncate">{night.hostName || night.hostLabel}</span>
+                  </span>
+                  <span className="shrink-0 font-medium text-ember">{(night.spots || 0) <= 0 ? t("priv.full") : `${night.spots} places`}</span>
                 </div>
               </div>
             </Link>
