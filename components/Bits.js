@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBB } from "./Providers";
 import { resolveCopy } from "@/lib/i18n";
+import { getMedia } from "@/lib/media";
 
 function escapeText(value) {
   return String(value ?? "")
@@ -82,6 +83,26 @@ export function fileToCover(file) {
 
 export function Photo({ src, alt, onChange, className = "" }) {
   const { editing } = useBB();
+  const [shown, setShown] = useState("");
+  useEffect(() => {
+    let cancel = false;
+    if (!src) {
+      setShown("");
+      return undefined;
+    }
+    if (!String(src).startsWith("idb:")) {
+      setShown(src);
+      return undefined;
+    }
+    getMedia(String(src).slice(4)).then((url) => {
+      if (!cancel) setShown(url || "");
+    }).catch(() => {
+      if (!cancel) setShown("");
+    });
+    return () => {
+      cancel = true;
+    };
+  }, [src]);
   async function take(file) {
     if (!file || !onChange) return;
     try {
@@ -103,7 +124,7 @@ export function Photo({ src, alt, onChange, className = "" }) {
         take(e.dataTransfer.files?.[0]);
       }}
     >
-      {src ? <img src={src} alt={alt || ""} className="absolute inset-0 h-full w-full object-cover" /> : null}
+      {shown ? <img src={shown} alt={alt || ""} className="absolute inset-0 h-full w-full object-cover" /> : null}
       {editing && onChange && (
         <label
           className="absolute bottom-3 right-3 z-10 rounded-full bg-black/75 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white"

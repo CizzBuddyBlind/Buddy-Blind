@@ -39,25 +39,24 @@ const STEPS = [
   {
     n: "08",
     title: "Points change the circle",
-    body: "Not the price. Join adds 1. Invite adds 2. Host adds 5. No points yet, the circle stays plain. Points start at bronze. Silver at 100. Gold at 500.",
+    body: "Not the price. Join adds 1. Invite adds 2. Host adds 5. Enjoy the discount.",
   },
 ];
 
 const BADGES = [
-  { letter: "B", name: "Bronze", note: "You have points", circle: "bg-[#C68642] text-[#1a1208]" },
-  { letter: "S", name: "Silver", note: "100 points", circle: "bg-[#E4E7EC] text-[#1a1408]" },
-  { letter: "G", name: "Gold", note: "500 points", circle: "bg-[#E6C15A] text-[#1a1408]" },
+  { letter: "B", name: "Bronze", note: "5%", circle: "bg-[#C68642] text-[#1a1208]" },
+  { letter: "S", name: "Silver", note: "10%", circle: "bg-[#E4E7EC] text-[#1a1408]" },
+  { letter: "G", name: "Gold", note: "15%", circle: "bg-[#E6C15A] text-[#1a1408]" },
 ];
 
 export default function HowPage() {
   return (
     <main className="bb-frame bg-ink pb-28 pt-10 text-fg md:pb-20">
       <div className="mx-auto w-full max-w-5xl">
-      <p className="text-[0.72rem] uppercase tracking-[0.2em] text-ember">How it works</p>
-      <h1 className="mt-5 max-w-4xl font-serif text-[3.4rem] leading-[0.95] text-white sm:text-6xl md:text-7xl">
-        See the place.
+      <h1 className="max-w-4xl font-serif text-[3.4rem] leading-[0.95] text-white sm:text-6xl md:text-7xl">
+        How it works
         <br />
-        <span className="italic">Take a seat.</span>
+        <span className="italic text-ember">Take a seat.</span>
       </h1>
       <ol className="mt-14 overflow-hidden rounded-[1.7rem] border border-white/15">
         {STEPS.map((step) => (

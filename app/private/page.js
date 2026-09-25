@@ -65,7 +65,7 @@ export default function PrivatePage() {
       {campaign && (
         <Link href={`/private/${campaign.id}`} className="bb-feature mt-8 grid h-[300px] w-full shrink-0 grid-cols-1 overflow-hidden rounded-3xl bg-char text-paper md:h-[340px] md:grid-cols-2">
           <div className="relative h-[140px] md:h-full">
-            <Photo src={campaign.imageUrl} alt={campaign.name} className="absolute inset-0" onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === campaign.id); if (item) item.imageUrl = imageUrl; })} />
+            <Photo src={campaign.gallery?.[0] || campaign.imageUrl} alt={campaign.name} className="absolute inset-0" onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === campaign.id); if (item) item.imageUrl = imageUrl; })} />
           </div>
           <div className="flex h-full flex-col justify-center overflow-hidden p-6 md:p-8">
             <p className="text-[10px] uppercase tracking-[0.16em] text-ember">{t("priv.campaign")}</p>
@@ -109,7 +109,7 @@ export default function PrivatePage() {
           >
             <Link href={`/private/${night.id}`} className="block" onClick={() => editing && setSelectedId(night.id)}>
               <div className="bb-zoom-wrap relative block aspect-[4/3] overflow-hidden">
-                <Photo src={night.imageUrl} alt={night.name} onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === night.id); if (item) item.imageUrl = imageUrl; })} />
+                <Photo src={night.gallery?.[0] || night.imageUrl} alt={night.name} onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === night.id); if (item) item.imageUrl = imageUrl; })} />
               </div>
               <div className="px-4 py-4">
                 <div className="font-serif text-xl">
