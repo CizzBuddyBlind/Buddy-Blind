@@ -44,9 +44,9 @@ const STEPS = [
 ];
 
 const BADGES = [
-  { letter: "B", name: "Bronze", points: "100 points", note: "5%", circle: "bg-[#C68642] text-[#1a1208]" },
+  { letter: "B", name: "Bronze", points: "100 points", note: "5%", circle: "bb-metal-bronze" },
   { letter: "S", name: "Silver", points: "300 points", note: "10%", circle: "bb-metal-silver" },
-  { letter: "G", name: "Gold", points: "500 points", note: "20%", circle: "bg-[#E6C15A] text-[#1a1408]" },
+  { letter: "G", name: "Gold", points: "500 points", note: "20%", circle: "bb-metal-gold" },
 ];
 
 export default function HowPage() {

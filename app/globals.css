@@ -140,7 +140,11 @@ button.bb-metal-plain-dark,
 button.bb-metal-plain-light,
 .bb-metal-plain-light { background-color: #f5f5f5 !important; color: #0a0a0a !important; }
 button.bb-metal-bronze,
-.bb-metal-bronze { background-color: #D4782A !important; color: #1a1208 !important; }
+.bb-metal-bronze {
+  background-color: #d4782a !important;
+  background-image: linear-gradient(145deg, #f6d7b0 0%, #e0a15c 20%, #8f4e1c 48%, #f0c48a 60%, #c4783a 100%) !important;
+  color: #1a1208 !important;
+}
 button.bb-metal-silver,
 .bb-metal-silver {
   background-color: #c5ced6 !important;
@@ -148,7 +152,11 @@ button.bb-metal-silver,
   color: #1c2128 !important;
 }
 button.bb-metal-gold,
-.bb-metal-gold { background-color: #E6B325 !important; color: #1a1408 !important; }
+.bb-metal-gold {
+  background-color: #e6b325 !important;
+  background-image: linear-gradient(145deg, #fff6d4 0%, #f0d56a 20%, #c49212 48%, #fff1c2 60%, #e6c15a 100%) !important;
+  color: #1a1408 !important;
+}
 .bb-sheet {
   animation: bb-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
