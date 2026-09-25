@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { DoneShare, PayDialog, ShareSheet, rememberReturn } from "@/components/Flows";
+import { DoneShare, HostBadge, PayDialog, ShareSheet, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { bookingHold, iso, tableStart } from "@/lib/bible";
 
@@ -165,9 +165,8 @@ export default function HomePage() {
                   <span className="rounded-full bg-black/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">{featured.home?.when || [featured.area, featured.time].filter(Boolean).join(" · ")}</span>
                   <span className="rounded-full bg-ember px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#1a1408]">{featured.home?.spots || `${featured.spots ?? 0} spots left`}</span>
                 </div>
-                <div className="pointer-events-none absolute right-3 top-3 flex items-center gap-2 rounded-full bg-white py-1 pl-1 pr-3 text-[10px] font-semibold uppercase tracking-wide text-ink">
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-[#1a1a1a] text-[11px] text-white">{featured.home?.letter || String(featured.host || "C").slice(0, 1)}</span>
-                  {featured.home?.host || `Host: ${featured.host || "CJ"}`}
+                <div className="absolute right-3 top-4">
+                  <HostBadge handle={featured.host || "C"} tier={featured.tier || "bronze"} />
                 </div>
                 <Link href="/how" className="absolute bottom-3 left-3 grid h-8 w-8 place-items-center rounded-full bg-white text-sm font-semibold text-ink">?</Link>
                 <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">{featured.home?.chip || featured.meta}</span>
@@ -179,8 +178,8 @@ export default function HomePage() {
                 <button type="button" onClick={() => setShare(true)} className="mt-4 rounded-full border border-white/25 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">Share</button>
                 <p className="mt-4 text-sm leading-relaxed text-white/75">{featured.home?.about || featured.hostAbout}</p>
                 <div className="mt-5 flex items-center gap-3">
-                  <button type="button" onClick={joinFeatured} className="flex-1 rounded-full bg-white py-3.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-ink">Join blind box</button>
-                  <button type="button" onClick={() => featured.kind === "table" && bb.setFlow({ type: "invite", venueId: featured.venue.id })} className="rounded-full border border-white/25 px-5 py-3.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-white">Invite</button>
+                  <button type="button" onClick={joinFeatured} className="flex-1 rounded-full bg-white px-4 py-3.5 text-[13px] font-semibold text-ink">Love it. Let's do this.</button>
+                  <Link href="/venues" className="rounded-full border border-white/25 px-5 py-3.5 text-[13px] font-semibold text-white">Explore more</Link>
                 </div>
                 {featured.home?.foot && <p className="mt-4 text-[10px] uppercase leading-relaxed tracking-[0.08em] text-white/35">{featured.home.foot}</p>}
               </div>
