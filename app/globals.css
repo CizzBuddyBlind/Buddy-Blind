@@ -142,7 +142,11 @@ button.bb-metal-plain-light,
 button.bb-metal-bronze,
 .bb-metal-bronze { background-color: #D4782A !important; color: #1a1208 !important; }
 button.bb-metal-silver,
-.bb-metal-silver { background-color: #7D8B99 !important; color: #ffffff !important; }
+.bb-metal-silver {
+  background-color: #c5ced6 !important;
+  background-image: linear-gradient(145deg, #f7f8fa 0%, #d5dbe3 20%, #8d9aab 48%, #f3f5f7 60%, #b4bec8 100%) !important;
+  color: #1c2128 !important;
+}
 button.bb-metal-gold,
 .bb-metal-gold { background-color: #E6B325 !important; color: #1a1408 !important; }
 .bb-sheet {
