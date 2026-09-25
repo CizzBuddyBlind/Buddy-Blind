@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { DoneShare, HostBadge, PayDialog, rememberReturn } from "@/components/Flows";
+import { DoneShare, PayDialog, ShareSheet, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { bookingHold, iso, tableStart } from "@/lib/bible";
 
@@ -37,6 +37,7 @@ function upcoming(content) {
         reason: table.tableType === "blind-date" ? "blind date" : venue.cuisine || "dinner",
         hostAbout: venue.about || "",
         href: `/venues/${venue.id}`,
+        home: table.homeCard || null,
       });
     });
   });
@@ -72,14 +73,6 @@ function upcoming(content) {
   return rows;
 }
 
-function exactDate(isoDate) {
-  if (!isoDate) return "";
-  const d = new Date(`${isoDate}T12:00:00`);
-  const wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
-  const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
-  return `${wd}, ${d.getDate()} ${mon}`;
-}
-
 export default function HomePage() {
   const bb = useBB();
   const rows = useMemo(() => upcoming(bb.content), [bb.content]);
@@ -93,6 +86,7 @@ export default function HomePage() {
   const [pay, setPay] = useState(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
+  const [share, setShare] = useState(false);
 
   async function confirmPay() {
     if (!pay) return;
@@ -159,43 +153,36 @@ export default function HomePage() {
         <section>
           <p className="mb-3 flex items-center gap-2 text-[0.68rem] uppercase tracking-[0.16em] text-white/55">
             <span className="text-ember">●</span>
-            Featured tonight · The blind box we bring
+            Featured tonight · One blind box open
           </p>
           {featured ? (
-            <article className="overflow-hidden rounded-[28px] border border-white/10 bg-[#121212]">
-              <Link href={featured.href} className="relative block">
-                <img src={featured.image} alt="" className="aspect-[16/9] w-full object-cover" />
-                <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-                  <span className="rounded-full bg-black/70 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-white">
-                    {[featured.area, featured.time].filter(Boolean).join(" · ")}
-                  </span>
-                  {featured.spots != null && (
-                    <span className="rounded-full bg-ember px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[#1a1408]">
-                      {featured.spots} spots left
-                    </span>
-                  )}
+            <article className="overflow-hidden rounded-[28px] border border-white/10 bg-[#161616]">
+              <div className="relative">
+                <Link href={featured.href} className="block">
+                  <img src={featured.image} alt="" className="aspect-[16/10] w-full object-cover" />
+                </Link>
+                <div className="pointer-events-none absolute left-3 top-3 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-black/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">{featured.home?.when || [featured.area, featured.time].filter(Boolean).join(" · ")}</span>
+                  <span className="rounded-full bg-ember px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#1a1408]">{featured.home?.spots || `${featured.spots ?? 0} spots left`}</span>
                 </div>
-              </Link>
-              <div className="px-5 pb-6 pt-5">
-                <h2 className="font-serif text-3xl text-white">{featured.name}</h2>
-                <p className="mt-3 text-sm text-white/75">{exactDate(featured.dateISO)}</p>
-                {featured.time && <p className="text-sm text-white/75">{featured.time}</p>}
-                <div className="mt-4 text-sm leading-relaxed text-white/80">
-                  <p>Join a {featured.reason}</p>
-                  <p>meet new friends</p>
-                  <p>no pitches, just presence.</p>
+                <div className="pointer-events-none absolute right-3 top-3 flex items-center gap-2 rounded-full bg-white py-1 pl-1 pr-3 text-[10px] font-semibold uppercase tracking-wide text-ink">
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-[#1a1a1a] text-[11px] text-white">{featured.home?.letter || String(featured.host || "C").slice(0, 1)}</span>
+                  {featured.home?.host || `Host: ${featured.host || "CJ"}`}
                 </div>
-                <div className="mt-4 flex items-start gap-3">
-                  <HostBadge handle={featured.host || "?"} tier={featured.tier} />
-                  <div className="text-sm leading-relaxed text-white/70">
-                    <p>Hi, come join us.</p>
-                    {featured.seats ? <p>A {featured.seats}-seat table.</p> : null}
-                    {featured.reason ? <p>{featured.reason}</p> : null}
-                  </div>
+                <Link href="/how" className="absolute bottom-3 left-3 grid h-8 w-8 place-items-center rounded-full bg-white text-sm font-semibold text-ink">?</Link>
+                <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">{featured.home?.chip || featured.meta}</span>
+              </div>
+              <div className="px-5 pb-5 pt-5">
+                <h2 className="font-serif text-[2.6rem] leading-none text-white">{featured.name}</h2>
+                <p className="mt-3 text-[11px] uppercase leading-relaxed tracking-[0.14em] text-white/45">{featured.home?.meta || featured.meta}</p>
+                <p className="mt-4 text-[13px] uppercase leading-relaxed tracking-[0.04em] text-white/85">{featured.home?.invite || `Join a ${featured.reason} and meet new friends — no pitches, just presence.`}</p>
+                <button type="button" onClick={() => setShare(true)} className="mt-4 rounded-full border border-white/25 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">Share</button>
+                <p className="mt-4 text-sm leading-relaxed text-white/75">{featured.home?.about || featured.hostAbout}</p>
+                <div className="mt-5 flex items-center gap-3">
+                  <button type="button" onClick={joinFeatured} className="flex-1 rounded-full bg-white py-3.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-ink">Join blind box</button>
+                  <button type="button" onClick={() => featured.kind === "table" && bb.setFlow({ type: "invite", venueId: featured.venue.id })} className="rounded-full border border-white/25 px-5 py-3.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-white">Invite</button>
                 </div>
-                <button type="button" onClick={joinFeatured} className="mt-5 w-full rounded-full bg-white py-3 text-xs font-semibold uppercase tracking-[0.16em] text-ink">
-                  Join
-                </button>
+                {featured.home?.foot && <p className="mt-4 text-[10px] uppercase leading-relaxed tracking-[0.08em] text-white/35">{featured.home.foot}</p>}
               </div>
             </article>
           ) : (
@@ -207,6 +194,12 @@ export default function HomePage() {
         </section>
       </div>
 
+      <ShareSheet
+        open={share}
+        onClose={() => setShare(false)}
+        lines={[featured?.name, featured?.home?.when, featured?.home?.invite]}
+        path={featured?.kind === "table" ? `/share/table/${featured.venue.id}/${featured.table.id}` : `/share/private/${featured?.id || ""}`}
+      />
       <PayDialog
         open={!!pay}
         title={`Join · ${pay?.name || ""}`}
