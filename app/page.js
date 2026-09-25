@@ -76,7 +76,7 @@ function exactDate(isoDate) {
   if (!isoDate) return "";
   const d = new Date(`${isoDate}T12:00:00`);
   const wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
-  const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"][d.getMonth()];
+  const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
   return `${wd}, ${d.getDate()} ${mon}`;
 }
 
@@ -121,26 +121,26 @@ export default function HomePage() {
   }
 
   return (
-    <main className="bb-frame flex min-h-[calc(100dvh-4rem)] flex-col justify-center py-10 pb-28 md:py-12">
-      <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        <section>
+    <main className="bb-frame pb-28 pt-6 md:pb-16 md:pt-8">
+      <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
+        <section className="@container lg:sticky lg:top-16 lg:flex lg:h-[calc(100dvh-4rem)] lg:flex-col lg:justify-center">
           <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/50">
             Hong Kong · Tonight · {rows.length} blind boxes / {hosts} hosts / {scenes} scenes
           </p>
-          <h1 className="mt-8 font-serif text-[2rem] leading-[1.12] text-white sm:text-[2.35rem]">
-            <span className="block">You don't know</span>
-            <span className="block italic">who you'll meet.</span>
-            <span className="block italic text-ember">That's the point.</span>
+          <h1 className="mt-5 font-serif leading-[1.08] text-white">
+            <span className="block whitespace-nowrap text-[12cqi]">You don't know</span>
+            <span className="block whitespace-nowrap text-[12cqi] italic">who you'll meet.</span>
+            <span className="block whitespace-nowrap text-[12cqi] italic text-ember">That's the point.</span>
           </h1>
-          <p className="mt-6 max-w-md text-sm leading-relaxed text-white/70">
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-white/70">
             Restaurants provide the scene. Private events create the reason.
             <br />
             You bring curiosity.
           </p>
-          <Link href="/register" className="mt-8 inline-flex items-center rounded-full bg-white px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-ink">
+          <Link href="/register" className="mt-5 inline-flex items-center rounded-full bg-white px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-ink">
             Join Buddy →
           </Link>
-          <div className="mt-28 grid grid-cols-3 gap-4 border-t border-white/15 pt-8 md:mt-36">
+          <div className="mt-16 grid grid-cols-3 gap-4 border-t border-white/15 pt-5 md:mt-[5.4rem]">
             <div>
               <p className="bb-figure text-4xl text-white">{events}</p>
               <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">Total events</p>
@@ -178,17 +178,20 @@ export default function HomePage() {
               </Link>
               <div className="px-5 pb-6 pt-5">
                 <h2 className="font-serif text-3xl text-white">{featured.name}</h2>
-                <p className="mt-2 text-sm text-white/70">
-                  {[exactDate(featured.dateISO), featured.time].filter(Boolean).join(" · ")}
-                </p>
-                <p className="mt-4 text-sm uppercase leading-relaxed tracking-[0.04em] text-white/80">
-                  Join a {featured.reason} and meet new friends — no pitches, just presence.
-                </p>
+                <p className="mt-3 text-sm text-white/75">{exactDate(featured.dateISO)}</p>
+                {featured.time && <p className="text-sm text-white/75">{featured.time}</p>}
+                <div className="mt-4 text-sm leading-relaxed text-white/80">
+                  <p>Join a {featured.reason}</p>
+                  <p>meet new friends</p>
+                  <p>no pitches, just presence.</p>
+                </div>
                 <div className="mt-4 flex items-start gap-3">
                   <HostBadge handle={featured.host || "?"} tier={featured.tier} />
-                  <p className="text-sm leading-relaxed text-white/70">
-                    Hi, come join us.{featured.seats ? ` A ${featured.seats}-seat table.` : ""} {featured.hostAbout}
-                  </p>
+                  <div className="text-sm leading-relaxed text-white/70">
+                    <p>Hi, come join us.</p>
+                    {featured.seats ? <p>A {featured.seats}-seat table.</p> : null}
+                    {featured.reason ? <p>{featured.reason}</p> : null}
+                  </div>
                 </div>
                 <button type="button" onClick={joinFeatured} className="mt-5 w-full rounded-full bg-white py-3 text-xs font-semibold uppercase tracking-[0.16em] text-ink">
                   Join
