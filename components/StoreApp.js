@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Photo } from "./Bits";
 import { HostBadge, PayDialog } from "./Flows";
 import { useBB, peopleYouCanRate } from "./Providers";
 import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso, soonestTable, tableStart } from "@/lib/bible";
+import { resolveCopy, translate } from "@/lib/i18n";
 
 const HOW = [
   ["01", "See the place", "The photo is the filter. A restaurant, or a private night. Like the room, you’ll like the night."],
@@ -55,6 +57,22 @@ function upcoming(content) {
   });
   rows.sort((a, b) => b.joined - a.joined || a.when - b.when);
   return rows;
+}
+
+function useWords() {
+  const bb = useBB();
+  return {
+    bb,
+    t: (key) => translate(bb.lang, key),
+    copy: (key, legacy) => resolveCopy(bb.content, bb.lang, key, legacy),
+  };
+}
+
+function Dock({ children }) {
+  const [on, setOn] = useState(false);
+  useEffect(() => setOn(true), []);
+  if (!on) return null;
+  return createPortal(children, document.body);
 }
 
 function Joiners({ people, host }) {
@@ -134,10 +152,11 @@ export function StoreApp() {
           <button
             type="button"
             aria-label="Language"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               const order = ["en", "zh-HK", "zh"];
               const index = order.indexOf(bb.lang);
-              bb.setLang(order[(index + 1) % order.length] || "en");
+              bb.setLang(order[(index + 1) % order.length]);
             }}
             className="grid h-9 min-w-9 place-items-center rounded-full border border-black/20 px-2 text-xs font-semibold"
           >
@@ -161,12 +180,12 @@ export function StoreApp() {
         <div className="absolute right-[4vw] z-40 w-[min(16rem,74vw)] overflow-hidden rounded-2xl border border-black/10 bg-white text-char shadow-2xl" style={{ top: "calc(env(safe-area-inset-top) + 3.6rem)" }}>
           {bb.session && <p className="border-b border-black/10 px-4 py-3 text-sm">{bb.session.handle}</p>}
           {bb.session ? (
-            <button type="button" className="block w-full px-4 py-3 text-left text-sm" onClick={() => { bb.logout(); setMenu(false); }}>Log out</button>
+            <button type="button" className="block w-full px-4 py-3 text-left text-sm" onClick={() => { bb.logout(); setMenu(false); }}>{translate(bb.lang, "nav.logout")}</button>
           ) : (
-            <button type="button" className="block w-full px-4 py-3 text-left text-sm" onClick={() => { setMenu(false); setAuth(true); }}>Log in</button>
+            <button type="button" className="block w-full px-4 py-3 text-left text-sm" onClick={() => { setMenu(false); setAuth(true); }}>{translate(bb.lang, "nav.login")}</button>
           )}
-          <a href="/subscribe" className="block px-4 py-3 text-sm">Upgrade plan</a>
-          <a href="/about" className="block px-4 py-3 text-sm">About us</a>
+          <a href="/subscribe" className="block px-4 py-3 text-sm">{translate(bb.lang, "nav.subscribe")}</a>
+          <a href="/about" className="block px-4 py-3 text-sm">{translate(bb.lang, "nav.about")}</a>
         </div>
       )}
       {notes && (
@@ -197,11 +216,11 @@ export function StoreApp() {
         style={{ paddingBottom: "max(0.45rem, env(safe-area-inset-bottom))" }}
       >
         {[
-          ["venues", "Venues"],
-          ["quick", "Quick"],
+          ["venues", "nav.venues"],
+          ["quick", "nav.quick"],
           ["how", ""],
-          ["private", "Private"],
-          ["profile", "Profile"],
+          ["private", "nav.private"],
+          ["profile", "nav.profile"],
         ].map(([idName, label]) => {
           const on = navOn === idName;
           if (idName === "how") {
@@ -214,7 +233,7 @@ export function StoreApp() {
           return (
             <button key={idName} type="button" onClick={() => go(idName)} className={`flex flex-col items-center gap-1 pb-1 text-[0.58rem] uppercase tracking-[0.12em] ${on ? "text-ember" : "text-current opacity-40"}`}>
               <Icon tab={idName} />
-              {label}
+              {label ? translate(bb.lang, label) : null}
             </button>
           );
         })}
@@ -270,16 +289,14 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
         Hong Kong · Tonight · {rows.length} blind boxes / {hosts} hosts / {scenes} scenes
       </p>
       <h1 className="mt-8 text-center font-serif text-[clamp(2.1rem,9vw,2.8rem)] leading-[1.05] text-white">
-        You don't know
+        {resolveCopy(bb.content, bb.lang, "app.home.1", "You don't know")}
         <br />
-        <span className="italic">who you'll meet.</span>
+        <span className="italic">{resolveCopy(bb.content, bb.lang, "app.home.2", "who you'll meet.")}</span>
         <br />
-        <span className="italic text-ember">That's the point.</span>
+        <span className="italic text-ember">{resolveCopy(bb.content, bb.lang, "app.home.3", "That's the point.")}</span>
       </h1>
       <p className="mx-auto mt-6 max-w-sm text-center text-sm leading-relaxed text-white/65">
-        Restaurants provide the scene. Private events create the reason.
-        <br />
-        You bring curiosity.
+        {resolveCopy(bb.content, bb.lang, "app.home.story", "Restaurants provide the scene. Private events create the reason. You bring curiosity.")}
       </p>
       {featured && (
         <article className="mt-8 overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#141414]">
@@ -350,14 +367,12 @@ function Venues({ onOpen }) {
         <span className="text-right">A neighbourhood. A time. Seats left.</span>
       </div>
       <h1 className="mt-6 text-center font-serif text-[clamp(1.8rem,8vw,2.4rem)] leading-tight">
-        Pick the place.
+        {resolveCopy(bb.content, bb.lang, "app.venues.1", "Pick the place.")}
         <br />
-        <span className="italic text-ember">Leave the rest blind.</span>
+        <span className="italic text-ember">{resolveCopy(bb.content, bb.lang, "app.venues.2", "Leave the rest blind.")}</span>
       </h1>
       <p className="mx-auto mt-4 max-w-sm text-center text-sm leading-relaxed text-white/60">
-        No faces, just places.
-        <br />
-        Enough to WANT, enough uncertainty to be WORTH having.
+        {resolveCopy(bb.content, bb.lang, "app.venues.3", "No faces, just places. Enough to WANT, enough uncertainty to be WORTH having.")}
       </p>
       <div className="mt-6 flex gap-4 overflow-x-auto border-b border-white/10 pb-2 text-[0.72rem] uppercase tracking-[0.14em]">
         {[
@@ -367,28 +382,32 @@ function Venues({ onOpen }) {
           ["central", "Central"],
           ["tonight", "Tonight"],
         ].map(([idName, label]) => (
-          <button key={idName} type="button" onClick={() => setFilter(idName)} className={`shrink-0 pb-1 ${filter === idName ? "border-b border-white text-white" : "text-white/40"}`}>{label}</button>
+          <button key={idName} type="button" onClick={() => setFilter(idName)} className={`shrink-0 pb-1 ${filter === idName ? "border-b border-white text-white" : "text-white/40"}`}>{translate(bb.lang, idName === "all" ? "filter.all" : idName === "tonight" ? "filter.tonight" : idName === "tst" ? "filter.tst" : idName === "cwb" ? "filter.cwb" : "filter.central")}</button>
         ))}
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="mt-4 grid grid-cols-2 items-start gap-x-3 gap-y-5">
         {venues.map((venue) => {
           const next = soonestTable(venue)[0];
           return (
-            <button key={venue.id} type="button" onClick={() => onOpen(venue.id)} className="text-left">
-              <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-black">
-                <Photo src={venue.imageUrl} alt="" />
+            <button key={venue.id} type="button" onClick={() => onOpen(venue.id)} className="flex flex-col text-left">
+              <div className="relative w-full overflow-hidden rounded-2xl bg-black" style={{ paddingBottom: "133%" }}>
+                <div className="absolute inset-0">
+                  <Photo src={venue.imageUrl} alt="" />
+                </div>
                 <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-white">{venue.spots || next?.hold.places || 0} spots</span>
                 <span className="absolute bottom-2 left-2 rounded-full bg-white px-2.5 py-1 text-[9px] font-semibold uppercase text-black">{next?.table.time || venue.timeLabel}</span>
               </div>
-              <h2 className="mt-2 font-serif text-[clamp(1rem,4.2vw,1.2rem)] leading-tight">{venue.name}</h2>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-white/55">{venue.typeLabel}</p>
-              <p className="text-[11px] text-white/50">{venue.locationLabel}</p>
-              {next && (
-                <span className="mt-2 flex items-center gap-1.5">
-                  <HostBadge handle={next.table.hostHandle || "C"} tier={next.table.hostTier || "bronze"} />
-                  <Joiners people={next.table.participants} host={next.table.hostHandle} />
-                </span>
-              )}
+              <h2 className="mt-2 line-clamp-2 min-h-[2.4em] font-serif text-[clamp(1rem,4.2vw,1.2rem)] leading-tight">{venue.name}</h2>
+              <p className="mt-1 line-clamp-1 text-[10px] uppercase tracking-[0.08em] text-white/55">{venue.typeLabel}</p>
+              <p className="line-clamp-2 min-h-[2em] text-[11px] text-white/50">{venue.locationLabel}</p>
+              <span className="mt-2 flex h-6 items-center gap-1.5">
+                {next && (
+                  <>
+                    <HostBadge handle={next.table.hostHandle || "C"} tier={next.table.hostTier || "bronze"} />
+                    <Joiners people={next.table.participants} host={next.table.hostHandle} />
+                  </>
+                )}
+              </span>
               <p className="text-[11px] text-white/45">{venue.priceLabel}</p>
             </button>
           );
@@ -416,9 +435,14 @@ function VenueDetail({ id, onBack }) {
         {rows.slice(0, 5).map(({ table, hold }) => (
           <div key={table.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 px-3 py-3">
             <p className="text-sm">{table.dateISO} · {table.time} · {hold.places} left</p>
-            <button type="button" className="rounded-full border border-ember px-3 py-1.5 text-xs font-semibold text-ember" onClick={() => bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>Join</button>
+            <button type="button" className="rounded-full border border-ember px-3 py-1.5 text-xs font-semibold text-ember" onClick={() => bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>{translate(bb.lang, "btn.join")}</button>
           </div>
         ))}
+      </div>
+      <div className="mt-5 grid grid-cols-3 gap-2">
+        <button type="button" className="rounded-full border border-white/20 py-3 text-xs font-semibold" onClick={() => bb.setFlow({ type: "invite", venueId: venue.id })}>{translate(bb.lang, "btn.invite")}</button>
+        <button type="button" className="rounded-full bg-white py-3 text-xs font-semibold text-black" onClick={() => bb.setFlow({ type: "join", venueId: venue.id })}>{translate(bb.lang, "btn.join")}</button>
+        <button type="button" className="rounded-full border border-ember py-3 text-xs font-semibold text-ember" onClick={() => bb.setFlow({ type: "private-create", venueId: venue.id })}>{translate(bb.lang, "btn.host")}</button>
       </div>
     </section>
   );
@@ -440,11 +464,11 @@ function Quick({ onOpen }) {
   return (
     <section className="px-[4.5vw] pb-4 pt-2">
       <h1 className="mt-4 text-center font-serif text-[clamp(2rem,8.5vw,2.7rem)] leading-[1.05]">
-        I'm free now.
+        {resolveCopy(bb.content, bb.lang, "quick.title", "I'm free now.")}
         <br />
-        <span className="italic text-ember">Who wants to join?</span>
+        <span className="italic text-ember">{resolveCopy(bb.content, bb.lang, "quick.accent", "Who wants to join?")}</span>
       </h1>
-      <p className="mx-auto mt-4 max-w-xs text-center text-sm leading-relaxed text-black/55">A seat nearby. A time. No bio, no swipe. If you're free, sit down.</p>
+      <p className="mx-auto mt-4 max-w-xs text-center text-sm leading-relaxed text-black/55">{resolveCopy(bb.content, bb.lang, "app.quick.story", "A seat nearby. A time. No bio, no swipe. If you're free, sit down.")}</p>
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
         {[
           ["nearby", "Nearby"],
@@ -473,40 +497,49 @@ function Quick({ onOpen }) {
             <button
               type="button"
               className="shrink-0 rounded-full border border-ember px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ember"
-              onClick={() => setPay(row)}
-            >Join</button>
+              onClick={() => {
+                const venue = (bb.content.venues || []).find((item) => item.id === row.venueId || String(item.name || "").toLowerCase() === String(row.name || "").toLowerCase());
+                const table = venue && soonestTable(venue)[0];
+                if (venue && table) bb.setFlow({ type: "join", venueId: venue.id, tableId: table.table.id });
+                else setPay(row);
+              }}
+            >{translate(bb.lang, "btn.join")}</button>
           </div>
         ))}
       </div>
       <p className="mt-4 rounded-2xl bg-white px-4 py-4 text-sm leading-relaxed text-black/70">No one around yet? Create one. If nobody joins, fine — you were already planning to eat alone.</p>
-      <PayDialog
-        open={!!pay}
-        title={pay?.name || ""}
-        lines={[pay?.timeLabel, pay?.detail]}
-        busy={busy}
-        onClose={() => setPay(null)}
-        onConfirm={async () => {
-          setBusy(true);
-          const res = await bb.act("event", pay.id, "join");
-          setBusy(false);
-          setPay(null);
-          if (res?.needLogin) bb.notify("Log in first.");
-          else if (res?.error) bb.notify(res.error);
-          else bb.notify("You’re in.");
-        }}
-      />
+      <Dock>
+        <PayDialog
+          open={!!pay}
+          title={pay?.name || ""}
+          lines={[pay?.timeLabel, pay?.detail]}
+          busy={busy}
+          onClose={() => setPay(null)}
+          onConfirm={async () => {
+            setBusy(true);
+            const res = await bb.act("event", pay.id, "join");
+            setBusy(false);
+            setPay(null);
+            if (res?.needLogin) bb.notify("Log in first.");
+            else if (res?.error) bb.notify(res.error);
+            else bb.notify("You’re in.");
+          }}
+        />
+      </Dock>
     </section>
   );
 }
 
 function How() {
+  const bb = useBB();
+  const line = (key, fallback) => resolveCopy(bb.content, bb.lang, key, fallback);
   return (
     <section className="px-[6vw] pb-8 pt-6">
-      <p className="text-center text-[0.68rem] uppercase tracking-[0.16em] text-white/45">How it works</p>
+      <p className="text-center text-[0.68rem] uppercase tracking-[0.16em] text-white/45">{translate(bb.lang, "nav.how")}</p>
       <h1 className="mt-5 text-center font-serif text-[clamp(2.2rem,9vw,2.8rem)] leading-none">
-        See venue, see vibe
+        {line("app.how.1", "See venue, see vibe")}
         <br />
-        <span className="italic text-ember">Take a seat.</span>
+        <span className="italic text-ember">{line("app.how.2", "Take a seat.")}</span>
       </h1>
       <p className="mx-auto mt-4 max-w-xs text-center text-sm leading-relaxed text-white/55">No bios. No swiping. Just a place, a time, and curiosity.</p>
       <ol className="relative mt-8 space-y-0">
@@ -519,7 +552,7 @@ function How() {
               </span>
             </div>
             <div className={`pb-6 ${index ? "border-t border-white/10 pt-5" : ""}`}>
-              <h2 className="font-serif text-base leading-tight text-white"><span className="mr-2 text-sm not-italic text-ember">{n}</span>{title}</h2>
+              <h2 className="font-serif text-base leading-tight text-white"><span className="mr-2 text-sm not-italic text-ember">{n}</span>{line(`app.step.${n}`, title)}</h2>
               <p className="mt-2 text-sm leading-relaxed text-white/55">{body}</p>
               {n === "08" && (
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -559,11 +592,11 @@ function Private({ onOpen }) {
         <span>Interest → Connect</span>
       </div>
       <h1 className="mt-5 text-center font-serif text-[clamp(2rem,8.5vw,2.6rem)] leading-[1.05]">
-        Find your interest.
+        {resolveCopy(bb.content, bb.lang, "private.title", "Find your interest.")}
         <br />
-        <span className="italic text-ember">Meet your people.</span>
+        <span className="italic text-ember">{resolveCopy(bb.content, bb.lang, "private.accent", "Meet your people.")}</span>
       </h1>
-      <p className="mx-auto mt-3 max-w-xs text-center text-sm leading-relaxed text-black/50">Host creates the reason. You find your kind.</p>
+      <p className="mx-auto mt-3 max-w-xs text-center text-sm leading-relaxed text-black/50">{resolveCopy(bb.content, bb.lang, "private.sub", "Host creates the reason. You find your kind.")}</p>
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
         {[
           ["comed", "Comedian"],
@@ -615,16 +648,18 @@ function PrivateDetail({ id, onBack }) {
       <p className="mt-2 text-sm">{event.location} · {event.dateISO} · {event.timeLabel}</p>
       <p className="mt-3 text-sm leading-relaxed text-black/70">{event.description || event.forWhom}</p>
       <p className="mt-4 flex items-center gap-2 text-sm"><HostBadge handle={event.hostName || "Host"} tier={event.hostTier || "bronze"} /> {event.hostName}</p>
-      <button type="button" className="mt-5 w-full rounded-full bg-black py-3 text-sm font-semibold text-white" onClick={() => { if (!bb.session) { bb.notify("Log in first."); return; } setPay(true); }}>Join</button>
-      {premium && <button type="button" className="mt-2 w-full rounded-full border border-black/15 py-3 text-sm" onClick={() => bb.setFlow({ type: "private-create", venueId: event.venueId || "" })}>Host</button>}
-      <PayDialog open={pay} title={event.name} lines={[event.location, `${event.dateISO} · ${event.timeLabel}`]} busy={busy} onClose={() => setPay(false)} onConfirm={async () => {
-        setBusy(true);
-        const res = await bb.joinPrivate(event.id);
-        setBusy(false);
-        setPay(false);
-        if (res?.error) bb.notify(res.error === "FULL" ? "Full." : res.error);
-        else bb.notify("You’re in.");
-      }} />
+      <button type="button" className="mt-5 w-full rounded-full bg-black py-3 text-sm font-semibold text-white" onClick={() => { if (!bb.session) { bb.notify("Log in first."); return; } setPay(true); }}>{translate(bb.lang, "btn.join")}</button>
+      {premium && <button type="button" className="mt-2 w-full rounded-full border border-black/15 py-3 text-sm" onClick={() => bb.setFlow({ type: "private-create", venueId: event.venueId || "" })}>{translate(bb.lang, "btn.host")}</button>}
+      <Dock>
+        <PayDialog open={pay} title={event.name} lines={[event.location, `${event.dateISO} · ${event.timeLabel}`]} busy={busy} onClose={() => setPay(false)} onConfirm={async () => {
+          setBusy(true);
+          const res = await bb.joinPrivate(event.id);
+          setBusy(false);
+          setPay(false);
+          if (res?.error) bb.notify(res.error === "FULL" ? "Full." : res.error);
+          else bb.notify("You’re in.");
+        }} />
+      </Dock>
     </section>
   );
 }
