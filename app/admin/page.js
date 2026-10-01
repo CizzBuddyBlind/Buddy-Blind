@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useBB } from "@/components/Providers";
 import { fileToCover } from "@/components/Bits";
 import { CUISINES } from "@/lib/bible";
-import { say } from "@/lib/say";
+import { DICT, EXTRA } from "@/lib/i18n";
+import { phraseList, say } from "@/lib/say";
 
 const EMPTY = {
   name: "",
@@ -52,6 +53,78 @@ export function restaurantFields(form) {
     contactMethod: form.contactMethod === "sms" ? "sms" : "whatsapp",
     about: form.about.trim(),
   };
+}
+
+function englishLines() {
+  return [...new Set([...phraseList(), ...Object.values(DICT.en || {}), ...Object.values(EXTRA.en || {})])].filter((line) => line && /[A-Za-z]/.test(line));
+}
+
+function WordingEditor({ bb }) {
+  const [lang, setLang] = useState("zh-HK");
+  const [query, setQuery] = useState("");
+  const [edits, setEdits] = useState({});
+  const [busy, setBusy] = useState(false);
+  const bag = bb.content?.wording?.[lang] || {};
+  const lines = useMemo(() => {
+    const all = [...new Set([...englishLines(), ...Object.keys(bb.content?.wording?.zh || {}), ...Object.keys(bb.content?.wording?.["zh-HK"] || {})])];
+    const q = query.trim().toLowerCase();
+    return all
+      .filter((line) => !q || line.toLowerCase().includes(q) || String(bag[line] || say(lang, line, false)).toLowerCase().includes(q))
+      .sort((a, b) => a.localeCompare(b))
+      .slice(0, 80);
+  }, [query, lang, bag, bb.content]);
+
+  function shown(english) {
+    if (Object.prototype.hasOwnProperty.call(edits, english)) return edits[english];
+    return bag[english] || say(lang, english, false);
+  }
+
+  async function save() {
+    setBusy(true);
+    bb.update((draft) => {
+      if (!draft.wording) draft.wording = { zh: {}, "zh-HK": {} };
+      if (!draft.wording.zh) draft.wording.zh = {};
+      if (!draft.wording["zh-HK"]) draft.wording["zh-HK"] = {};
+      const next = draft.wording[lang];
+      Object.entries(edits).forEach(([english, value]) => {
+        const clean = String(value || "").trim();
+        if (!clean) delete next[english];
+        else next[english] = clean;
+      });
+    });
+    await bb.publish();
+    setEdits({});
+    setBusy(false);
+  }
+
+  return (
+    <section data-keep className="mt-16 max-w-3xl">
+      <h2 className="font-serif text-4xl">Wording</h2>
+      <p className="mt-2 text-sm text-mute">Change Traditional or Simplified on its own. Saving one does not change the other.</p>
+      <div className="mt-4 flex gap-2">
+        {[
+          ["zh-HK", "繁 Traditional"],
+          ["zh", "简 Simplified"],
+        ].map(([id, label]) => (
+          <button key={id} type="button" onClick={() => { setLang(id); setEdits({}); }} className={`rounded-full px-4 py-2 text-sm ${lang === id ? "bg-ember font-semibold text-[#1a1408]" : "border border-white/20 text-white/70"}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search English or the translation" className="mt-4 w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg" />
+      <div className="mt-4 grid gap-3">
+        {lines.map((english) => (
+          <label key={english} className="grid gap-1">
+            <span className="text-xs text-white/45">{english}</span>
+            <textarea value={shown(english)} onChange={(e) => setEdits((prev) => ({ ...prev, [english]: e.target.value }))} rows={2} className="rounded-xl border border-white/15 bg-card px-4 py-2 text-sm text-fg" />
+          </label>
+        ))}
+      </div>
+      <button type="button" onClick={save} disabled={busy || !Object.keys(edits).length} className="mt-4 rounded-full bg-white px-5 py-3 text-sm font-semibold text-black disabled:opacity-50">
+        {busy ? "Saving…" : lang === "zh-HK" ? "Save Traditional only" : "Save Simplified only"}
+      </button>
+    </section>
+  );
 }
 
 export default function AdminPage() {
@@ -161,6 +234,7 @@ export default function AdminPage() {
           </li>
         ))}
       </ul>
+      <WordingEditor bb={bb} />
     </main>
   );
 }

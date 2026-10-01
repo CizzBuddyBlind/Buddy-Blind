@@ -6,6 +6,7 @@ import { loadSharedContent, saveSharedContent, supabaseReady } from "@/lib/supab
 import { bookingHold, iso, logEntry, normalizeContent, privateEditOpen, tableStart, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
 import { notifyRestaurant } from "@/lib/notify";
 import { putMedia } from "@/lib/media";
+import { setWording } from "@/lib/say";
 
 const Ctx = createContext(null);
 export function useBB() {
@@ -315,6 +316,7 @@ export function BuddyProvider({ children }) {
   const staff = !!(session && (session.role === "admin" || session.role === "founder"));
   const editing = false;
   const content = editing ? draft || published : published;
+  setWording(content?.wording);
 
   const saveDraft = useCallback(() => {
     const next = clone(draftRef.current || publishedRef.current);
