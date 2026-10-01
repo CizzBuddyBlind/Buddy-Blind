@@ -7,6 +7,7 @@ import { Editable, Photo } from "@/components/Bits";
 import { HostBadge, ShareSheet } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
+import { say } from "@/lib/say";
 import { bookingHold, prettyDate, tablePrefs } from "@/lib/bible";
 
 export default function VenuePage() {
@@ -92,13 +93,13 @@ export default function VenuePage() {
 
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-ember">
-            <Editable locked={venue.locked} value={venue.cuisine || ""} onChange={(cuisine) => patch({ cuisine })} />
+            <Editable locked={venue.locked} value={say(lang, venue.cuisine || "")} onChange={(cuisine) => patch({ cuisine })} />
           </p>
           <h1 className="mt-2 font-serif text-4xl leading-tight md:text-5xl">
             <Editable locked={venue.locked} value={venue.name} onChange={(name) => patch({ name })} />
           </h1>
           <p className="mt-3 text-sm text-mute">
-            <Editable locked={venue.locked} value={venue.locationLabel || ""} onChange={(locationLabel) => patch({ locationLabel })} />
+            <Editable locked={venue.locked} value={say(lang, venue.locationLabel || "")} onChange={(locationLabel) => patch({ locationLabel })} />
             {" · "}
             {venue.priceTier}
             {" · "}
@@ -111,7 +112,7 @@ export default function VenuePage() {
               {t("venue.pet")}
             </label>
           )}
-          <Editable as="p" className="mt-6 text-base leading-relaxed text-fg/90" locked={venue.locked} value={venue.about || ""} onChange={(about) => patch({ about })} />
+          <Editable as="p" className="mt-6 text-base leading-relaxed text-fg/90" locked={venue.locked} value={say(lang, venue.about || "")} onChange={(about) => patch({ about })} />
           {(venue.goodFor || editing) && (
             <p className="mt-3 text-sm text-mute">
               {t("venue.good")} · <Editable locked={venue.locked} value={venue.goodFor || ""} onChange={(goodFor) => patch({ goodFor })} />

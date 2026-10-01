@@ -8,6 +8,7 @@ import { DoneShare, HostBadge, PayDialog, ShareSheet, rememberReturn } from "@/c
 import { useBB } from "@/components/Providers";
 import { eventPhotos, eventPoster, privateEditOpen, privateLockDate } from "@/lib/bible";
 import { getMedia } from "@/lib/media";
+import { say } from "@/lib/say";
 
 export default function PrivateDetailPage() {
   const { id } = useParams();
@@ -207,13 +208,13 @@ export default function PrivateDetailPage() {
           )}
         </div>
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-ember">{event.forWhom || event.typeLabel}</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-ember">{say(bb.lang, event.forWhom || event.typeLabel)}</p>
           <h1 className="mt-2 font-serif text-4xl leading-tight md:text-5xl">
-            <Editable value={event.name} onChange={(name) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.name = name; })} />
+            <Editable value={say(bb.lang, event.name, false)} onChange={(name) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.name = name; })} />
           </h1>
           <p className="mt-3 text-sm">{event.location} · {event.dateISO} · {event.timeLabel}</p>
           <p className="mt-1 text-sm text-mute">{full ? "Full" : `${event.spots} seats left`}</p>
-          <Editable as="p" className="mt-6 text-base leading-relaxed" value={event.description || ""} onChange={(description) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.description = description; })} />
+          <Editable as="p" className="mt-6 text-base leading-relaxed" value={say(bb.lang, event.description || "")} onChange={(description) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.description = description; })} />
           <div className="mt-8 border-t border-black/10 pt-6">
             <div className="flex items-center gap-3">
               <HostBadge handle={host.handle} tier={event.hostTier || "bronze"} />
@@ -231,7 +232,7 @@ export default function PrivateDetailPage() {
               {buddyLabel !== "" && <p className="text-char">Buddies {buddyLabel}</p>}
             </div>
             {(event.aboutHost || bb.editing) && (
-              <Editable as="p" className="mt-4 text-sm leading-relaxed" value={event.aboutHost || ""} onChange={(aboutHost) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.aboutHost = aboutHost; })} />
+              <Editable as="p" className="mt-4 text-sm leading-relaxed" value={say(bb.lang, event.aboutHost || "")} onChange={(aboutHost) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.aboutHost = aboutHost; })} />
             )}
           </div>
           <div className="mt-6 flex flex-wrap gap-2">

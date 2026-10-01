@@ -7,6 +7,7 @@ import { HostBadge, PayDialog } from "./Flows";
 import { useBB, peopleYouCanRate } from "./Providers";
 import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso, soonestTable, tableStart } from "@/lib/bible";
 import { resolveCopy, translate } from "@/lib/i18n";
+import { say } from "@/lib/say";
 
 const HOW = [
   ["01", "See the place", "The photo is the filter. A restaurant, or a private night. Like the room, you’ll like the night."],
@@ -318,11 +319,11 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
               <Joiners people={featured.kind === "table" ? featured.table.participants : featured.event.participants} host={featured.host} />
             </div>
             <p className="mt-3 text-sm leading-relaxed text-white/70">
-              {featured.kind === "private" ? (featured.event.description || featured.event.forWhom) : featured.venue.about}
+              {say(bb.lang, featured.kind === "private" ? (featured.event.description || featured.event.forWhom) : featured.venue.about)}
             </p>
             <div className="mt-4 flex gap-2">
-              <button type="button" onClick={join} className="flex-1 rounded-full bg-white px-3 py-3 text-[13px] font-semibold text-black">Love it. Let's do this.</button>
-              <button type="button" onClick={onVenues} className="rounded-full border border-white/25 px-4 py-3 text-[13px] font-semibold">Explore more</button>
+              <button type="button" onClick={join} className="flex-1 rounded-full bg-white px-3 py-3 text-[13px] font-semibold text-black">{say(bb.lang, "Love it. Let's do this.")}</button>
+              <button type="button" onClick={onVenues} className="rounded-full border border-white/25 px-4 py-3 text-[13px] font-semibold">{say(bb.lang, "Explore more")}</button>
             </div>
           </div>
         </article>
@@ -363,8 +364,8 @@ function Venues({ onOpen }) {
   return (
     <section className="px-[4.5vw] pb-6 pt-4">
       <div className="flex justify-between gap-3 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">
-        <span>Venues · Restaurants</span>
-        <span className="text-right">A neighbourhood. A time. Seats left.</span>
+        <span>{say(bb.lang, "Venues · Restaurants")}</span>
+        <span className="text-right">{say(bb.lang, "A neighbourhood. A time. Seats left.")}</span>
       </div>
       <h1 className="mt-6 text-center font-serif text-[clamp(1.8rem,8vw,2.4rem)] leading-tight">
         {resolveCopy(bb.content, bb.lang, "app.venues.1", "Pick the place.")}
@@ -397,9 +398,9 @@ function Venues({ onOpen }) {
                 <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-white">{venue.spots || next?.hold.places || 0} spots</span>
                 <span className="absolute bottom-2 left-2 rounded-full bg-white px-2.5 py-1 text-[9px] font-semibold uppercase text-black">{next?.table.time || venue.timeLabel}</span>
               </div>
-              <h2 className="mt-2 line-clamp-2 min-h-[2.4em] font-serif text-[clamp(1rem,4.2vw,1.2rem)] leading-tight">{venue.name}</h2>
-              <p className="mt-1 line-clamp-1 text-[10px] uppercase tracking-[0.08em] text-white/55">{venue.typeLabel}</p>
-              <p className="line-clamp-2 min-h-[2em] text-[11px] text-white/50">{venue.locationLabel}</p>
+              <h2 className="mt-2 line-clamp-2 min-h-[2.4em] font-serif text-[clamp(1rem,4.2vw,1.2rem)] leading-tight">{say(bb.lang, venue.name, false)}</h2>
+              <p className="mt-1 line-clamp-1 text-[10px] uppercase tracking-[0.08em] text-white/55">{say(bb.lang, venue.typeLabel)}</p>
+              <p className="line-clamp-2 min-h-[2em] text-[11px] text-white/50">{say(bb.lang, venue.locationLabel)}</p>
               <span className="mt-2 flex h-6 items-center gap-1.5">
                 {next && (
                   <>
@@ -408,7 +409,7 @@ function Venues({ onOpen }) {
                   </>
                 )}
               </span>
-              <p className="text-[11px] text-white/45">{venue.priceLabel}</p>
+              <p className="text-[11px] text-white/45">{say(bb.lang, venue.priceLabel)}</p>
             </button>
           );
         })}
@@ -424,13 +425,13 @@ function VenueDetail({ id, onBack }) {
   const rows = soonestTable(venue);
   return (
     <section className="px-[4.5vw] pb-8 pt-4">
-      <button type="button" onClick={onBack} className="text-xs uppercase tracking-[0.14em] text-white/45">Back</button>
+      <button type="button" onClick={onBack} className="text-xs uppercase tracking-[0.14em] text-white/45">{say(bb.lang, "Back")}</button>
       <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-3xl">
         <Photo src={venue.gallery?.[0] || venue.imageUrl} alt="" />
       </div>
-      <h1 className="mt-4 font-serif text-[clamp(1.8rem,8vw,2.4rem)]">{venue.name}</h1>
-      <p className="mt-2 text-sm text-white/60">{venue.typeLabel} · {venue.locationLabel}</p>
-      <p className="mt-3 text-sm leading-relaxed text-white/75">{venue.about}</p>
+      <h1 className="mt-4 font-serif text-[clamp(1.8rem,8vw,2.4rem)]">{say(bb.lang, venue.name, false)}</h1>
+      <p className="mt-2 text-sm text-white/60">{say(bb.lang, venue.typeLabel)} · {say(bb.lang, venue.locationLabel)}</p>
+      <p className="mt-3 text-sm leading-relaxed text-white/75">{say(bb.lang, venue.about)}</p>
       <div className="mt-4 space-y-2">
         {rows.slice(0, 5).map(({ table, hold }) => (
           <div key={table.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 px-3 py-3">
@@ -477,7 +478,7 @@ function Quick({ onOpen }) {
           ["drinks", "Drinks"],
           ["coffee", "Coffee"],
         ].map(([idName, label]) => (
-          <button key={idName} type="button" onClick={() => setChip(idName)} className={`shrink-0 rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] ${chip === idName ? "bg-black text-white" : "bg-white text-black"}`}>{label}</button>
+          <button key={idName} type="button" onClick={() => setChip(idName)} className={`shrink-0 rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] ${chip === idName ? "bg-black text-white" : "bg-white text-black"}`}>{say(bb.lang, label)}</button>
         ))}
       </div>
       <div className="mt-2 divide-y divide-black/10">
@@ -487,12 +488,12 @@ function Quick({ onOpen }) {
               <Photo src={row.imageUrl} alt="" />
             </span>
             <span className="min-w-0 flex-1" onClick={() => row.venueId && onOpen(row.venueId)}>
-              <span className="block text-[10px] uppercase tracking-[0.12em] text-black/45">{row.timeLabel}</span>
+              <span className="block text-[10px] uppercase tracking-[0.12em] text-black/45">{say(bb.lang, row.timeLabel)}</span>
               <span className="mt-0.5 flex items-center gap-2">
-                <span className="truncate font-serif text-lg">{row.name}</span>
+                <span className="truncate font-serif text-lg">{say(bb.lang, row.name, false)}</span>
                 <HostBadge handle={row.hostName || "CJ"} tier={row.hostTier || "gold"} />
               </span>
-              <span className="block text-xs text-black/45">{row.detail}</span>
+              <span className="block text-xs text-black/45">{say(bb.lang, row.detail)}</span>
             </span>
             <button
               type="button"
@@ -507,7 +508,7 @@ function Quick({ onOpen }) {
           </div>
         ))}
       </div>
-      <p className="mt-4 rounded-2xl bg-white px-4 py-4 text-sm leading-relaxed text-black/70">No one around yet? Create one. If nobody joins, fine — you were already planning to eat alone.</p>
+      <p className="mt-4 rounded-2xl bg-white px-4 py-4 text-sm leading-relaxed text-black/70">{say(bb.lang, "No one around yet? Create one. If nobody joins, fine — you were already planning to eat alone.")}</p>
       <Dock>
         <PayDialog
           open={!!pay}
@@ -552,8 +553,8 @@ function How() {
               </span>
             </div>
             <div className={`pb-6 ${index ? "border-t border-white/10 pt-5" : ""}`}>
-              <h2 className="font-serif text-base leading-tight text-white"><span className="mr-2 text-sm not-italic text-ember">{n}</span>{line(`app.step.${n}`, title)}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-white/55">{body}</p>
+              <h2 className="font-serif text-base leading-tight text-white"><span className="mr-2 text-sm not-italic text-ember">{n}</span>{say(bb.lang, line(`app.step.${n}`, title))}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-white/55">{say(bb.lang, body)}</p>
               {n === "08" && (
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                   {[
@@ -588,8 +589,8 @@ function Private({ onOpen }) {
   return (
     <section className="px-[4.5vw] pb-6 pt-3">
       <div className="flex justify-between gap-3 text-[0.62rem] uppercase tracking-[0.14em] text-black/40">
-        <span className="text-ember">Private · Host led</span>
-        <span>Interest → Connect</span>
+        <span className="text-ember">{say(bb.lang, "Private · Host led")}</span>
+        <span>{say(bb.lang, "Interest → Connect")}</span>
       </div>
       <h1 className="mt-5 text-center font-serif text-[clamp(2rem,8.5vw,2.6rem)] leading-[1.05]">
         {resolveCopy(bb.content, bb.lang, "private.title", "Find your interest.")}
@@ -605,7 +606,7 @@ function Private({ onOpen }) {
           ["wine", "Wine"],
           ["hik", "Hiking"],
         ].map(([idName, label]) => (
-          <button key={idName} type="button" onClick={() => setChip((cur) => (cur === idName ? "" : idName))} className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${chip === idName ? "bg-black text-white" : "bg-white text-black/70"}`}>{label}</button>
+          <button key={idName} type="button" onClick={() => setChip((cur) => (cur === idName ? "" : idName))} className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${chip === idName ? "bg-black text-white" : "bg-white text-black/70"}`}>{say(bb.lang, label)}</button>
         ))}
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3">
@@ -615,9 +616,9 @@ function Private({ onOpen }) {
               <Photo src={eventPhotos(night)[0] || ""} fallback={eventPoster(night)} alt="" />
             </div>
             <div className="px-3 py-3">
-              <h2 className="font-serif text-[clamp(1rem,4vw,1.15rem)] leading-tight">{night.name}</h2>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-black/45">{night.typeLabel}</p>
-              <p className="mt-1 text-xs text-black/55">{night.upcomingLabel || `${night.spots} places`}</p>
+              <h2 className="font-serif text-[clamp(1rem,4vw,1.15rem)] leading-tight">{say(bb.lang, night.name, false)}</h2>
+              <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-black/45">{say(bb.lang, night.typeLabel)}</p>
+              <p className="mt-1 text-xs text-black/55">{say(bb.lang, night.upcomingLabel || `${night.spots} places`)}</p>
               <span className="mt-2 flex items-center gap-1.5">
                 <HostBadge handle={night.hostName || "Host"} tier={night.hostTier || "bronze"} />
                 <Joiners people={night.participants} host={night.hostName} />
@@ -644,9 +645,9 @@ function PrivateDetail({ id, onBack }) {
       <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-3xl bg-neutral-200">
         <Photo src={eventPhotos(event)[0] || ""} fallback={eventPoster(event)} alt="" />
       </div>
-      <h1 className="mt-4 font-serif text-[clamp(1.8rem,8vw,2.4rem)]">{event.name}</h1>
-      <p className="mt-2 text-sm">{event.location} · {event.dateISO} · {event.timeLabel}</p>
-      <p className="mt-3 text-sm leading-relaxed text-black/70">{event.description || event.forWhom}</p>
+      <h1 className="mt-4 font-serif text-[clamp(1.8rem,8vw,2.4rem)]">{say(bb.lang, event.name, false)}</h1>
+      <p className="mt-2 text-sm">{say(bb.lang, event.location)} · {event.dateISO} · {say(bb.lang, event.timeLabel)}</p>
+      <p className="mt-3 text-sm leading-relaxed text-black/70">{say(bb.lang, event.description || event.forWhom)}</p>
       <p className="mt-4 flex items-center gap-2 text-sm"><HostBadge handle={event.hostName || "Host"} tier={event.hostTier || "bronze"} /> {event.hostName}</p>
       <button type="button" className="mt-5 w-full rounded-full bg-black py-3 text-sm font-semibold text-white" onClick={() => { if (!bb.session) { bb.notify("Log in first."); return; } setPay(true); }}>{translate(bb.lang, "btn.join")}</button>
       {premium && <button type="button" className="mt-2 w-full rounded-full border border-black/15 py-3 text-sm" onClick={() => bb.setFlow({ type: "private-create", venueId: event.venueId || "" })}>{translate(bb.lang, "btn.host")}</button>}
@@ -692,16 +693,16 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
     <section className="px-[5vw] pb-8 pt-6 text-center">
       <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-3xl ${paint.className}`} style={paint.style}>{initials(session)}</div>
       <h1 className="mt-4 font-serif text-[clamp(1.6rem,7vw,2rem)]">{session.handle}</h1>
-      {showWho && <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-white/55">{showWho}</p>}
-      {showWhere && <p className="text-[11px] uppercase tracking-[0.14em] text-white/55">{showWhere}</p>}
-      <p className="mt-1 text-sm text-white/70">{session.points || 0} points{off ? ` · ${off}% off` : ""}</p>
+      {showWho && <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-white/55">{say(bb.lang, showWho)}</p>}
+      {showWhere && <p className="text-[11px] uppercase tracking-[0.14em] text-white/55">{say(bb.lang, where)}</p>}
+      <p className="mt-1 text-sm text-white/70">{session.points || 0} {say(bb.lang, "points")}{off ? ` · ${off}% ${say(bb.lang, "off")}` : ""}</p>
       <div className="mx-auto mt-6 flex max-w-sm rounded-full bg-[#1c1c1c] p-1">
         {[
           ["info", "Info"],
           ["buddies", "Buddies"],
           ["review", "Review"],
         ].map(([idName, label]) => (
-          <button key={idName} type="button" onClick={() => setPanel(idName)} className={`flex-1 rounded-full py-2 text-xs uppercase tracking-[0.12em] ${panel === idName ? "bg-white text-black" : "text-white/55"}`}>{label}</button>
+          <button key={idName} type="button" onClick={() => setPanel(idName)} className={`flex-1 rounded-full py-2 text-xs uppercase tracking-[0.12em] ${panel === idName ? "bg-white text-black" : "text-white/55"}`}>{say(bb.lang, label)}</button>
         ))}
       </div>
       {panel === "info" && <Info session={session} content={bb.content} />}
@@ -710,27 +711,27 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
           {buddies.map((buddy) => (
             <span key={buddy.id} className="grid aspect-square place-items-center rounded-full border border-white/15 bg-[#161616] font-serif text-lg">{buddy.name.slice(0, 1).toUpperCase()}</span>
           ))}
-          {!buddies.length && <p className="col-span-5 text-sm text-white/45">No buddies yet.</p>}
+          {!buddies.length && <p className="col-span-5 text-sm text-white/45">{say(bb.lang, "No buddies yet.")}</p>}
         </div>
       )}
       {panel === "review" && (
         <div className="mt-5 space-y-3 text-left">
           {reviews.slice(0, 3).map((review) => (
-            <p key={review.id || review.at} className="rounded-2xl bg-[#161616] px-4 py-3 text-sm text-white/75">{review.body || review.note}</p>
+            <p key={review.id || review.at} className="rounded-2xl bg-[#161616] px-4 py-3 text-sm text-white/75">{say(bb.lang, review.body || review.note, false)}</p>
           ))}
-          {!reviews.length && <p className="text-center text-sm text-white/45">No reviews yet.</p>}
-          {peopleYouCanRate(bb.content, session.handle).length > 0 && <p className="text-center text-xs text-white/40">Rate someone after you have shared a table.</p>}
+          {!reviews.length && <p className="text-center text-sm text-white/45">{say(bb.lang, "No reviews yet.")}</p>}
+          {peopleYouCanRate(bb.content, session.handle).length > 0 && <p className="text-center text-xs text-white/40">{say(bb.lang, "Rate someone after you have shared a table.")}</p>}
         </div>
       )}
       <div className="mt-8 text-left">
-        <p className="text-[0.68rem] uppercase tracking-[0.14em] text-white/45">Today and upcoming</p>
-        {!seats.length && <p className="mt-3 text-sm text-white/45">None yet.</p>}
+        <p className="text-[0.68rem] uppercase tracking-[0.14em] text-white/45">{say(bb.lang, "Today and upcoming")}</p>
+        {!seats.length && <p className="mt-3 text-sm text-white/45">{say(bb.lang, "None yet.")}</p>}
         <div className="mt-3 flex gap-3 overflow-x-auto">
           {seats.map((seat) => (
             <button key={`${seat.id}-${seat.dateISO}`} type="button" onClick={() => (seat.kind === "private" ? onOpenEvent(seat.id) : seat.venueId && onOpenVenue(seat.venueId))} className="w-[42%] shrink-0 overflow-hidden rounded-2xl border border-white/10 text-left">
               <div className="aspect-square bg-black/40" />
               <div className="p-2">
-                <p className="truncate text-sm">{seat.name}</p>
+                <p className="truncate text-sm">{say(bb.lang, seat.name, false)}</p>
                 <p className="text-[11px] text-white/45">{seat.dateISO} · {seat.time}</p>
               </div>
             </button>
@@ -765,9 +766,10 @@ function Info({ session, content }) {
     else if (event.kind === "quick") quick += 1;
   });
   const rows = [["Joined", joined], ["Invited", invited], ["Quick meet", quick], ["Private joined", privJoin], ["Private hosted", privHost]];
+  const bb = useBB();
   return (
     <div className="mx-auto mt-5 max-w-sm rounded-3xl bg-[#1c1c1c] px-5 py-4 text-left text-sm">
-      {rows.map(([label, n]) => <p key={label} className="mt-2 flex justify-between text-white/70 first:mt-0"><span>{label}</span><span>{n}</span></p>)}
+      {rows.map(([label, n]) => <p key={label} className="mt-2 flex justify-between text-white/70 first:mt-0"><span>{say(bb.lang, label)}</span><span>{n}</span></p>)}
     </div>
   );
 }

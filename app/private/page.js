@@ -6,6 +6,7 @@ import { Copy, Editable, Photo } from "@/components/Bits";
 import { DoneShare, HostBadge, PayDialog, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
+import { say } from "@/lib/say";
 import { eventPhotos, eventPoster, queryHits } from "@/lib/bible";
 
 export default function PrivatePage() {
@@ -115,10 +116,10 @@ export default function PrivatePage() {
               </div>
               <div className="bb-night-copy px-4 pt-4">
                 <div className="bb-night-line font-serif text-xl">
-                  <Editable locked={night.locked} value={night.name} onChange={(name) => update((d) => { const item = d.events.find((x) => x.id === night.id); if (item) item.name = name; })} />
+                  <Editable locked={night.locked} value={say(bb.lang, night.name, false)} onChange={(name) => update((d) => { const item = d.events.find((x) => x.id === night.id); if (item) item.name = name; })} />
                 </div>
-                <div className="bb-night-line mt-1 text-xs tracking-wide text-mute">{night.forWhom || night.typeLabel}</div>
-                <div className="bb-night-line mt-1 text-xs text-mute">{night.location || "Hong Kong"} · {night.dateISO} · {night.timeLabel}</div>
+                <div className="bb-night-line mt-1 text-xs tracking-wide text-mute">{say(bb.lang, night.forWhom || night.typeLabel)}</div>
+                <div className="bb-night-line mt-1 text-xs text-mute">{say(bb.lang, night.location || "Hong Kong")} · {night.dateISO} · {say(bb.lang, night.timeLabel)}</div>
               </div>
               <div className="mt-3 flex items-center justify-between gap-2 px-4 pb-4 text-sm">
                   <span className="flex min-w-0 items-center gap-2">

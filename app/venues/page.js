@@ -8,6 +8,7 @@ import { Copy, Editable, Photo } from "@/components/Bits";
 import { HostBadge } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
+import { say } from "@/lib/say";
 import { CUISINES, iso, queryHits, soonestTable, tablePrefs } from "@/lib/bible";
 
 const FILTERS = [
@@ -173,10 +174,10 @@ function Home() {
                     <Editable locked={venue.locked} value={venue.name} onChange={(name) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.name = name; })} />
                   </h3>
                   <p className="mt-1 text-[0.72rem] tracking-wide text-mute">
-                    <Editable locked={venue.locked} value={venue.cuisine || venue.typeLabel} onChange={(cuisine) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.cuisine = cuisine; })} />
+                    <Editable locked={venue.locked} value={say(bb.lang, venue.cuisine || venue.typeLabel)} onChange={(cuisine) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.cuisine = cuisine; })} />
                   </p>
                   <p className="text-[0.72rem] tracking-wide text-mute">
-                    <Editable locked={venue.locked} value={venue.locationLabel} onChange={(locationLabel) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.locationLabel = locationLabel; })} />
+                    <Editable locked={venue.locked} value={say(bb.lang, venue.locationLabel)} onChange={(locationLabel) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.locationLabel = locationLabel; })} />
                   </p>
                   <p className="mt-1 text-[0.8rem] text-mute">{venue.priceTier} · {venue.hours}</p>
                   {venue.petFriendly && <p className="mt-1 text-[0.72rem] uppercase tracking-[0.12em] text-ember">{t("venue.pet")}</p>}

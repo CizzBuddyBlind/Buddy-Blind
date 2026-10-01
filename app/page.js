@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { DoneShare, HostBadge, PayDialog, ShareSheet, rememberReturn } from "@/components/Flows";
 import { useBB } from "@/components/Providers";
 import { bookingHold, iso, tableStart } from "@/lib/bible";
+import { say } from "@/lib/say";
 
 function upcoming(content) {
   const today = iso(0);
@@ -119,33 +120,31 @@ export default function HomePage() {
       <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
         <section className="bb-home-hero lg:sticky lg:top-16 lg:flex lg:h-[calc(100dvh-4rem)] lg:flex-col lg:justify-center">
           <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/50">
-            Hong Kong · Tonight · {rows.length} blind boxes / {hosts} hosts / {scenes} scenes
+            Hong Kong · {say(bb.lang, "Tonight")} · {rows.length} {say(bb.lang, "blind boxes")} / {hosts} {say(bb.lang, "hosts")} / {scenes} {say(bb.lang, "scenes")}
           </p>
           <h1 className="mt-16 font-serif text-white md:mt-[5.4rem]">
-            <span>You don't know</span>
-            <span className="italic">who you'll meet.</span>
-            <span className="italic text-ember">That's the point.</span>
+            <span>{say(bb.lang, "You don't know")}</span>
+            <span className="italic">{say(bb.lang, "who you'll meet.")}</span>
+            <span className="italic text-ember">{say(bb.lang, "That's the point.")}</span>
           </h1>
           <p className="mt-10 max-w-md text-sm leading-relaxed text-white/70">
-            Restaurants provide the scene. Private events create the reason.
-            <br />
-            You bring curiosity.
+            {say(bb.lang, "Restaurants provide the scene. Private events create the reason. You bring curiosity.")}
           </p>
           <Link href="/quick" className="mt-8 inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-ink">
-            Want a Quick Meet?
+            {say(bb.lang, "Want a Quick Meet?")}
           </Link>
           <div className="mt-16 grid grid-cols-3 gap-4 border-t border-white/15 pt-5 md:mt-[5.4rem]">
             <div>
               <p className="bb-figure text-4xl text-white">{events}</p>
-              <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">Total events</p>
+              <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">{say(bb.lang, "Total events")}</p>
             </div>
             <div>
               <p className="bb-figure text-4xl text-white">{scenes}</p>
-              <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">Scenes tonight</p>
+              <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">{say(bb.lang, "Scenes tonight")}</p>
             </div>
             <div>
               <p className="bb-figure text-4xl text-white">{rating}</p>
-              <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">Avg after-talk rating</p>
+              <p className="mt-2 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">{say(bb.lang, "Avg after-talk rating")}</p>
             </div>
           </div>
         </section>
@@ -153,7 +152,7 @@ export default function HomePage() {
         <section className="lg:flex lg:min-h-[calc(100dvh-4rem)] lg:flex-col lg:justify-center lg:py-8">
           <p className="mb-3 flex items-center gap-2 text-[0.68rem] uppercase tracking-[0.16em] text-white/55">
             <span className="text-ember">●</span>
-            Featured tonight · One blind box open
+            {say(bb.lang, "Featured tonight · One blind box open")}
           </p>
           {featured ? (
             <article className="overflow-hidden rounded-[28px] border border-white/10 bg-[#161616]">
@@ -162,8 +161,8 @@ export default function HomePage() {
                   <img src={featured.image} alt="" className="aspect-[16/10] w-full object-cover" />
                 </Link>
                 <div className="pointer-events-none absolute left-3 top-3 flex flex-wrap gap-2">
-                  <span className="rounded-full bg-black/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">{featured.home?.when || [featured.area, featured.time].filter(Boolean).join(" · ")}</span>
-                  <span className="rounded-full bg-ember px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#1a1408]">{featured.home?.spots || `${featured.spots ?? 0} spots left`}</span>
+                  <span className="rounded-full bg-black/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">{say(bb.lang, featured.home?.when || [featured.area, featured.time].filter(Boolean).join(" · "))}</span>
+                  <span className="rounded-full bg-ember px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#1a1408]">{say(bb.lang, featured.home?.spots || `${featured.spots ?? 0} spots left`)}</span>
                 </div>
                 <div className="absolute right-3 top-4">
                   <HostBadge handle={featured.host || "C"} tier={featured.tier || "bronze"} size="feature" />
@@ -172,14 +171,14 @@ export default function HomePage() {
                 <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">{featured.home?.chip || featured.meta}</span>
               </div>
               <div className="px-5 pb-5 pt-5">
-                <h2 className="font-serif text-[2.6rem] leading-none text-white">{featured.name}</h2>
-                <p className="mt-3 text-[11px] uppercase leading-relaxed tracking-[0.14em] text-white/45">{featured.home?.meta || featured.meta}</p>
-                <p className="mt-4 text-[13px] uppercase leading-relaxed tracking-[0.04em] text-white/85">{featured.home?.invite || `Join a ${featured.reason} and meet new friends — no pitches, just presence.`}</p>
-                <button type="button" onClick={() => setShare(true)} className="mt-4 rounded-full border border-white/25 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">Share</button>
-                <p className="mt-4 text-sm leading-relaxed text-white/75">{featured.home?.about || featured.hostAbout}</p>
+                <h2 className="font-serif text-[2.6rem] leading-none text-white">{say(bb.lang, featured.name, false)}</h2>
+                <p className="mt-3 text-[11px] uppercase leading-relaxed tracking-[0.14em] text-white/45">{say(bb.lang, featured.home?.meta || featured.meta)}</p>
+                <p className="mt-4 text-[13px] uppercase leading-relaxed tracking-[0.04em] text-white/85">{say(bb.lang, featured.home?.invite || `Join a ${featured.reason} and meet new friends — no pitches, just presence.`)}</p>
+                <button type="button" onClick={() => setShare(true)} className="mt-4 rounded-full border border-white/25 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">{say(bb.lang, "Share")}</button>
+                <p className="mt-4 text-sm leading-relaxed text-white/75">{say(bb.lang, featured.home?.about || featured.hostAbout)}</p>
                 <div className="mt-5 flex items-center gap-3">
-                  <button type="button" onClick={joinFeatured} className="flex-1 rounded-full bg-white px-4 py-3.5 text-[13px] font-semibold text-ink">Love it. Let's do this.</button>
-                  <Link href="/venues" className="rounded-full border border-white/25 px-5 py-3.5 text-[13px] font-semibold text-white">Explore more</Link>
+                  <button type="button" onClick={joinFeatured} className="flex-1 rounded-full bg-white px-4 py-3.5 text-[13px] font-semibold text-ink">{say(bb.lang, "Love it. Let's do this.")}</button>
+                  <Link href="/venues" className="rounded-full border border-white/25 px-5 py-3.5 text-[13px] font-semibold text-white">{say(bb.lang, "Explore more")}</Link>
                 </div>
                 {featured.home?.foot && <p className="mt-4 text-[10px] uppercase leading-relaxed tracking-[0.08em] text-white/35">{featured.home.foot}</p>}
               </div>
