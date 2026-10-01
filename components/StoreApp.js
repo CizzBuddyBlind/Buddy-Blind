@@ -293,7 +293,7 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
       <h1 className="mt-8 text-center font-serif text-[clamp(2.1rem,9vw,2.8rem)] leading-[1.05] text-white">
         {resolveCopy(bb.content, bb.lang, "app.home.1", "You don't know")}
         <br />
-        <span className="italic">{resolveCopy(bb.content, bb.lang, "app.home.2", "who you'll meet.")}</span>
+        <span>{resolveCopy(bb.content, bb.lang, "app.home.2", "who you'll meet.")}</span>
         <br />
         <span className="italic text-ember">{resolveCopy(bb.content, bb.lang, "app.home.3", "That's the point.")}</span>
       </h1>

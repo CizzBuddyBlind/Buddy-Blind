@@ -124,7 +124,7 @@ export default function HomePage() {
           </p>
           <h1 className="mt-16 font-serif text-white md:mt-[5.4rem]">
             <span>{say(bb.lang, "You don't know")}</span>
-            <span className="italic">{say(bb.lang, "who you'll meet.")}</span>
+            <span>{say(bb.lang, "who you'll meet.")}</span>
             <span className="italic text-ember">{say(bb.lang, "That's the point.")}</span>
           </h1>
           <p className="mt-10 max-w-md text-sm leading-relaxed text-white/70">
