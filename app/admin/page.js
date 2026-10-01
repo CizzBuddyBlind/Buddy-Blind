@@ -67,7 +67,7 @@ export default function AdminPage() {
       </main>
     );
   }
-  if (bb.session?.role !== "admin") {
+  if (bb.session?.role !== "admin" && bb.session?.role !== "founder") {
     return (
       <main data-keep className="bb-frame py-20">
         <h1 className="font-serif text-4xl">{say(bb.lang, "Restaurants")}</h1>
