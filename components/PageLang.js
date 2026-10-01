@@ -3,6 +3,7 @@
 import { useLayoutEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useBB } from "./Providers";
+import { say } from "@/lib/say";
 
 const mem = new Map();
 const HOLD = "\u2060";
@@ -50,142 +51,212 @@ function skip(el) {
   return !el || el.closest("[data-keep], script, style, noscript, textarea, svg, select, option, input");
 }
 
+function storedLang() {
+  try {
+    const raw = localStorage.getItem("bb_lang_v1");
+    if (!raw) return "en";
+    return raw.charAt(0) === "\"" ? JSON.parse(raw) : raw;
+  } catch {
+    return "en";
+  }
+}
+
+function knownLine(lang, text, preferDict) {
+  if (preferDict) {
+    const line = say(lang, text);
+    if (line && line !== text) return line;
+  }
+  return mem.get(`${lang}\n${text}`) || "";
+}
+
 export function PageLang() {
   const { lang } = useBB();
-  const path = usePathname();
+  const path = usePathname() || "/";
+  const website = path !== "/m" && !path.startsWith("/m/");
 
   useLayoutEffect(() => {
-    const source = new WeakMap();
-    const applied = new WeakMap();
-    let lock = false;
-    let timer = 0;
+    if (website) return undefined;
+    return watch(lang, false);
+  }, [lang, path, website]);
 
-    function remember(node) {
-      if (node.nodeValue === HOLD) return;
-      if (applied.get(node) !== node.nodeValue) source.set(node, node.nodeValue);
+  useLayoutEffect(() => {
+    if (!website) {
+      document.documentElement.classList.remove("bb-lang-wait");
+      return undefined;
     }
+    return watch(lang, true);
+  });
 
-    function write(node, value) {
-      if (node.nodeValue === value) {
-        applied.set(node, value);
-        return;
-      }
+  return null;
+}
+
+function watch(lang, website) {
+  const source = new WeakMap();
+  const applied = new WeakMap();
+  let lock = false;
+  let timer = 0;
+  let safety = 0;
+
+  function revealPage() {
+    if (website) document.documentElement.classList.remove("bb-lang-wait");
+  }
+
+  function remember(node) {
+    if (node.nodeValue === HOLD) return;
+    if (applied.get(node) !== node.nodeValue) source.set(node, node.nodeValue);
+  }
+
+  function write(node, value) {
+    if (node.nodeValue === value) {
       applied.set(node, value);
-      node.nodeValue = value;
+      return;
     }
+    applied.set(node, value);
+    node.nodeValue = value;
+  }
 
-    function conceal(node) {
+  function conceal(node) {
+    if (website) return;
+    const el = node.parentElement;
+    if (!el || el.dataset.bbHold || el.childElementCount > 6) return;
+    el.dataset.bbHold = el.style.color || "inherit";
+    el.style.color = "transparent";
+  }
+
+  function reveal(node) {
+    const el = node.parentElement;
+    if (!el?.dataset.bbHold) return;
+    el.style.color = el.dataset.bbHold === "inherit" ? "" : el.dataset.bbHold;
+    delete el.dataset.bbHold;
+  }
+
+  function jobs() {
+    const list = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+    while (node) {
       const el = node.parentElement;
-      if (!el || el.dataset.bbHold || el.childElementCount > 6) return;
-      el.dataset.bbHold = el.style.color || "inherit";
-      el.style.color = "transparent";
-    }
-
-    function reveal(node) {
-      const el = node.parentElement;
-      if (!el?.dataset.bbHold) return;
-      el.style.color = el.dataset.bbHold === "inherit" ? "" : el.dataset.bbHold;
-      delete el.dataset.bbHold;
-    }
-
-    function jobs() {
-      const list = [];
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      let node = walker.nextNode();
-      while (node) {
-        const el = node.parentElement;
-        if (!skip(el)) {
-          remember(node);
-          const raw = source.get(node) || "";
-          const text = raw.trim();
-          if (text && /[A-Za-z]/.test(text)) list.push({ node, raw, text: text.slice(0, 450) });
-        }
-        node = walker.nextNode();
+      if (!skip(el)) {
+        remember(node);
+        const raw = source.get(node) || "";
+        const text = raw.trim();
+        if (text && /[A-Za-z]/.test(text)) list.push({ node, raw, text: text.slice(0, 450) });
       }
-      return list;
+      node = walker.nextNode();
     }
+    return list;
+  }
 
-    function fields() {
-      return [...document.querySelectorAll("input[placeholder], textarea[placeholder]")].filter((el) => !skip(el));
-    }
+  function fields() {
+    return [...document.querySelectorAll("input[placeholder], textarea[placeholder]")].filter((el) => !skip(el));
+  }
 
-    function applyNow() {
-      lock = true;
-      const missing = [];
-      try {
-        const list = jobs();
-        const inputs = fields();
-        inputs.forEach((el) => {
-          if (!el.dataset.srcPh) el.dataset.srcPh = el.placeholder;
-        });
-        if (!lang || lang === "en") {
-          list.forEach(({ node, raw }) => {
-            write(node, raw);
-            reveal(node);
-          });
-          inputs.forEach((el) => {
-            if (el.dataset.srcPh) el.placeholder = el.dataset.srcPh;
-          });
-          return missing;
-        }
-        list.forEach(({ node, raw, text }) => {
-          const hit = mem.get(`${lang}\n${text}`);
-          if (!hit) {
-            conceal(node);
-            if (node.nodeValue !== HOLD) write(node, HOLD);
-            missing.push(text);
-            return;
-          }
-          const lead = raw.match(/^\s*/)[0];
-          const tail = raw.match(/\s*$/)[0];
-          write(node, `${lead}${hit}${tail}`);
+  function applyNow() {
+    lock = true;
+    const missing = [];
+    try {
+      const list = jobs();
+      const inputs = fields();
+      inputs.forEach((el) => {
+        if (!el.dataset.srcPh) el.dataset.srcPh = el.placeholder;
+      });
+      if (!lang || lang === "en") {
+        list.forEach(({ node, raw }) => {
+          write(node, raw);
           reveal(node);
         });
         inputs.forEach((el) => {
-          const text = (el.dataset.srcPh || "").trim().slice(0, 450);
-          if (!text || !/[A-Za-z]/.test(text)) return;
-          const hit = mem.get(`${lang}\n${text}`);
-          if (hit) el.placeholder = hit;
+          if (el.dataset.srcPh) el.placeholder = el.dataset.srcPh;
         });
-      } finally {
-        queueMicrotask(() => {
-          lock = false;
-        });
+        return missing;
       }
-      return missing;
-    }
-
-    async function fetchMissing(texts) {
-      if (!texts.length || !lang || lang === "en") return;
-      lock = true;
-      try {
-        await fill(texts, lang);
-      } catch {
-        /* keep the page usable if the translator is busy */
-      } finally {
+      list.forEach(({ node, raw, text }) => {
+        const hit = knownLine(lang, text, website);
+        if (!hit) {
+          conceal(node);
+          if (!website && node.nodeValue !== HOLD) write(node, HOLD);
+          missing.push(text);
+          return;
+        }
+        const lead = raw.match(/^\s*/)[0];
+        const tail = raw.match(/\s*$/)[0];
+        write(node, `${lead}${hit}${tail}`);
+        reveal(node);
+      });
+      inputs.forEach((el) => {
+        const text = (el.dataset.srcPh || "").trim().slice(0, 450);
+        if (!text || !/[A-Za-z]/.test(text)) return;
+        const hit = knownLine(lang, text, website);
+        if (hit) el.placeholder = hit;
+        else if (!website) missing.push(text);
+      });
+    } finally {
+      queueMicrotask(() => {
         lock = false;
-      }
-      applyNow();
+      });
     }
+    return missing;
+  }
 
-    function schedule(texts) {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => fetchMissing(texts), 30);
+  async function fetchMissing(texts) {
+    if (!texts.length || !lang || lang === "en") {
+      revealPage();
+      return;
     }
+    lock = true;
+    try {
+      await fill(texts, lang);
+    } catch {
+      /* show the page even if a line could not be translated */
+    } finally {
+      lock = false;
+    }
+    applyNow();
+    revealPage();
+  }
 
-    const obs = new MutationObserver(() => {
-      if (lock) return;
-      const missing = applyNow();
-      if (missing.length) schedule(missing);
-    });
-    obs.observe(document.body, { subtree: true, childList: true, characterData: true });
+  function schedule(texts) {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => fetchMissing(texts), website ? 0 : 30);
+  }
+
+  function onClick(event) {
+    if (!website || !lang || lang === "en") return;
+    const link = event.target.closest?.("a");
+    if (!link || link.target === "_blank" || !link.href) return;
+    let url;
+    try {
+      url = new URL(link.href, location.origin);
+    } catch {
+      return;
+    }
+    if (url.origin !== location.origin) return;
+    if (url.pathname === "/m" || url.pathname.startsWith("/m/")) return;
+    if (url.pathname === location.pathname && url.search === location.search) return;
+    document.documentElement.classList.add("bb-lang-wait");
+  }
+
+  if (website) document.addEventListener("click", onClick, true);
+  const obs = new MutationObserver(() => {
+    if (lock) return;
     const missing = applyNow();
     if (missing.length) schedule(missing);
-    return () => {
-      window.clearTimeout(timer);
-      obs.disconnect();
-    };
-  }, [lang, path]);
+    else revealPage();
+  });
+  obs.observe(document.body, { subtree: true, childList: true, characterData: true });
+  const waitingForLang = website && (!lang || lang === "en") && storedLang() !== "en";
+  const missing = applyNow();
+  if (waitingForLang) document.documentElement.classList.add("bb-lang-wait");
+  else if (missing.length) {
+    if (website && lang && lang !== "en") document.documentElement.classList.add("bb-lang-wait");
+    schedule(missing);
+    safety = window.setTimeout(revealPage, 2500);
+  } else revealPage();
 
-  return null;
+  return () => {
+    window.clearTimeout(timer);
+    window.clearTimeout(safety);
+    obs.disconnect();
+    if (website) document.removeEventListener("click", onClick, true);
+  };
 }

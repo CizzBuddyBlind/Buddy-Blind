@@ -21,6 +21,9 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+html.bb-lang-wait .bb-site {
+  visibility: hidden;
+}
 html {
   scroll-behavior: auto;
 }

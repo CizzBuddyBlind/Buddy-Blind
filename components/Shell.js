@@ -138,7 +138,7 @@ export function Shell({ children }) {
 
   if (appFlow) {
     return (
-      <div className="min-h-dvh bg-ink text-fg">
+      <div className="bb-site min-h-dvh bg-ink text-fg">
         <PageLang />
         <a href="/m?tab=profile" data-keep className="bb-word block px-5 pt-[max(1.25rem,env(safe-area-inset-top))] text-sm tracking-[0.16em]">BUDDY BLIND</a>
         {children}
@@ -147,7 +147,7 @@ export function Shell({ children }) {
   }
 
   return (
-    <div className={light ? "min-h-dvh bg-paper text-char" : "min-h-dvh bg-ink text-fg"}>
+    <div className={`${light ? "min-h-dvh bg-paper text-char" : "min-h-dvh bg-ink text-fg"} bb-site`}>
       <PageLang />
       {bb.staff && bb.preview && (
         <div className="sticky top-0 z-[60] flex items-center justify-between gap-3 bg-ember px-4 py-2 text-xs font-semibold text-white">
