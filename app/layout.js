@@ -27,6 +27,11 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link href="https://fonts.googleapis.com/css2?family=Iansui&display=swap" rel="stylesheet" />
+      </head>
       <body className="font-sans">
         <script
           dangerouslySetInnerHTML={{

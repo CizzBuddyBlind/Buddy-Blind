@@ -15,8 +15,8 @@ module.exports = {
         "ember-soft": "#E4C56A",
       },
       fontFamily: {
-        sans: ["var(--font-playfair)", "PingFang HK", "PingFang SC", "Noto Sans HK", "Noto Sans SC", "Microsoft JhengHei", "Georgia", "serif"],
-        serif: ["var(--font-playfair)", "PingFang HK", "PingFang SC", "Noto Sans HK", "Noto Sans SC", "Microsoft JhengHei", "Georgia", "serif"],
+        sans: ["var(--font-playfair)", "Iansui", "PingFang HK", "PingFang SC", "Noto Sans HK", "Noto Sans SC", "Microsoft JhengHei", "Georgia", "serif"],
+        serif: ["var(--font-playfair)", "Iansui", "PingFang HK", "PingFang SC", "Noto Sans HK", "Noto Sans SC", "Microsoft JhengHei", "Georgia", "serif"],
       },
     },
   },

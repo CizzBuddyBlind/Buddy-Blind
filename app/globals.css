@@ -46,7 +46,7 @@ label,
   padding-inline: 1rem;
 }
 .bb-hero-title {
-  font-family: var(--font-playfair), "PingFang HK", "PingFang SC", "Noto Sans HK", "Noto Sans SC", Georgia, serif;
+  font-family: var(--font-playfair), "Iansui", "PingFang HK", "PingFang SC", "Noto Sans HK", "Noto Sans SC", Georgia, serif;
   font-size: clamp(1.9rem, 5vw, 2.85rem);
   font-weight: 500;
   line-height: 1.2;
@@ -211,7 +211,7 @@ button.bb-metal-gold,
   }
 }
 
-/* English uses the same face as the Buddy Blind logo. Chinese falls through to a Chinese face. */
+/* English stays the Buddy Blind logo face. Simplified and Traditional Chinese use Iansui. */
 body,
 p, p.font-serif, li, li.font-serif, label, dd, dt,
 button, button.font-serif,
@@ -222,7 +222,7 @@ h1 *, h2 *, h3 *,
 .bb-hero-title, .bb-hero-title *,
 .bb-word, .bb-figure,
 .bb-kicker, a, span, div {
-  font-family: var(--font-playfair), "PingFang HK", "PingFang SC", "Noto Sans HK", "Noto Sans SC", "Microsoft JhengHei", Georgia, serif;
+  font-family: var(--font-playfair), "Iansui", "PingFang HK", "PingFang SC", "Noto Sans HK", "Noto Sans SC", "Microsoft JhengHei", Georgia, serif;
 }
 .bb-home-hero {
   container-type: inline-size;
