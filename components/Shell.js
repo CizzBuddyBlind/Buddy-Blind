@@ -98,6 +98,7 @@ export function Shell({ children }) {
 
   const [appFlow, setAppFlow] = useState(false);
   useEffect(() => {
+    window.scrollTo(0, 0);
     const from = new URLSearchParams(window.location.search).get("from");
     setAppFlow(from === "app" && (path === "/login" || path === "/register"));
   }, [path]);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Photo } from "./Bits";
 import { HostBadge, PayDialog } from "./Flows";
 import { useBB, peopleYouCanRate } from "./Providers";
@@ -96,13 +96,19 @@ export function StoreApp() {
   const paint = bb.session ? badgePaint(bb.session.points, bb.content?.pointThresholds, "dark") : null;
   const unread = (bb.social?.notes || []).filter((n) => !n.read).length;
 
+  const scroller = useRef(null);
+
   useEffect(() => {
     const next = new URLSearchParams(window.location.search).get("tab");
     if (next) setTab(next);
   }, []);
 
   useEffect(() => {
-    if (bb.session?.role === "admin" || bb.session?.role === "founder") {
+    scroller.current?.scrollTo(0, 0);
+  }, [tab, venueId, eventId]);
+
+  useEffect(() => {
+    if (bb.session?.role === "admin") {
       bb.logout();
       bb.notify("Admin login stays on the website.");
     }
@@ -175,7 +181,7 @@ export function StoreApp() {
         </div>
       )}
 
-      <div className="bb-store-scroll">
+      <div ref={scroller} className="bb-store-scroll">
         {venueId ? <VenueDetail id={venueId} onBack={() => setVenueId("")} /> : null}
         {!venueId && eventId ? <PrivateDetail id={eventId} onBack={() => setEventId("")} /> : null}
         {!venueId && !eventId && tab === "home" && <Home onVenues={() => go("venues")} onOpenVenue={setVenueId} onOpenEvent={setEventId} />}
@@ -513,21 +519,19 @@ function How() {
               </span>
             </div>
             <div className={`pb-6 ${index ? "border-t border-white/10 pt-5" : ""}`}>
-              <h2 className="font-serif text-[1.35rem] leading-tight text-white"><span className="mr-2 text-sm not-italic text-ember">{n}</span>{title}</h2>
+              <h2 className="font-serif text-base leading-tight text-white"><span className="mr-2 text-sm not-italic text-ember">{n}</span>{title}</h2>
               <p className="mt-2 text-sm leading-relaxed text-white/55">{body}</p>
               {n === "08" && (
-                <div className="mt-4 flex flex-wrap gap-4">
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                   {[
-                    ["B", "Bronze", "100 points", "5%", "bb-metal-bronze"],
-                    ["S", "Silver", "300 points", "10%", "bb-metal-silver"],
-                    ["G", "Gold", "500 points", "20%", "bb-metal-gold"],
-                  ].map(([letter, name, points, note, circle]) => (
-                    <div key={letter} className="flex items-center gap-2">
-                      <span className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg font-semibold ring-1 ring-black/15 ${circle}`}>{letter}</span>
-                      <span>
-                        <span className="block text-sm text-white">{name}</span>
-                        <span className="block text-xs text-white/45">{points} · {note}</span>
-                      </span>
+                    ["B", "100", "5%", "bb-metal-bronze"],
+                    ["S", "300", "10%", "bb-metal-silver"],
+                    ["G", "500", "20%", "bb-metal-gold"],
+                  ].map(([letter, points, note, circle]) => (
+                    <div key={letter} className="flex flex-col items-center">
+                      <span className={`grid h-9 w-9 place-items-center rounded-full font-serif text-sm font-semibold ring-1 ring-black/15 ${circle}`}>{letter}</span>
+                      <span className="mt-1.5 text-[11px] text-white/70">{points}</span>
+                      <span className="text-[11px] text-ember">{note}</span>
                     </div>
                   ))}
                 </div>
