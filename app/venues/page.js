@@ -221,7 +221,6 @@ function Home() {
         })}
       </div>
       {shown.length === 0 && <p className="pb-10 text-center text-sm text-mute">{t("empty.filter")}</p>}
-      <Copy as="p" k="hero.footer" legacy={copy.footer} className="pb-8 text-center text-[0.7rem] tracking-[0.08em] text-mute" onEnglish={(d, next) => { d.copy.venues.footer = next; }} />
     </main>
   );
 }
