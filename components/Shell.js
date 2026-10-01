@@ -114,6 +114,10 @@ export function Shell({ children }) {
     setShowToday(false);
   }
 
+  if (path === "/gate") {
+    return <div className="min-h-dvh bg-ink text-fg">{children}</div>;
+  }
+
   if (path === "/m" || path.startsWith("/m/")) {
     return (
       <div className="min-h-dvh bg-ink text-fg">

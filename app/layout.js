@@ -13,6 +13,7 @@ const playfair = Playfair_Display({
 export const metadata = {
   title: "Buddy Blind",
   description: "You don't know who you'll meet. That's the point.",
+  robots: { index: false, follow: false },
   appleWebApp: { capable: true, title: "Buddy Blind", statusBarStyle: "black-translucent" },
 };
 
