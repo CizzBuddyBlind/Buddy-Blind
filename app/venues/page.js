@@ -85,11 +85,19 @@ function Home() {
             <Copy k="hero.accent" legacy={copy.accent} onEnglish={(d, next) => { d.copy.venues.accent = next; }} />
           </span>
         </h1>
-        <p className="mx-auto mt-6 max-w-lg text-sm leading-relaxed text-mute">
-          No faces, just places.
-          <br />
-          Enough to WANT, enough uncertainty to be WORTH having.
-        </p>
+        {(() => {
+          const story = String(copy.sub || "").trim() || "No faces, just places.\nEnough to WANT, enough uncertainty to be WORTH having.";
+          return (
+            <p className="mx-auto mt-6 max-w-lg text-sm leading-relaxed text-mute">
+              {say(bb.lang, story).split("\n").map((line, index) => (
+                <span key={`${index}-${line}`}>
+                  {index > 0 && <br />}
+                  {line}
+                </span>
+              ))}
+            </p>
+          );
+        })()}
       </section>
 
       <div className="mb-4">

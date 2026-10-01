@@ -1,12 +1,13 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { SEED, SEED_ACCOUNTS } from "@/lib/defaults";
 import { loadSharedContent, saveSharedContent, supabaseReady } from "@/lib/supabase";
 import { bookingHold, iso, logEntry, normalizeContent, privateEditOpen, tableStart, tierFromPoints, TRIAL_DAYS } from "@/lib/bible";
 import { notifyRestaurant } from "@/lib/notify";
 import { putMedia } from "@/lib/media";
-import { setWording } from "@/lib/say";
+import { pageFromPath, setWording, setWordingPage } from "@/lib/say";
 
 const Ctx = createContext(null);
 export function useBB() {
@@ -129,6 +130,7 @@ function blankProfile(partial) {
 }
 
 export function BuddyProvider({ children }) {
+  const path = usePathname() || "/";
   const [published, setPublished] = useState(SEED);
   const [draft, setDraft] = useState(null);
   const [session, setSession] = useState(null);
@@ -317,6 +319,7 @@ export function BuddyProvider({ children }) {
   const editing = false;
   const content = editing ? draft || published : published;
   setWording(content?.wording);
+  setWordingPage(pageFromPath(path));
 
   const saveDraft = useCallback(() => {
     const next = clone(draftRef.current || publishedRef.current);

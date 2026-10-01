@@ -56,9 +56,9 @@ export function restaurantFields(form) {
 }
 
 function addLine(rows, seen, page, english) {
-  const text = String(english || "").replace(/\s+/g, " ").trim();
+  const text = String(english || "").replace(/\r/g, "").trim();
   if (!text || !/[A-Za-z]/.test(text)) return;
-  const id = `${page}\n${text}`;
+  const id = `${page}\u0000${text}`;
   if (seen.has(id)) return;
   seen.add(id);
   rows.push({ page, english: text });
@@ -95,11 +95,8 @@ function siteLines(content) {
     "See the venues",
   ].forEach((line) => addLine(rows, seen, "Home", line));
   ["kickerLeft", "kickerRight", "title", "accent"].forEach((key) => addLine(rows, seen, "Venues", venues[key]));
-  [
-    "No faces, just places.",
-    "Enough to WANT, enough uncertainty to be WORTH having.",
-    "Search tonight, 中菜, Central, gay, wine…",
-  ].forEach((line) => addLine(rows, seen, "Venues", line));
+  addLine(rows, seen, "Venues", String(venues.sub || "").trim() || "No faces, just places.\nEnough to WANT, enough uncertainty to be WORTH having.");
+  ["Search tonight, 中菜, Central, gay, wine…"].forEach((line) => addLine(rows, seen, "Venues", line));
   ["btn.invite", "btn.join", "spots", "venue.pet", "empty.filter", "filter.more", "filter.nearby", "filter.cuisine", "filter.any", "filter.central", "filter.cwb", "filter.tst", "venue.events", "venue.good", "btn.back", "btn.host", "btn.share"].forEach((key) => fromKey(rows, seen, "Venues", key));
   ["title", "accent", "note"].forEach((key) => addLine(rows, seen, "Quick", quick[key]));
   [
@@ -214,39 +211,58 @@ function siteLines(content) {
   return rows;
 }
 
+function shownValue(bag, row) {
+  const pageBag = bag?.[row.page];
+  const collapsed = row.english.replace(/\s+/g, " ").trim();
+  if (pageBag && typeof pageBag === "object") {
+    if (pageBag[row.english]) return pageBag[row.english];
+    if (pageBag[collapsed]) return pageBag[collapsed];
+  }
+  if (row.page === "Venues" && /No faces|Enough to WANT/i.test(row.english)) {
+    if (typeof bag?.[row.english] === "string") return bag[row.english];
+    if (typeof bag?.[collapsed] === "string") return bag[collapsed];
+    const hit = Object.entries(bag || {}).find(([key, value]) => typeof value === "string" && key.replace(/\s+/g, " ").trim() === collapsed);
+    if (hit) return hit[1];
+  }
+  return "";
+}
+
 function WordingEditor({ bb }) {
   const [lang, setLang] = useState("zh-HK");
-  const [page, setPage] = useState("All");
+  const [page, setPage] = useState("Home");
   const [query, setQuery] = useState("");
   const [edits, setEdits] = useState({});
   const [busy, setBusy] = useState(false);
   const bag = bb.content?.wording?.[lang] || {};
   const live = useMemo(() => siteLines(bb.content), [bb.content]);
-  const pages = useMemo(() => ["All", ...new Set(live.map((row) => row.page))], [live]);
+  const pages = useMemo(() => [...new Set(live.map((row) => row.page))], [live]);
   const lines = useMemo(() => {
     const q = query.trim().toLowerCase();
     return live
-      .filter((row) => page === "All" || row.page === page)
-      .filter((row, index, list) => list.findIndex((item) => item.english === row.english) === index)
-      .filter((row) => !q || row.english.toLowerCase().includes(q) || String(bag[row.english] || say(lang, row.english, false)).toLowerCase().includes(q));
+      .filter((row) => row.page === page)
+      .filter((row) => !q || row.english.toLowerCase().includes(q) || String(shownValue(bag, row)).toLowerCase().includes(q));
   }, [query, lang, page, bag, live]);
 
-  function shown(english) {
-    if (Object.prototype.hasOwnProperty.call(edits, english)) return edits[english];
-    return bag[english] || say(lang, english, false);
+  function shown(row) {
+    const id = `${row.page}\u0000${row.english}`;
+    if (Object.prototype.hasOwnProperty.call(edits, id)) return edits[id];
+    return shownValue(bag, row);
   }
 
   async function save() {
     setBusy(true);
     bb.update((draft) => {
       if (!draft.wording) draft.wording = { zh: {}, "zh-HK": {} };
-      if (!draft.wording.zh) draft.wording.zh = {};
-      if (!draft.wording["zh-HK"]) draft.wording["zh-HK"] = {};
-      const next = draft.wording[lang];
-      Object.entries(edits).forEach(([english, value]) => {
+      if (!draft.wording[lang] || typeof draft.wording[lang] !== "object") draft.wording[lang] = {};
+      Object.entries(edits).forEach(([id, value]) => {
+        const cut = id.indexOf("\u0000");
+        const editPage = id.slice(0, cut);
+        const english = id.slice(cut + 1);
+        const current = draft.wording[lang][editPage];
+        if (!current || typeof current !== "object") draft.wording[lang][editPage] = {};
         const clean = String(value || "").trim();
-        if (!clean) delete next[english];
-        else next[english] = clean;
+        if (!clean) delete draft.wording[lang][editPage][english];
+        else draft.wording[lang][editPage][english] = clean;
       });
     });
     await bb.publish();
@@ -257,7 +273,7 @@ function WordingEditor({ bb }) {
   return (
     <section data-keep>
       <h1 className="font-serif text-5xl">Wording</h1>
-      <p className="mt-2 max-w-xl text-sm text-mute">Every page. Traditional and Simplified are separate. Saving one does not change the other.</p>
+      <p className="mt-2 max-w-xl text-sm text-mute">One page at a time. Traditional and Simplified stay separate. An empty line on the site has no box.</p>
       <div className="mt-4 flex gap-2">
         {[
           ["zh-HK", "繁 Traditional"],
@@ -278,9 +294,9 @@ function WordingEditor({ bb }) {
       <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search this page" className="mt-4 w-full max-w-xl rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg" />
       <div className="mt-4 grid max-w-3xl gap-3">
         {lines.map((row) => (
-          <label key={`${row.page}-${row.english}`} className="grid gap-1">
-            <span className="text-xs text-white/45">{page === "All" ? `${row.page} · ` : ""}{row.english}</span>
-            <textarea value={shown(row.english)} onChange={(e) => setEdits((prev) => ({ ...prev, [row.english]: e.target.value }))} rows={2} className="rounded-xl border border-white/15 bg-card px-4 py-2 text-sm text-fg" />
+          <label key={`${row.page}\u0000${row.english}`} className="grid gap-1">
+            <span className="whitespace-pre-line text-xs text-white/45">{row.english}</span>
+            <textarea value={shown(row)} onChange={(e) => setEdits((prev) => ({ ...prev, [`${row.page}\u0000${row.english}`]: e.target.value }))} rows={row.english.includes("\n") ? 4 : 2} className="rounded-xl border border-white/15 bg-card px-4 py-2 text-sm text-fg" />
           </label>
         ))}
       </div>
