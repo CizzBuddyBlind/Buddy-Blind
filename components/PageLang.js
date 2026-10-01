@@ -71,17 +71,22 @@ function knownLine(lang, text, preferDict) {
   return mem.get(`${lang}\n${text}`) || "";
 }
 
+function hasHan(text) {
+  return /[\u3400-\u9fff]/.test(text || "");
+}
+
 function collect(book, leaveApp) {
   const list = [];
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   let node = walker.nextNode();
   while (node) {
     const el = node.parentElement;
-    if (!skip(el, leaveApp)) {
-      if (node.nodeValue !== HOLD && book.applied.get(node) !== node.nodeValue) book.source.set(node, node.nodeValue);
+    const current = node.nodeValue || "";
+    if (!skip(el, leaveApp) && !hasHan(current)) {
+      if (current !== HOLD && book.applied.get(node) !== current) book.source.set(node, current);
       const raw = book.source.get(node) || "";
       const text = raw.trim();
-      if (text && /[A-Za-z]/.test(text)) list.push({ node, raw, text: text.slice(0, 450) });
+      if (text && /[A-Za-z]/.test(text) && !hasHan(text)) list.push({ node, raw, text: text.slice(0, 450) });
     }
     node = walker.nextNode();
   }

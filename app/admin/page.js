@@ -6,7 +6,7 @@ import { useBB } from "@/components/Providers";
 import { fileToCover } from "@/components/Bits";
 import { CUISINES } from "@/lib/bible";
 import { DICT, EXTRA } from "@/lib/i18n";
-import { phraseList, say } from "@/lib/say";
+import { say } from "@/lib/say";
 
 const EMPTY = {
   name: "",
@@ -55,110 +55,162 @@ export function restaurantFields(form) {
   };
 }
 
-function pageOf(key) {
-  if (key.startsWith("app.home") || key.startsWith("hero.")) return "Home";
-  if (key.startsWith("app.venues") || key.startsWith("venue.") || key.startsWith("filter.") || key === "nav.venues" || key === "empty.filter" || key === "spots" || key === "moreEvents" || key === "host.line") return "Venues";
-  if (key.startsWith("quick.") || key.startsWith("app.quick") || key === "nav.quick") return "Quick";
-  if (key.startsWith("private.") || key.startsWith("priv.") || key === "nav.private") return "Private";
-  if (key.startsWith("how.") || key.startsWith("app.how") || key.startsWith("app.step") || key === "nav.how") return "How";
-  if (key.startsWith("trial.") || key.startsWith("pay.") || key === "nav.premium" || key === "nav.subscribe") return "Plan";
-  if (key.startsWith("about.") || key === "nav.about") return "About";
-  if (key.startsWith("reg.") || key === "nav.login" || key === "nav.logout" || key === "nav.profile" || key === "adult.note") return "Account";
-  if (key.startsWith("today.") || key.startsWith("ping.") || key.startsWith("Info") || key === "nav.notifications") return "Profile";
-  if (key.startsWith("btn.") || key.startsWith("nav.") || key.startsWith("step.") || key.startsWith("leave.") || key.startsWith("share.") || key.startsWith("empty.")) return "Shared";
-  return "Other";
+function addLine(rows, seen, page, english) {
+  const text = String(english || "").replace(/\s+/g, " ").trim();
+  if (!text || !/[A-Za-z]/.test(text)) return;
+  const id = `${page}\n${text}`;
+  if (seen.has(id)) return;
+  seen.add(id);
+  rows.push({ page, english: text });
 }
 
-const HOW_LINES = [
-  "See venue, see vibe",
-  "Take a seat.",
-  "See the place",
-  "The photo is the filter. A restaurant, or a private night. Like the room, you’ll like the night.",
-  "See enough",
-  "Neighbourhood, time, seats left. Soho tonight or Central tomorrow. No faces. Enough to want it.",
-  "Take a seat",
-  "Join, or open the table. HK$5 only when you confirm. That’s for trust, not the meal.",
-  "Show up",
-  "No names before. No photos before. The restaurant is the scene. You bring the vibe.",
-  "After the meal",
-  "Stars aren’t about looks. A short line is your reputation. Your voice matters.",
-  "Add a buddy",
-  "Hey, you’re my vibe. One tap. If they say yes too, you’re buddies.",
-  "Host the reason",
-  "Premium. A private night, up to 20. Wine, social, a hike. You make the reason.",
-  "Points change the circle",
-  "Not the price. Join adds 1. Invite adds 2. Host adds 5. Enjoy the discount.",
-  "How it works",
-  "Bronze",
-  "Silver",
-  "Gold",
-  "100 points",
-  "300 points",
-  "500 points",
-];
+function fromKey(rows, seen, page, key) {
+  addLine(rows, seen, page, DICT.en?.[key] || EXTRA.en?.[key] || "");
+}
 
-const PROFILE_LINES = [
-  "Info",
-  "Buddies",
-  "Review",
-  "No buddies yet.",
-  "No reviews yet.",
-  "Rate someone after you have shared a table.",
-  "Today and upcoming",
-  "Seats you joined",
-  "Joined",
-  "Invited",
-  "Quick meet",
-  "Private joined",
-  "Private hosted",
-  "Lives in",
-  "Works in",
-  "points",
-  "Log in",
-  "Log in first.",
-];
-
-const HOME_LINES = [
-  "You don't know",
-  "who you'll meet.",
-  "That's the point.",
-  "Restaurants provide the scene. Private events create the reason. You bring curiosity.",
-  "Want a Quick Meet?",
-  "Total events",
-  "Scenes tonight",
-  "Avg after-talk rating",
-  "Featured tonight · One blind box open",
-  "Love it. Let's do this.",
-  "Explore more",
-  "Terms and conditions apply",
-  "Hong Kong · Tonight",
-  "blind boxes",
-  "hosts",
-  "scenes",
-  "Tonight",
-];
-
-const PAGES = ["All", "Home", "Venues", "Quick", "Private", "How", "Plan", "Profile", "About", "Account", "Shared", "Other"];
-
-function catalog() {
+function siteLines(content) {
   const rows = [];
   const seen = new Set();
-  function add(page, english) {
-    const text = String(english || "").trim();
-    if (!text || !/[A-Za-z]/.test(text)) return;
-    const id = `${page}\n${text}`;
-    if (seen.has(id)) return;
-    seen.add(id);
-    rows.push({ page, english: text });
-  }
-  Object.entries(DICT.en || {}).forEach(([key, value]) => add(pageOf(key), value));
-  Object.entries(EXTRA.en || {}).forEach(([key, value]) => add(pageOf(key), value));
-  HOME_LINES.forEach((line) => add("Home", line));
-  HOW_LINES.forEach((line) => add("How", line));
-  PROFILE_LINES.forEach((line) => add("Profile", line));
-  phraseList().forEach((line) => {
-    if (!rows.some((row) => row.english === line)) add("Other", line);
-  });
+  const venues = content?.copy?.venues || {};
+  const quick = content?.copy?.quick || {};
+  const night = content?.copy?.private || {};
+  [
+    "You don't know",
+    "who you'll meet.",
+    "That's the point.",
+    "Restaurants provide the scene. Private events create the reason. You bring curiosity.",
+    "Want a Quick Meet?",
+    "Total events",
+    "Scenes tonight",
+    "Avg after-talk rating",
+    "Featured tonight · One blind box open",
+    "Love it. Let's do this.",
+    "Explore more",
+    "Share",
+    "Tonight",
+    "blind boxes",
+    "hosts",
+    "scenes",
+    "No table open yet.",
+    "See the venues",
+  ].forEach((line) => addLine(rows, seen, "Home", line));
+  ["kickerLeft", "kickerRight", "title", "accent"].forEach((key) => addLine(rows, seen, "Venues", venues[key]));
+  [
+    "No faces, just places.",
+    "Enough to WANT, enough uncertainty to be WORTH having.",
+    "Search tonight, 中菜, Central, gay, wine…",
+  ].forEach((line) => addLine(rows, seen, "Venues", line));
+  ["btn.invite", "btn.join", "spots", "venue.pet", "empty.filter", "filter.more", "filter.nearby", "filter.cuisine", "filter.any", "filter.central", "filter.cwb", "filter.tst", "venue.events", "venue.good", "btn.back", "btn.host", "btn.share"].forEach((key) => fromKey(rows, seen, "Venues", key));
+  ["title", "accent", "note"].forEach((key) => addLine(rows, seen, "Quick", quick[key]));
+  [
+    "Quick meet",
+    "A seat nearby. A time. No bio, no swipe. If you're free, sit down.",
+    "Nearby, today",
+    "Coffee, lunch, or a drink",
+    "Join a seat, or open one",
+    "I'm free now",
+    "Where are you?",
+    "Nearby",
+    "Share your location? We only use it to show places near you.",
+    "Share",
+    "Not now",
+    "left",
+    "Nothing there. Try another area.",
+  ].forEach((line) => addLine(rows, seen, "Quick", line));
+  ["kickerLeft", "kickerRight", "title", "accent", "sub"].forEach((key) => addLine(rows, seen, "Private", night[key]));
+  ["priv.campaign", "priv.search", "priv.full", "btn.host"].forEach((key) => fromKey(rows, seen, "Private", key));
+  [
+    "How it works",
+    "See venue, see vibe",
+    "Take a seat.",
+    "See the place",
+    "The photo is the filter. A restaurant, or a private night. Like the room, you’ll like the night.",
+    "See enough",
+    "Neighbourhood, time, seats left. Soho tonight or Central tomorrow. No faces. Enough to want it.",
+    "Take a seat",
+    "Join, or open the table. HK$5 only when you confirm. That’s for trust, not the meal.",
+    "Show up",
+    "No names before. No photos before. The restaurant is the scene. You bring the vibe.",
+    "After the meal",
+    "Stars aren’t about looks. A short line is your reputation. Your voice matters.",
+    "Add a buddy",
+    "Hey, you’re my vibe. One tap. If they say yes too, you’re buddies.",
+    "Host the reason",
+    "Premium. A private night, up to 20. Wine, social, a hike. You make the reason.",
+    "Points change the circle",
+    "Not the price. Join adds 1. Invite adds 2. Host adds 5. Enjoy the discount.",
+    "Bronze",
+    "Silver",
+    "Gold",
+    "100 points",
+    "300 points",
+    "500 points",
+  ].forEach((line) => addLine(rows, seen, "How", line));
+  [
+    "Subscription",
+    "Your reason.",
+    "New people.",
+    "Host the vibe you care about — or join one. Guests stay blind.",
+    "Wine, work, a hike. Or whatever you care about.",
+    "Free",
+    "Try once",
+    "Lite",
+    "Per month",
+    "Premium",
+    "Per month · 90 days trial",
+    "1 blind box / month",
+    "Venues only",
+    "No private creation",
+    "5 blind boxes / month",
+    "Join private events",
+    "Create quick meet",
+    "Unlimited blind boxes",
+    "Create private up to 20",
+    "Industry / wine / 50+ social / hike",
+    "Host badge gold",
+    "HK$5 admin fee per event",
+    "Go Premium",
+    "Upgrade to Lite",
+  ].forEach((line) => addLine(rows, seen, "Plan", line));
+  ["trial.kicker", "trial.title", "trial.body", "trial.check", "trial.note", "trial.start"].forEach((key) => fromKey(rows, seen, "Plan", key));
+  [
+    "Profile",
+    "Log in to see your seat.",
+    "Login",
+    "Info",
+    "Buddies",
+    "Review",
+    "Joined",
+    "Invited",
+    "Quick meet",
+    "Private joined",
+    "Private hosted",
+    "No buddies yet.",
+    "No comments yet.",
+    "No one to rate yet. It opens an hour after you sit down together.",
+    "Edit details",
+    "Close",
+    "points",
+    "Lives in",
+    "Work",
+    "Show gender, age, and orientation",
+    "Show where I live and work",
+    "Save",
+  ].forEach((line) => addLine(rows, seen, "Profile", line));
+  [
+    "About us",
+    "The restaurant is the setting.",
+    "The people are the experience.",
+    "The conversation is the point.",
+    "Buddy Blind is built on one simple idea: meet people without knowing exactly who you’re going to meet.",
+    "You choose the time, the place, and how many seats. You know enough to decide you want to go — but you don’t get to pre-select who sits with you. That uncertainty isn’t a bug. It’s the product. We call it the Blind Box.",
+    "Show up. Talk. Discover who they are through a real meal — not a profile, not a swipe, and not endless scrolling beforehand.",
+    "Buddy Blind is not a dating app. It’s a way to get more real interaction back into everyday life: dinner, lunch near work, a drink after — planned in the app, lived at the table.",
+  ].forEach((line) => addLine(rows, seen, "About", line));
+  ["Email", "Username", "Gender", "Age range", "Orientation", "Password", "Code"].forEach((line) => addLine(rows, seen, "Account", line));
+  ["reg.name", "reg.send", "reg.sent", "reg.otp", "reg.bad", "reg.card", "reg.optional", "reg.login", "trial.kicker", "trial.title", "trial.body", "trial.check", "trial.start", "nav.login", "nav.logout"].forEach((key) => fromKey(rows, seen, "Account", key));
+  ["Venues", "Quick", "Private", "How", "Plan", "Profile", "Upgrade plan", "About us", "Login", "Log out"].forEach((line) => addLine(rows, seen, "Shared", line));
+  ["pay.admin", "pay.total", "pay.why", "pay.check", "pay.freeCheck", "pay.confirm", "pay.confirmFree", "pay.free", "pay.fixed", "empty.inviteTitle", "empty.inviteBody", "empty.inviteCta", "leave.title", "leave.body", "step.location", "step.date", "step.time", "step.type", "step.people", "step.prefs", "step.summary", "step.pay", "btn.next", "btn.close", "btn.back", "adult.note", "ping.seeYou", "ping.areYou", "ping.needJoin", "ping.wait"].forEach((key) => fromKey(rows, seen, "Shared", key));
   return rows;
 }
 
@@ -169,15 +221,15 @@ function WordingEditor({ bb }) {
   const [edits, setEdits] = useState({});
   const [busy, setBusy] = useState(false);
   const bag = bb.content?.wording?.[lang] || {};
+  const live = useMemo(() => siteLines(bb.content), [bb.content]);
+  const pages = useMemo(() => ["All", ...new Set(live.map((row) => row.page))], [live]);
   const lines = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const extra = Object.keys(bag).map((english) => ({ page: "Other", english }));
-    return [...catalog(), ...extra]
+    return live
       .filter((row) => page === "All" || row.page === page)
       .filter((row, index, list) => list.findIndex((item) => item.english === row.english) === index)
-      .filter((row) => !q || row.english.toLowerCase().includes(q) || String(bag[row.english] || say(lang, row.english, false)).toLowerCase().includes(q))
-      .slice(0, 120);
-  }, [query, lang, page, bag, bb.content]);
+      .filter((row) => !q || row.english.toLowerCase().includes(q) || String(bag[row.english] || say(lang, row.english, false)).toLowerCase().includes(q));
+  }, [query, lang, page, bag, live]);
 
   function shown(english) {
     if (Object.prototype.hasOwnProperty.call(edits, english)) return edits[english];
@@ -217,7 +269,7 @@ function WordingEditor({ bb }) {
         ))}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        {PAGES.map((name) => (
+        {pages.map((name) => (
           <button key={name} type="button" onClick={() => setPage(name)} className={`rounded-full px-3 py-1.5 text-xs ${page === name ? "bg-white font-semibold text-black" : "border border-white/15 text-white/70"}`}>
             {name}
           </button>
