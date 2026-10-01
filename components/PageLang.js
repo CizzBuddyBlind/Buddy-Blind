@@ -1,16 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useBB } from "./Providers";
 
 const mem = new Map();
-let loaded = false;
-
-function code(lang) {
-  if (lang === "zh-HK") return "zh-TW";
-  if (lang === "zh") return "zh-CN";
-  return "en";
-}
+const HOLD = "\u2060";
 
 function readCache() {
   try {
@@ -19,6 +14,8 @@ function readCache() {
     /* ignore */
   }
 }
+
+if (typeof window !== "undefined") readCache();
 
 function writeCache() {
   const dump = {};
@@ -35,7 +32,7 @@ function writeCache() {
 }
 
 async function fill(texts, to) {
-  const missing = texts.filter((text) => !mem.has(`${to}\n${text}`));
+  const missing = [...new Set(texts.filter((text) => text && !mem.has(`${to}\n${text}`)))];
   for (let start = 0; start < missing.length; start += 10) {
     const slice = missing.slice(start, start + 10);
     const res = await fetch("/api/tr", {
@@ -49,86 +46,150 @@ async function fill(texts, to) {
   if (missing.length) writeCache();
 }
 
+function skip(el) {
+  return !el || el.closest("[data-keep], script, style, noscript, textarea, svg");
+}
+
 export function PageLang() {
   const { lang } = useBB();
-  useEffect(() => {
-    if (!loaded) {
-      readCache();
-      loaded = true;
-    }
+  const path = usePathname();
+
+  useLayoutEffect(() => {
     const source = new WeakMap();
     const applied = new WeakMap();
     let lock = false;
     let timer = 0;
 
-    async function run() {
-      if (lock) return;
-      lock = true;
-      try {
-        const to = code(lang);
-        const jobs = [];
-        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-        let node = walker.nextNode();
-        while (node) {
-          const el = node.parentElement;
-          if (el && !el.closest("[data-keep], script, style, noscript, textarea, svg")) {
-            if (applied.get(node) !== node.nodeValue) source.set(node, node.nodeValue);
-            const raw = source.get(node) || "";
-            const text = raw.trim();
-            if (text && /[A-Za-z]/.test(text)) jobs.push({ node, raw, text: text.slice(0, 450) });
-          }
-          node = walker.nextNode();
+    function remember(node) {
+      if (node.nodeValue === HOLD) return;
+      if (applied.get(node) !== node.nodeValue) source.set(node, node.nodeValue);
+    }
+
+    function write(node, value) {
+      if (node.nodeValue === value) {
+        applied.set(node, value);
+        return;
+      }
+      applied.set(node, value);
+      node.nodeValue = value;
+    }
+
+    function conceal(node) {
+      const el = node.parentElement;
+      if (!el || el.dataset.bbHold || el.childElementCount > 6) return;
+      el.dataset.bbHold = el.style.color || "inherit";
+      el.style.color = "transparent";
+    }
+
+    function reveal(node) {
+      const el = node.parentElement;
+      if (!el?.dataset.bbHold) return;
+      el.style.color = el.dataset.bbHold === "inherit" ? "" : el.dataset.bbHold;
+      delete el.dataset.bbHold;
+    }
+
+    function jobs() {
+      const list = [];
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let node = walker.nextNode();
+      while (node) {
+        const el = node.parentElement;
+        if (!skip(el)) {
+          remember(node);
+          const raw = source.get(node) || "";
+          const text = raw.trim();
+          if (text && /[A-Za-z]/.test(text)) list.push({ node, raw, text: text.slice(0, 450) });
         }
-        const fields = [...document.querySelectorAll("input[placeholder], textarea[placeholder]")].filter((el) => !el.closest("[data-keep]"));
-        fields.forEach((el) => {
+        node = walker.nextNode();
+      }
+      return list;
+    }
+
+    function fields() {
+      return [...document.querySelectorAll("input[placeholder], textarea[placeholder]")].filter((el) => !skip(el));
+    }
+
+    function applyNow() {
+      lock = true;
+      const missing = [];
+      try {
+        const list = jobs();
+        const inputs = fields();
+        inputs.forEach((el) => {
           if (!el.dataset.srcPh) el.dataset.srcPh = el.placeholder;
         });
-        if (to === "en") {
-          jobs.forEach(({ node, raw }) => {
-            if (node.nodeValue !== raw) {
-              applied.set(node, raw);
-              node.nodeValue = raw;
-            }
+        if (!lang || lang === "en") {
+          list.forEach(({ node, raw }) => {
+            write(node, raw);
+            reveal(node);
           });
-          fields.forEach((el) => {
+          inputs.forEach((el) => {
             if (el.dataset.srcPh) el.placeholder = el.dataset.srcPh;
           });
-          return;
+          return missing;
         }
-        const unique = [...new Set([
-          ...jobs.map((job) => job.text),
-          ...fields.map((el) => (el.dataset.srcPh || "").trim()).filter((text) => /[A-Za-z]/.test(text)),
-        ])];
-        await fill(unique, lang);
-        jobs.forEach(({ node, raw, text }) => {
+        list.forEach(({ node, raw, text }) => {
+          const hit = mem.get(`${lang}\n${text}`);
+          if (!hit) {
+            conceal(node);
+            if (node.nodeValue !== HOLD) write(node, HOLD);
+            missing.push(text);
+            return;
+          }
           const lead = raw.match(/^\s*/)[0];
           const tail = raw.match(/\s*$/)[0];
-          const next = `${lead}${mem.get(`${lang}\n${text}`) || text}${tail}`;
-          if (node.nodeValue !== next) {
-            applied.set(node, next);
-            node.nodeValue = next;
+          write(node, `${lead}${hit}${tail}`);
+          reveal(node);
+        });
+        inputs.forEach((el) => {
+          const text = (el.dataset.srcPh || "").trim().slice(0, 450);
+          if (!text || !/[A-Za-z]/.test(text)) return;
+          const hit = mem.get(`${lang}\n${text}`);
+          if (hit) el.placeholder = hit;
+          else {
+            el.placeholder = "";
+            missing.push(text);
           }
         });
-        fields.forEach((el) => {
-          const text = (el.dataset.srcPh || "").trim();
-          if (text) el.placeholder = mem.get(`${lang}\n${text.slice(0, 450)}`) || el.dataset.srcPh;
+      } finally {
+        queueMicrotask(() => {
+          lock = false;
         });
+      }
+      return missing;
+    }
+
+    async function fetchMissing(texts) {
+      if (!texts.length || !lang || lang === "en") return;
+      lock = true;
+      try {
+        await fill(texts, lang);
+      } catch {
+        /* keep the page usable if the translator is busy */
       } finally {
         lock = false;
       }
+      applyNow();
+    }
+
+    function schedule(texts) {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => fetchMissing(texts), 30);
     }
 
     const obs = new MutationObserver(() => {
       if (lock) return;
-      window.clearTimeout(timer);
-      timer = window.setTimeout(run, 280);
+      const missing = applyNow();
+      if (missing.length) schedule(missing);
     });
     obs.observe(document.body, { subtree: true, childList: true, characterData: true });
-    run();
+    const missing = applyNow();
+    if (missing.length) schedule(missing);
     return () => {
       window.clearTimeout(timer);
       obs.disconnect();
     };
-  }, [lang]);
+  }, [lang, path]);
+
   return null;
 }
