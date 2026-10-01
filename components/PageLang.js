@@ -47,7 +47,7 @@ async function fill(texts, to) {
 }
 
 function skip(el) {
-  return !el || el.closest("[data-keep], script, style, noscript, textarea, svg");
+  return !el || el.closest("[data-keep], script, style, noscript, textarea, svg, select, option, input");
 }
 
 export function PageLang() {
@@ -146,10 +146,6 @@ export function PageLang() {
           if (!text || !/[A-Za-z]/.test(text)) return;
           const hit = mem.get(`${lang}\n${text}`);
           if (hit) el.placeholder = hit;
-          else {
-            el.placeholder = "";
-            missing.push(text);
-          }
         });
       } finally {
         queueMicrotask(() => {

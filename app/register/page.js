@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useBB } from "@/components/Providers";
 import { AGE_RANGES } from "@/lib/bible";
 import { translate } from "@/lib/i18n";
+import { say } from "@/lib/say";
 import { LangSwitch } from "@/components/Flows";
 
 export default function RegisterPage() {
@@ -91,7 +92,7 @@ export default function RegisterPage() {
 
   return (
     <main className="bb-frame grid min-h-[80dvh] place-items-center py-16 pb-28">
-      <form onSubmit={submit} className="w-full max-w-sm">
+      <form onSubmit={submit} data-keep className="w-full max-w-sm">
         <div className="mb-4 flex justify-end">
           <LangSwitch />
         </div>
@@ -99,26 +100,26 @@ export default function RegisterPage() {
         <h1 className="mt-3 font-serif text-3xl">{t("trial.title")}</h1>
         <p className="mt-2 text-sm leading-relaxed text-mute">{t("trial.body")}</p>
         <div className="mt-6 space-y-3">
-          <input required value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
-          <input required value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
-          <input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder={t("reg.name")} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
-          <select required value={gender} onChange={(e) => setGender(e.target.value)} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none">
-            <option value="">Gender</option>
-            {["Woman", "Man", "Non-binary"].map((item) => <option key={item}>{item}</option>)}
+          <input required value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder={say(bb.lang, "Email")} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg outline-none" />
+          <input required value={username} onChange={(e) => setUsername(e.target.value)} placeholder={say(bb.lang, "Username")} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg outline-none" />
+          <input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder={t("reg.name")} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg outline-none" />
+          <select required value={gender} onChange={(e) => setGender(e.target.value)} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg outline-none">
+            <option value="">{say(bb.lang, "Gender")}</option>
+            {["Woman", "Man", "Non-binary"].map((item) => <option key={item} value={item}>{say(bb.lang, item)}</option>)}
           </select>
-          <select required value={ageRange} onChange={(e) => setAgeRange(e.target.value)} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none">
-            <option value="">Age range</option>
-            {AGE_RANGES.map((item) => <option key={item}>{item}</option>)}
+          <select required value={ageRange} onChange={(e) => setAgeRange(e.target.value)} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg outline-none">
+            <option value="">{say(bb.lang, "Age range")}</option>
+            {AGE_RANGES.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
-          <select required value={orientation} onChange={(e) => setOrientation(e.target.value)} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none">
-            <option value="">Orientation</option>
-            {["Straight", "Gay", "Lesbian", "Bi", "Trans"].map((item) => <option key={item}>{item}</option>)}
+          <select required value={orientation} onChange={(e) => setOrientation(e.target.value)} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg outline-none">
+            <option value="">{say(bb.lang, "Orientation")}</option>
+            {["Straight", "Gay", "Lesbian", "Bi", "Trans"].map((item) => <option key={item} value={item}>{say(bb.lang, item)}</option>)}
           </select>
-          <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+852 9123 4567" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
-          <input required value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
+          <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+852 9123 4567" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg outline-none" />
+          <input required value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder={say(bb.lang, "Password")} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg outline-none" />
           <button type="button" disabled={busy} className="text-xs text-ember disabled:opacity-40" onClick={() => void sendCode()}>{t("reg.send")}</button>
           {sent && <p className="text-xs text-mute">{test ? "Test code 248163. No text yet." : `${t("reg.sent")} ${sent}`}</p>}
-          <input value={otp} onChange={(e) => setOtp(e.target.value)} inputMode="numeric" placeholder="Code" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
+          <input value={otp} onChange={(e) => setOtp(e.target.value)} inputMode="numeric" placeholder={say(bb.lang, "Code")} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg outline-none" />
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
             <span>{t("trial.check")}</span>
