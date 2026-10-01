@@ -55,24 +55,129 @@ export function restaurantFields(form) {
   };
 }
 
-function englishLines() {
-  return [...new Set([...phraseList(), ...Object.values(DICT.en || {}), ...Object.values(EXTRA.en || {})])].filter((line) => line && /[A-Za-z]/.test(line));
+function pageOf(key) {
+  if (key.startsWith("app.home") || key.startsWith("hero.")) return "Home";
+  if (key.startsWith("app.venues") || key.startsWith("venue.") || key.startsWith("filter.") || key === "nav.venues" || key === "empty.filter" || key === "spots" || key === "moreEvents" || key === "host.line") return "Venues";
+  if (key.startsWith("quick.") || key.startsWith("app.quick") || key === "nav.quick") return "Quick";
+  if (key.startsWith("private.") || key.startsWith("priv.") || key === "nav.private") return "Private";
+  if (key.startsWith("how.") || key.startsWith("app.how") || key.startsWith("app.step") || key === "nav.how") return "How";
+  if (key.startsWith("trial.") || key.startsWith("pay.") || key === "nav.premium" || key === "nav.subscribe") return "Plan";
+  if (key.startsWith("about.") || key === "nav.about") return "About";
+  if (key.startsWith("reg.") || key === "nav.login" || key === "nav.logout" || key === "nav.profile" || key === "adult.note") return "Account";
+  if (key.startsWith("today.") || key.startsWith("ping.") || key.startsWith("Info") || key === "nav.notifications") return "Profile";
+  if (key.startsWith("btn.") || key.startsWith("nav.") || key.startsWith("step.") || key.startsWith("leave.") || key.startsWith("share.") || key.startsWith("empty.")) return "Shared";
+  return "Other";
+}
+
+const HOW_LINES = [
+  "See venue, see vibe",
+  "Take a seat.",
+  "See the place",
+  "The photo is the filter. A restaurant, or a private night. Like the room, you’ll like the night.",
+  "See enough",
+  "Neighbourhood, time, seats left. Soho tonight or Central tomorrow. No faces. Enough to want it.",
+  "Take a seat",
+  "Join, or open the table. HK$5 only when you confirm. That’s for trust, not the meal.",
+  "Show up",
+  "No names before. No photos before. The restaurant is the scene. You bring the vibe.",
+  "After the meal",
+  "Stars aren’t about looks. A short line is your reputation. Your voice matters.",
+  "Add a buddy",
+  "Hey, you’re my vibe. One tap. If they say yes too, you’re buddies.",
+  "Host the reason",
+  "Premium. A private night, up to 20. Wine, social, a hike. You make the reason.",
+  "Points change the circle",
+  "Not the price. Join adds 1. Invite adds 2. Host adds 5. Enjoy the discount.",
+  "How it works",
+  "Bronze",
+  "Silver",
+  "Gold",
+  "100 points",
+  "300 points",
+  "500 points",
+];
+
+const PROFILE_LINES = [
+  "Info",
+  "Buddies",
+  "Review",
+  "No buddies yet.",
+  "No reviews yet.",
+  "Rate someone after you have shared a table.",
+  "Today and upcoming",
+  "Seats you joined",
+  "Joined",
+  "Invited",
+  "Quick meet",
+  "Private joined",
+  "Private hosted",
+  "Lives in",
+  "Works in",
+  "points",
+  "Log in",
+  "Log in first.",
+];
+
+const HOME_LINES = [
+  "You don't know",
+  "who you'll meet.",
+  "That's the point.",
+  "Restaurants provide the scene. Private events create the reason. You bring curiosity.",
+  "Want a Quick Meet?",
+  "Total events",
+  "Scenes tonight",
+  "Avg after-talk rating",
+  "Featured tonight · One blind box open",
+  "Love it. Let's do this.",
+  "Explore more",
+  "Terms and conditions apply",
+  "Hong Kong · Tonight",
+  "blind boxes",
+  "hosts",
+  "scenes",
+  "Tonight",
+];
+
+const PAGES = ["All", "Home", "Venues", "Quick", "Private", "How", "Plan", "Profile", "About", "Account", "Shared", "Other"];
+
+function catalog() {
+  const rows = [];
+  const seen = new Set();
+  function add(page, english) {
+    const text = String(english || "").trim();
+    if (!text || !/[A-Za-z]/.test(text)) return;
+    const id = `${page}\n${text}`;
+    if (seen.has(id)) return;
+    seen.add(id);
+    rows.push({ page, english: text });
+  }
+  Object.entries(DICT.en || {}).forEach(([key, value]) => add(pageOf(key), value));
+  Object.entries(EXTRA.en || {}).forEach(([key, value]) => add(pageOf(key), value));
+  HOME_LINES.forEach((line) => add("Home", line));
+  HOW_LINES.forEach((line) => add("How", line));
+  PROFILE_LINES.forEach((line) => add("Profile", line));
+  phraseList().forEach((line) => {
+    if (!rows.some((row) => row.english === line)) add("Other", line);
+  });
+  return rows;
 }
 
 function WordingEditor({ bb }) {
   const [lang, setLang] = useState("zh-HK");
+  const [page, setPage] = useState("All");
   const [query, setQuery] = useState("");
   const [edits, setEdits] = useState({});
   const [busy, setBusy] = useState(false);
   const bag = bb.content?.wording?.[lang] || {};
   const lines = useMemo(() => {
-    const all = [...new Set([...englishLines(), ...Object.keys(bb.content?.wording?.zh || {}), ...Object.keys(bb.content?.wording?.["zh-HK"] || {})])];
     const q = query.trim().toLowerCase();
-    return all
-      .filter((line) => !q || line.toLowerCase().includes(q) || String(bag[line] || say(lang, line, false)).toLowerCase().includes(q))
-      .sort((a, b) => a.localeCompare(b))
-      .slice(0, 80);
-  }, [query, lang, bag, bb.content]);
+    const extra = Object.keys(bag).map((english) => ({ page: "Other", english }));
+    return [...catalog(), ...extra]
+      .filter((row) => page === "All" || row.page === page)
+      .filter((row, index, list) => list.findIndex((item) => item.english === row.english) === index)
+      .filter((row) => !q || row.english.toLowerCase().includes(q) || String(bag[row.english] || say(lang, row.english, false)).toLowerCase().includes(q))
+      .slice(0, 120);
+  }, [query, lang, page, bag, bb.content]);
 
   function shown(english) {
     if (Object.prototype.hasOwnProperty.call(edits, english)) return edits[english];
@@ -98,9 +203,9 @@ function WordingEditor({ bb }) {
   }
 
   return (
-    <section data-keep className="mt-16 max-w-3xl">
-      <h2 className="font-serif text-4xl">Wording</h2>
-      <p className="mt-2 text-sm text-mute">Change Traditional or Simplified on its own. Saving one does not change the other.</p>
+    <section data-keep>
+      <h1 className="font-serif text-5xl">Wording</h1>
+      <p className="mt-2 max-w-xl text-sm text-mute">Every page. Traditional and Simplified are separate. Saving one does not change the other.</p>
       <div className="mt-4 flex gap-2">
         {[
           ["zh-HK", "繁 Traditional"],
@@ -111,12 +216,19 @@ function WordingEditor({ bb }) {
           </button>
         ))}
       </div>
-      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search English or the translation" className="mt-4 w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg" />
-      <div className="mt-4 grid gap-3">
-        {lines.map((english) => (
-          <label key={english} className="grid gap-1">
-            <span className="text-xs text-white/45">{english}</span>
-            <textarea value={shown(english)} onChange={(e) => setEdits((prev) => ({ ...prev, [english]: e.target.value }))} rows={2} className="rounded-xl border border-white/15 bg-card px-4 py-2 text-sm text-fg" />
+      <div className="mt-4 flex flex-wrap gap-2">
+        {PAGES.map((name) => (
+          <button key={name} type="button" onClick={() => setPage(name)} className={`rounded-full px-3 py-1.5 text-xs ${page === name ? "bg-white font-semibold text-black" : "border border-white/15 text-white/70"}`}>
+            {name}
+          </button>
+        ))}
+      </div>
+      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search this page" className="mt-4 w-full max-w-xl rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg" />
+      <div className="mt-4 grid max-w-3xl gap-3">
+        {lines.map((row) => (
+          <label key={`${row.page}-${row.english}`} className="grid gap-1">
+            <span className="text-xs text-white/45">{page === "All" ? `${row.page} · ` : ""}{row.english}</span>
+            <textarea value={shown(row.english)} onChange={(e) => setEdits((prev) => ({ ...prev, [row.english]: e.target.value }))} rows={2} className="rounded-xl border border-white/15 bg-card px-4 py-2 text-sm text-fg" />
           </label>
         ))}
       </div>
@@ -131,6 +243,7 @@ export default function AdminPage() {
   const bb = useBB();
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState("restaurants");
   const venues = bb.content?.venues || [];
 
   if (!bb.ready) {
@@ -193,7 +306,13 @@ export default function AdminPage() {
   return (
     <main data-keep className="bb-frame pb-28 pt-10 md:pb-16">
       <p className="text-[0.72rem] uppercase tracking-[0.2em] text-ember">Admin</p>
-      <h1 className="mt-3 font-serif text-5xl">{say(bb.lang, "Restaurants")}</h1>
+      <div className="mt-4 flex gap-2">
+        <button type="button" onClick={() => setMode("restaurants")} className={`rounded-full px-4 py-2 text-sm ${mode === "restaurants" ? "bg-white font-semibold text-black" : "border border-white/20 text-white/70"}`}>Restaurants</button>
+        <button type="button" onClick={() => setMode("wording")} className={`rounded-full px-4 py-2 text-sm ${mode === "wording" ? "bg-white font-semibold text-black" : "border border-white/20 text-white/70"}`}>All pages</button>
+      </div>
+      {mode === "wording" ? <div className="mt-8"><WordingEditor bb={bb} /></div> : (
+      <>
+      <h1 className="mt-8 font-serif text-5xl">{say(bb.lang, "Restaurants")}</h1>
       <form onSubmit={add} className="mt-8 grid max-w-xl gap-3">
         <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder={say(bb.lang, "Restaurant name")} className="rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg" required />
         <select value={form.cuisine} onChange={(e) => set("cuisine", e.target.value)} className="rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg">
@@ -234,7 +353,8 @@ export default function AdminPage() {
           </li>
         ))}
       </ul>
-      <WordingEditor bb={bb} />
+      </>
+      )}
     </main>
   );
 }
