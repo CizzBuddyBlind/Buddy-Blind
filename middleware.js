@@ -7,6 +7,7 @@ export function middleware(request) {
     pathname.startsWith("/api/gate") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
+    pathname === "/bb-logo.jpg" ||
     pathname === "/robots.txt"
   ) {
     return NextResponse.next();
@@ -21,5 +22,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|bb-logo.jpg).*)"],
 };
