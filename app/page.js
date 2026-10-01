@@ -171,7 +171,7 @@ export default function HomePage() {
                 <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">{featured.home?.chip || featured.meta}</span>
               </div>
               <div className="px-5 pb-5 pt-5">
-                <h2 className="font-serif text-[2.6rem] leading-none text-white">{say(bb.lang, featured.name, false)}</h2>
+                <h2 className="font-serif text-[2.6rem] leading-none text-white" {...(featured.kind === "table" ? { "data-keep": "1" } : {})}>{say(bb.lang, featured.name, false)}</h2>
                 <p className="mt-3 text-[11px] uppercase leading-relaxed tracking-[0.14em] text-white/45">{say(bb.lang, featured.home?.meta || featured.meta)}</p>
                 <p className="mt-4 text-[13px] uppercase leading-relaxed tracking-[0.04em] text-white/85">{say(bb.lang, featured.home?.invite || `Join a ${featured.reason} and meet new friends — no pitches, just presence.`)}</p>
                 <button type="button" onClick={() => setShare(true)} className="mt-4 rounded-full border border-white/25 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">{say(bb.lang, "Share")}</button>

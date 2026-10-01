@@ -208,7 +208,7 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
   }
 
   return (
-    <Frame title={`${title} · ${venue.name}`} step={shown} total={todayOnly ? 7 : 8} onBack={step === 0 ? close : () => setStep(todayOnly && step === 2 ? 0 : step - 1)} onClose={close}>
+    <Frame title={<><span>{title}</span>{" · "}<span data-keep>{venue.name}</span></>} step={shown} total={todayOnly ? 7 : 8} onBack={step === 0 ? close : () => setStep(todayOnly && step === 2 ? 0 : step - 1)} onClose={close}>
       <p className="mb-3 text-xs text-mute">{t("adult.note")}</p>
       {step === 0 && (
         <div className="space-y-2">
@@ -282,7 +282,7 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
       )}
       {step === 6 && (
         <div className="space-y-1 text-sm text-mute">
-          <p>Restaurant · {venue.name}</p>
+          <p>Restaurant · <span data-keep>{venue.name}</span></p>
           <p>Location · {branch?.label} · {branch?.address}</p>
           <p>Date · {todayOnly ? "Today" : prettyDate(dateISO, bb.lang)}</p>
           <p>Time · {time}</p>
@@ -372,7 +372,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
   }
 
   return (
-    <Frame title={`Join · ${venue.name}`} step={step + 1} total={2} onBack={step === 0 ? close : () => setStep(0)} onClose={close}>
+    <Frame title={<><span>Join</span>{" · "}<span data-keep>{venue.name}</span></>} step={step + 1} total={2} onBack={step === 0 ? close : () => setStep(0)} onClose={close}>
       {step === 0 && (
         <div className="space-y-2">
           <p className="text-sm text-mute">Pick a table.</p>
@@ -395,7 +395,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
       {step === 1 && row && (
         <div className="space-y-3">
           <div className="space-y-1 text-sm text-mute">
-            <p className="font-serif text-2xl text-fg">{venue.name}</p>
+            <p data-keep className="font-serif text-2xl text-fg">{venue.name}</p>
             <p>{row.table.address || venue.locationLabel}</p>
             <p>{prettyDate(row.table.dateISO, bb.lang)} · {row.table.time}</p>
             <p>{tablePrefs(row.table) || "Meet friends"}</p>
@@ -453,7 +453,7 @@ export function TodayPopup({ onJoin, onBrowse, onDismiss }) {
               <div className="flex items-center gap-2">
                 <HostBadge handle={table.hostHandle} tier={table.hostTier} />
                 <div>
-                  <div className="font-medium">{venue.name}</div>
+                  <div data-keep className="font-medium">{venue.name}</div>
                   <div className="text-xs text-mute">{venue.locationLabel} · {table.time}</div>
                 </div>
               </div>
@@ -719,7 +719,7 @@ export function PrivateWizard({ venueId = "", onClose }) {
       {phase === "details" && venue && (
         <div className="space-y-3">
           <p className="text-xs uppercase tracking-[0.16em] text-mute">Venue</p>
-          <p className="font-serif text-2xl">{venue.name}</p>
+          <p data-keep className="font-serif text-2xl">{venue.name}</p>
           <p className="text-sm text-mute">{location}</p>
           {branches.length > 1 && (
             <div className="flex flex-wrap gap-2">

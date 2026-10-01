@@ -160,6 +160,7 @@ export function StoreApp() {
               bb.setLang(order[(index + 1) % order.length]);
             }}
             className="grid h-9 min-w-9 place-items-center rounded-full border border-black/20 px-2 text-xs font-semibold"
+            data-keep
           >
             {bb.lang === "zh-HK" ? "繁" : bb.lang === "zh" ? "简" : "EN"}
           </button>
@@ -313,7 +314,7 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
             </span>
           </button>
           <div className="px-4 py-4">
-            <h2 className="font-serif text-[clamp(1.6rem,7vw,2rem)] leading-none">{featured.name}</h2>
+            <h2 className="font-serif text-[clamp(1.6rem,7vw,2rem)] leading-none" {...(featured.kind === "table" ? { "data-keep": "1" } : {})}>{featured.name}</h2>
             <div className="mt-3 flex items-center gap-2">
               <HostBadge handle={featured.host || "C"} tier={featured.tier || "bronze"} />
               <Joiners people={featured.kind === "table" ? featured.table.participants : featured.event.participants} host={featured.host} />
@@ -398,7 +399,7 @@ function Venues({ onOpen }) {
                 <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-white">{venue.spots || next?.hold.places || 0} spots</span>
                 <span className="absolute bottom-2 left-2 rounded-full bg-white px-2.5 py-1 text-[9px] font-semibold uppercase text-black">{next?.table.time || venue.timeLabel}</span>
               </div>
-              <h2 className="mt-2 line-clamp-2 min-h-[2.4em] font-serif text-[clamp(1rem,4.2vw,1.2rem)] leading-tight">{say(bb.lang, venue.name, false)}</h2>
+              <h2 data-keep className="mt-2 line-clamp-2 min-h-[2.4em] font-serif text-[clamp(1rem,4.2vw,1.2rem)] leading-tight">{say(bb.lang, venue.name, false)}</h2>
               <p className="mt-1 line-clamp-1 text-[10px] uppercase tracking-[0.08em] text-white/55">{say(bb.lang, venue.typeLabel)}</p>
               <p className="line-clamp-2 min-h-[2em] text-[11px] text-white/50">{say(bb.lang, venue.locationLabel)}</p>
               <span className="mt-2 flex h-6 items-center gap-1.5">
@@ -429,7 +430,7 @@ function VenueDetail({ id, onBack }) {
       <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-3xl">
         <Photo src={venue.gallery?.[0] || venue.imageUrl} alt="" />
       </div>
-      <h1 className="mt-4 font-serif text-[clamp(1.8rem,8vw,2.4rem)]">{say(bb.lang, venue.name, false)}</h1>
+      <h1 data-keep className="mt-4 font-serif text-[clamp(1.8rem,8vw,2.4rem)]">{say(bb.lang, venue.name, false)}</h1>
       <p className="mt-2 text-sm text-white/60">{say(bb.lang, venue.typeLabel)} · {say(bb.lang, venue.locationLabel)}</p>
       <p className="mt-3 text-sm leading-relaxed text-white/75">{say(bb.lang, venue.about)}</p>
       <div className="mt-4 space-y-2">
@@ -490,7 +491,7 @@ function Quick({ onOpen }) {
             <span className="min-w-0 flex-1" onClick={() => row.venueId && onOpen(row.venueId)}>
               <span className="block text-[10px] uppercase tracking-[0.12em] text-black/45">{say(bb.lang, row.timeLabel)}</span>
               <span className="mt-0.5 flex items-center gap-2">
-                <span className="truncate font-serif text-lg">{say(bb.lang, row.name, false)}</span>
+                <span data-keep className="truncate font-serif text-lg">{say(bb.lang, row.name, false)}</span>
                 <HostBadge handle={row.hostName || "CJ"} tier={row.hostTier || "gold"} />
               </span>
               <span className="block text-xs text-black/45">{say(bb.lang, row.detail)}</span>

@@ -7,6 +7,7 @@ import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
 import { JoinWizard, OpenTableWizard, PrivateWizard, TodayPopup, TrialGate } from "./Flows";
 import { RestaurantAdmin } from "./RestaurantAdmin";
+import { PageLang } from "./PageLang";
 import { iso, badgePaint } from "@/lib/bible";
 
 const TOP = [
@@ -116,6 +117,7 @@ export function Shell({ children }) {
   if (path === "/m" || path.startsWith("/m/")) {
     return (
       <div className="min-h-dvh bg-ink text-fg">
+        <PageLang />
         {children}
         {bb.toast && (
           <div className="fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-[70] -translate-x-1/2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-ink shadow-xl">
@@ -137,6 +139,7 @@ export function Shell({ children }) {
   if (appFlow) {
     return (
       <div className="min-h-dvh bg-ink text-fg">
+        <PageLang />
         <a href="/m?tab=profile" className="bb-word block px-5 pt-[max(1.25rem,env(safe-area-inset-top))] text-sm tracking-[0.16em]">BUDDY BLIND</a>
         {children}
       </div>
@@ -145,6 +148,7 @@ export function Shell({ children }) {
 
   return (
     <div className={light ? "min-h-dvh bg-paper text-char" : "min-h-dvh bg-ink text-fg"}>
+      <PageLang />
       {bb.staff && bb.preview && (
         <div className="sticky top-0 z-[60] flex items-center justify-between gap-3 bg-ember px-4 py-2 text-xs font-semibold text-white">
           <span>Preview — this is what visitors see. Draft is not live.</span>
@@ -208,6 +212,7 @@ export function Shell({ children }) {
                     bb.setLang(order[(index + 1) % order.length] || "en");
                   }}
                   className="relative z-40 grid h-9 min-w-9 place-items-center rounded-full border border-white/20 px-2 text-xs font-semibold text-white"
+                  data-keep
                 >
                   {bb.lang === "zh-HK" ? "繁" : bb.lang === "zh" ? "简" : "EN"}
                 </button>

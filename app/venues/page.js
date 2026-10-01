@@ -170,7 +170,7 @@ function Home() {
                   <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-[0.7rem] font-semibold text-char">{venue.timeLabel}</span>
                 </div>
                 <div className="flex flex-1 flex-col px-4 pb-2 pt-4">
-                  <h3 className="font-serif text-[1.2rem] text-ember-soft">
+                  <h3 data-keep className="font-serif text-[1.2rem] text-ember-soft">
                     <Editable locked={venue.locked} value={venue.name} onChange={(name) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.name = name; })} />
                   </h3>
                   <p className="mt-1 text-[0.72rem] tracking-wide text-mute">

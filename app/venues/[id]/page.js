@@ -95,7 +95,7 @@ export default function VenuePage() {
           <p className="text-xs uppercase tracking-[0.18em] text-ember">
             <Editable locked={venue.locked} value={say(lang, venue.cuisine || "")} onChange={(cuisine) => patch({ cuisine })} />
           </p>
-          <h1 className="mt-2 font-serif text-4xl leading-tight md:text-5xl">
+          <h1 data-keep className="mt-2 font-serif text-4xl leading-tight md:text-5xl">
             <Editable locked={venue.locked} value={venue.name} onChange={(name) => patch({ name })} />
           </h1>
           <p className="mt-3 text-sm text-mute">

@@ -131,7 +131,7 @@ export default function QuickPage() {
             </div>
             <div className="min-w-0 flex-1 text-left">
               <div className="flex items-center gap-2">
-                <div className="min-w-0 font-medium">
+                <div data-keep className="min-w-0 font-medium">
                   <Editable locked={row.locked} value={placeInfo.name} onChange={(name) => update((d) => { const item = d.events.find((x) => x.id === row.id); if (item) item.name = name; })} />
                 </div>
                 <HostBadge handle={row.hostName || "CJ"} tier={row.hostTier || "gold"} />
@@ -173,7 +173,7 @@ export default function QuickPage() {
                     <button key={venue.id} type="button" className="flex w-full items-center gap-3 rounded-xl border border-black/10 p-2 text-left" onClick={() => { setFlow({ type: "quick-invite", venueId: venue.id }); setFree(false); }}>
                       <img src={venue.imageUrl} alt="" className="h-12 w-12 rounded-lg object-cover" />
                       <span>
-                        <span className="block text-sm font-medium">{venue.name}</span>
+                        <span data-keep className="block text-sm font-medium">{venue.name}</span>
                         <span className="block text-xs text-mute">{venue.locationLabel}</span>
                       </span>
                     </button>
