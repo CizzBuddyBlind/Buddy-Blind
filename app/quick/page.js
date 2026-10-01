@@ -45,7 +45,7 @@ function nearestArea(lat, lng) {
 
 export default function QuickPage() {
   const router = useRouter();
-  const { content, editing, update, act, notify, setSelectedId, selectedId, setFlow } = useBB();
+  const { content, editing, update, act, notify, setSelectedId, selectedId, setFlow, lang } = useBB();
   const [sheet, setSheet] = useState(null);
   const [area, setArea] = useState("");
   const [free, setFree] = useState(false);
@@ -104,11 +104,11 @@ export default function QuickPage() {
             <br />
             <Copy k="quick.accent" legacy={copy.accent} className="italic text-ember" onEnglish={(d, next) => { d.copy.quick.accent = next; }} />
           </h1>
-          <p className="mt-5 max-w-sm text-sm leading-relaxed text-mute">{say(bb.lang, "A seat nearby. A time. No bio, no swipe. If you're free, sit down.")}</p>
+          <p className="mt-5 max-w-sm text-sm leading-relaxed text-mute">{say(lang, "A seat nearby. A time. No bio, no swipe. If you're free, sit down.")}</p>
           <ul className="mt-6 space-y-2 text-sm text-mute">
-            <li>{say(bb.lang, "Nearby, today")}</li>
-            <li>{say(bb.lang, "Coffee, lunch, or a drink")}</li>
-            <li>{say(bb.lang, "Join a seat, or open one")}</li>
+            <li>{say(lang, "Nearby, today")}</li>
+            <li>{say(lang, "Coffee, lunch, or a drink")}</li>
+            <li>{say(lang, "Join a seat, or open one")}</li>
           </ul>
         </section>
         <section>
@@ -136,9 +136,9 @@ export default function QuickPage() {
                 </div>
                 <HostBadge handle={row.hostName || "CJ"} tier={row.hostTier || "gold"} />
               </div>
-              <div className="text-xs text-mute">{say(bb.lang, placeInfo.address)}</div>
-              <div className="text-xs text-mute">{say(bb.lang, placeInfo.cuisine)}</div>
-              <div className="text-xs text-mute">{say(bb.lang, row.timeLabel)} · {row.spots} {say(bb.lang, "left")}</div>
+              <div className="text-xs text-mute">{say(lang, placeInfo.address)}</div>
+              <div className="text-xs text-mute">{say(lang, placeInfo.cuisine)}</div>
+              <div className="text-xs text-mute">{say(lang, row.timeLabel)} · {row.spots} {say(lang, "left")}</div>
             </div>
             <button type="button" className="shrink-0 rounded-full bg-char px-4 py-2 text-xs font-semibold text-paper" onClick={() => setSheet({ id: row.id, name: placeInfo.name, mode: "join", detail: `${placeInfo.address} · ${placeInfo.cuisine}` })}>
               JOIN
@@ -149,19 +149,19 @@ export default function QuickPage() {
           </div>
           <Copy as="p" k="quick.note" legacy={copy.note} className="mt-6 text-sm leading-relaxed text-mute" onEnglish={(d, next) => { d.copy.quick.note = next; }} />
           <button type="button" className="mt-4 rounded-full border border-char px-5 py-2 text-sm" onClick={() => { setFree((v) => !v); setAsk(false); }}>
-            {say(bb.lang, "I'm free now")}
+            {say(lang, "I'm free now")}
           </button>
           {free && (
             <div className="mt-4 rounded-2xl border border-black/10 bg-white p-4">
-              <p className="text-sm">{say(bb.lang, "Where are you?")}</p>
+              <p className="text-sm">{say(lang, "Where are you?")}</p>
               <input value={place} onChange={(e) => { setPlace(e.target.value); setNote(""); }} placeholder="Central, CWB, TST…" className="mt-3 w-full rounded-full border border-black/10 px-4 py-2.5 text-sm outline-none focus:border-ember" />
-              <button type="button" className="mt-3 rounded-full bg-char px-4 py-2 text-xs font-semibold text-paper" onClick={() => setAsk(true)}>{say(bb.lang, "Nearby")}</button>
+              <button type="button" className="mt-3 rounded-full bg-char px-4 py-2 text-xs font-semibold text-paper" onClick={() => setAsk(true)}>{say(lang, "Nearby")}</button>
               {ask && (
                 <div className="mt-3 rounded-xl bg-black/[0.03] p-3">
-                  <p className="text-sm">{say(bb.lang, "Share your location? We only use it to show places near you.")}</p>
+                  <p className="text-sm">{say(lang, "Share your location? We only use it to show places near you.")}</p>
                   <div className="mt-3 flex gap-2">
-                    <button type="button" className="rounded-full bg-char px-4 py-2 text-xs font-semibold text-paper" onClick={shareLocation}>{say(bb.lang, "Share")}</button>
-                    <button type="button" className="rounded-full border border-black/15 px-4 py-2 text-xs" onClick={() => setAsk(false)}>{say(bb.lang, "Not now")}</button>
+                    <button type="button" className="rounded-full bg-char px-4 py-2 text-xs font-semibold text-paper" onClick={shareLocation}>{say(lang, "Share")}</button>
+                    <button type="button" className="rounded-full border border-black/15 px-4 py-2 text-xs" onClick={() => setAsk(false)}>{say(lang, "Not now")}</button>
                   </div>
                 </div>
               )}
