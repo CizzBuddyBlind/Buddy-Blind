@@ -140,7 +140,7 @@ export function Shell({ children }) {
     return (
       <div className="min-h-dvh bg-ink text-fg">
         <PageLang />
-        <a href="/m?tab=profile" className="bb-word block px-5 pt-[max(1.25rem,env(safe-area-inset-top))] text-sm tracking-[0.16em]">BUDDY BLIND</a>
+        <a href="/m?tab=profile" data-keep className="bb-word block px-5 pt-[max(1.25rem,env(safe-area-inset-top))] text-sm tracking-[0.16em]">BUDDY BLIND</a>
         {children}
       </div>
     );
@@ -185,7 +185,7 @@ export function Shell({ children }) {
         <div className={frame}>
           <header className={`sticky z-40 border-b border-white/10 bg-ink text-fg ${bb.editing ? "top-[46px]" : "top-0"}`}>
             <div className="bb-frame relative flex h-16 items-center justify-between">
-              <Link href="/" className="flex items-center gap-2.5">
+              <Link href="/" data-keep className="flex items-center gap-2.5">
                 <span className="bb-word grid h-9 w-9 place-items-center rounded-full bg-white text-[0.72rem] font-semibold tracking-wide text-ink">BB</span>
                 <span className="bb-word text-[0.95rem] tracking-[0.16em]">BUDDY BLIND</span>
               </Link>

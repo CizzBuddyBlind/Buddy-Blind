@@ -36,7 +36,9 @@ export async function POST(request) {
       parts = batch.map((item) => item.text);
     }
     batch.forEach((item, index) => {
-      out[item.index] = (parts[index] || item.text).trim();
+      let next = (parts[index] || item.text).trim();
+      if (next && item.text.endsWith(next) === false && item.text.startsWith(next) && item.text.length === next.length + 1) next = item.text;
+      out[item.index] = next;
     });
     batch = [];
     size = 0;

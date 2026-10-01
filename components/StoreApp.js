@@ -146,7 +146,7 @@ export function StoreApp() {
   return (
     <div className={`bb-store ${light && !venueId && !eventId ? "bg-paper text-char" : "bg-ink text-fg"}`}>
       <header className="z-20 flex shrink-0 items-center justify-between bg-[#f4f1ea] px-[4.5vw] py-3 text-char">
-        <button type="button" onClick={() => go("home")}>
+        <button type="button" data-keep onClick={() => go("home")}>
           <span className="bb-word text-[0.95rem] tracking-[0.16em]">BUDDY BLIND</span>
         </button>
         <div className="flex items-center gap-2.5">
