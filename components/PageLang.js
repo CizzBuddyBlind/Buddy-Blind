@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useBB } from "./Providers";
-import { say } from "@/lib/say";
+import { pageFromPath, say, setWordingPage } from "@/lib/say";
 
 const mem = new Map();
 const HOLD = "\u2060";
@@ -68,6 +68,7 @@ function knownLine(lang, text, preferDict) {
     const line = say(lang, text);
     if (line && line !== text) return line;
   }
+  if (hasHan(text)) return "";
   return mem.get(`${lang}\n${text}`) || "";
 }
 
@@ -96,9 +97,12 @@ function collect(book, leaveApp) {
 function write(book, node, value) {
   book.applied.set(node, value);
   if (node.nodeValue !== value) node.nodeValue = value;
+  const parent = node.parentElement;
+  if (parent && hasHan(value) && /[A-Za-z]/.test(value) && parent.childNodes.length === 1) parent.setAttribute("data-keep", "said");
 }
 
 function apply(book, lang, preferDict) {
+  if (typeof location !== "undefined") setWordingPage(pageFromPath(location.pathname));
   book.lock = true;
   const missing = [];
   try {
@@ -255,7 +259,8 @@ function watchApp(lang, book) {
         return missing;
       }
       list.forEach(({ node, raw, text }) => {
-        const hit = mem.get(`${lang}\n${text}`) || "";
+        const own = say(lang, text);
+        const hit = own && own !== text ? own : mem.get(`${lang}\n${text}`) || "";
         if (!hit) {
           conceal(node);
           if (node.nodeValue !== HOLD) write(book, node, HOLD);

@@ -355,9 +355,12 @@ export function BuddyProvider({ children }) {
     }
     publishedRef.current = slim;
     setPublished(slim);
-    write(PUB, slim);
+    setWording(slim.wording);
+    try { write(PUB, slim); } catch { /* the live copy still updates in this tab */ }
     if (supabaseReady) {
-      saveSharedContent(slim).then((saved) => setRemote(saved?.ok ? "live" : "error")).catch(() => setRemote("error"));
+      const saved = await saveSharedContent(slim);
+      setRemote(saved?.ok ? "live" : "error");
+      if (!saved?.ok) return { ok: false, error: saved?.reason || "Could not update the live site." };
     }
     return { ok: true };
   }, []);
@@ -365,14 +368,17 @@ export function BuddyProvider({ children }) {
   const publish = useCallback(async () => {
     const next = clone(draftRef.current || publishedRef.current);
     setDraft(next);
-    write(DRAFT, next);
-    const history = [{ at: new Date().toISOString(), content: next }, ...read(VERSIONS, [])].slice(0, 8);
-    write(VERSIONS, history);
-    setVersions(history);
+    try { write(DRAFT, next); } catch { /* ignore quota */ }
+    try {
+      const history = [{ at: new Date().toISOString(), content: next }, ...read(VERSIONS, [])].slice(0, 8);
+      write(VERSIONS, history);
+      setVersions(history);
+    } catch { /* ignore quota */ }
     setDirty(false);
     const saved = await pushLive(next);
     log("Published");
-    notify(saved.ok ? "Published. Everyone sees this now." : saved.error || "Saved on this browser only.");
+    notify(saved.ok ? "Updated. It is live now." : saved.error || "Saved on this browser only.");
+    return saved;
   }, [log, notify, pushLive]);
 
   const restoreVersion = useCallback(

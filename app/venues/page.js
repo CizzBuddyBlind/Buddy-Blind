@@ -87,16 +87,8 @@ function Home() {
         </h1>
         {(() => {
           const story = String(copy.sub || "").trim() || "No faces, just places.\nEnough to WANT, enough uncertainty to be WORTH having.";
-          return (
-            <p className="mx-auto mt-6 max-w-lg text-sm leading-relaxed text-mute">
-              {say(bb.lang, story).split("\n").map((line, index) => (
-                <span key={`${index}-${line}`}>
-                  {index > 0 && <br />}
-                  {line}
-                </span>
-              ))}
-            </p>
-          );
+          const line = say(bb.lang, story);
+          return <p {...(line !== story ? { "data-keep": "said" } : {})} className="mx-auto mt-6 max-w-lg whitespace-pre-line text-sm leading-relaxed text-mute">{line}</p>;
         })()}
       </section>
 

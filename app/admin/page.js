@@ -212,19 +212,18 @@ function siteLines(content) {
 }
 
 function shownValue(bag, row) {
-  const pageBag = bag?.[row.page];
   const collapsed = row.english.replace(/\s+/g, " ").trim();
+  const pageBag = bag?.[row.page];
   if (pageBag && typeof pageBag === "object") {
-    if (pageBag[row.english]) return pageBag[row.english];
-    if (pageBag[collapsed]) return pageBag[collapsed];
+    if (typeof pageBag[row.english] === "string") return pageBag[row.english];
+    if (typeof pageBag[collapsed] === "string") return pageBag[collapsed];
+    const nested = Object.entries(pageBag).find(([key, value]) => typeof value === "string" && key.replace(/\s+/g, " ").trim() === collapsed);
+    if (nested) return nested[1];
   }
-  if (row.page === "Venues" && /No faces|Enough to WANT/i.test(row.english)) {
-    if (typeof bag?.[row.english] === "string") return bag[row.english];
-    if (typeof bag?.[collapsed] === "string") return bag[collapsed];
-    const hit = Object.entries(bag || {}).find(([key, value]) => typeof value === "string" && key.replace(/\s+/g, " ").trim() === collapsed);
-    if (hit) return hit[1];
-  }
-  return "";
+  if (typeof bag?.[row.english] === "string") return bag[row.english];
+  if (typeof bag?.[collapsed] === "string") return bag[collapsed];
+  const flat = Object.entries(bag || {}).find(([key, value]) => typeof value === "string" && key.replace(/\s+/g, " ").trim() === collapsed);
+  return flat ? flat[1] : "";
 }
 
 function WordingEditor({ bb }) {
@@ -260,14 +259,14 @@ function WordingEditor({ bb }) {
         const english = id.slice(cut + 1);
         const current = draft.wording[lang][editPage];
         if (!current || typeof current !== "object") draft.wording[lang][editPage] = {};
-        const clean = String(value || "").trim();
-        if (!clean) delete draft.wording[lang][editPage][english];
+        const clean = String(value ?? "");
+        if (!clean.trim()) delete draft.wording[lang][editPage][english];
         else draft.wording[lang][editPage][english] = clean;
       });
     });
-    await bb.publish();
-    setEdits({});
+    const saved = await bb.publish();
     setBusy(false);
+    if (saved?.ok) setEdits({});
   }
 
   return (
@@ -301,7 +300,7 @@ function WordingEditor({ bb }) {
         ))}
       </div>
       <button type="button" onClick={save} disabled={busy || !Object.keys(edits).length} className="mt-4 rounded-full bg-white px-5 py-3 text-sm font-semibold text-black disabled:opacity-50">
-        {busy ? "Saving…" : lang === "zh-HK" ? "Save Traditional only" : "Save Simplified only"}
+        {busy ? "Saving…" : "Save and update"}
       </button>
     </section>
   );
