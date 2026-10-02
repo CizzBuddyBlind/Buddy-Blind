@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useBB } from "./Providers";
-import { pageFromPath, say, setWordingPage } from "@/lib/say";
+import { isSavedWording, pageFromPath, say, setWordingPage } from "@/lib/say";
 
 const mem = new Map();
 const HOLD = "\u2060";
@@ -33,7 +33,7 @@ function writeCache() {
 }
 
 async function fill(texts, to) {
-  const missing = [...new Set(texts.filter((text) => text && !mem.has(`${to}\n${text}`)))];
+  const missing = [...new Set(texts.filter((text) => text && !isSavedWording(text) && !hasHan(text) && !mem.has(`${to}\n${text}`)))];
   for (let start = 0; start < missing.length; start += 10) {
     const slice = missing.slice(start, start + 10);
     const res = await fetch("/api/tr", {
@@ -64,9 +64,11 @@ function storedLang() {
 }
 
 function knownLine(lang, text, preferDict) {
+  if (isSavedWording(text)) return text;
   if (preferDict) {
     const line = say(lang, text);
     if (line && line !== text) return line;
+    if (isSavedWording(line)) return line;
   }
   if (hasHan(text)) return "";
   return mem.get(`${lang}\n${text}`) || "";
@@ -83,11 +85,11 @@ function collect(book, leaveApp) {
   while (node) {
     const el = node.parentElement;
     const current = node.nodeValue || "";
-    if (!skip(el, leaveApp) && !hasHan(current)) {
+    if (!skip(el, leaveApp) && !hasHan(current) && !isSavedWording(current)) {
       if (current !== HOLD && book.applied.get(node) !== current) book.source.set(node, current);
       const raw = book.source.get(node) || "";
       const text = raw.trim();
-      if (text && /[A-Za-z]/.test(text) && !hasHan(text)) list.push({ node, raw, text: text.slice(0, 450) });
+      if (text && /[A-Za-z]/.test(text) && !hasHan(text) && !isSavedWording(text)) list.push({ node, raw, text: text.slice(0, 450) });
     }
     node = walker.nextNode();
   }
@@ -98,7 +100,7 @@ function write(book, node, value) {
   book.applied.set(node, value);
   if (node.nodeValue !== value) node.nodeValue = value;
   const parent = node.parentElement;
-  if (parent && hasHan(value) && /[A-Za-z]/.test(value) && parent.childNodes.length === 1) parent.setAttribute("data-keep", "said");
+  if (parent && parent.childNodes.length === 1 && (isSavedWording(value) || (hasHan(value) && /[A-Za-z]/.test(value)))) parent.setAttribute("data-keep", "said");
 }
 
 function apply(book, lang, preferDict) {
@@ -260,7 +262,7 @@ function watchApp(lang, book) {
       }
       list.forEach(({ node, raw, text }) => {
         const own = say(lang, text);
-        const hit = own && own !== text ? own : mem.get(`${lang}\n${text}`) || "";
+        const hit = isSavedWording(text) || isSavedWording(own) ? (own || text) : own && own !== text ? own : mem.get(`${lang}\n${text}`) || "";
         if (!hit) {
           conceal(node);
           if (node.nodeValue !== HOLD) write(book, node, HOLD);
