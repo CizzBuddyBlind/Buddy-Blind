@@ -879,6 +879,7 @@ export function BuddyProvider({ children }) {
     const text = String(body || "").trim();
     const target = String(to || "").trim();
     if (!session) return { error: "Log in first." };
+    if (!(plan === "lite" || plan === "premium" || trialOk)) return { error: "Comments and stars are on Lite and Premium." };
     if (!text || !target) return { error: "Pick someone and write a line." };
     if (target === session.handle) return { error: "You can't rate yourself." };
     const allowed = peopleYouCanRate(publishedRef.current, session.handle);
@@ -906,7 +907,7 @@ export function BuddyProvider({ children }) {
     }, 0);
     notify("Saved.");
     return { ok: true };
-  }, [notify, session]);
+  }, [notify, plan, session, trialOk]);
 
   const applyLive = useCallback(async (base) => {
     if (editing) {

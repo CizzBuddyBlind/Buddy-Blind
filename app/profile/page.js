@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useBB, peopleYouCanRate } from "@/components/Providers";
+import { PlanWindow } from "@/components/PlanWindow";
 import { AGE_RANGES, badgePaint, discountPercent } from "@/lib/bible";
 import { JoinedEvents } from "@/components/PhoneApp";
 
@@ -45,6 +46,43 @@ function historyOf(session, content) {
   return { joined, invited, quick, privJoin, privHost };
 }
 
+function commentsAbout(handle, content) {
+  const peer = (content?.peerReviews || []).filter((review) => review.to === handle);
+  if (peer.length) return peer.sort((a, b) => (b.at || 0) - (a.at || 0));
+  return (content?.reviews || [])
+    .filter((review) => review.handle === handle)
+    .map((review, index) => ({
+      id: `note-${handle}-${index}`,
+      from: "Table",
+      to: handle,
+      stars: Number(review.stars) || (index % 2 ? 4 : 5),
+      body: review.body,
+      at: 0,
+    }));
+}
+
+function starScore(list) {
+  const nums = list.map((review) => Number(review.stars)).filter((n) => n > 0);
+  if (!nums.length) return 0;
+  return Math.round(nums.reduce((sum, n) => sum + n, 0) / nums.length);
+}
+
+function StarMark({ score }) {
+  const full = Math.max(0, Math.min(5, score));
+  return (
+    <p className="text-sm tracking-widest text-ember" aria-label={full ? `${full} stars` : "No stars yet"}>
+      {"★★★★★".slice(0, full)}
+      <span className="text-white/25">{"☆☆☆☆☆".slice(full)}</span>
+    </p>
+  );
+}
+
+function canSeeComments(bb) {
+  const trial = bb.trial;
+  const trialOn = !!(trial?.at && !trial.cancelled && Date.now() - trial.at < (trial.days || 90) * 86400000);
+  return bb.plan === "lite" || bb.plan === "premium" || trialOn;
+}
+
 export default function ProfilePage() {
   const bb = useBB();
   const { session, social } = bb;
@@ -57,6 +95,26 @@ export default function ProfilePage() {
   const [target, setTarget] = useState(null);
   const [stars, setStars] = useState(5);
   const [note, setNote] = useState("");
+  const [guest, setGuest] = useState(null);
+  const [plans, setPlans] = useState(false);
+  useEffect(() => {
+    if (!bb.ready) return;
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    if (!sessionId) return;
+    let stop = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/checkout?session_id=${encodeURIComponent(sessionId)}`);
+        const data = await res.json();
+        if (stop || !data?.ok) return;
+        bb.setPlan(data.kind, { subscriptionId: data.subscriptionId, customerId: data.customerId });
+        bb.notify(data.kind === "premium" ? "You're Premium." : "You're on Lite.");
+      } catch { /* stay on the profile */ }
+      window.history.replaceState({}, "", "/profile");
+    })();
+    return () => { stop = true; };
+  }, [bb.ready]);
   if (!session) {
     return (
       <main className="bb-frame grid min-h-[70dvh] place-items-center pb-28 text-center">
@@ -80,19 +138,20 @@ export default function ProfilePage() {
   };
   const buddies = (social.buddies || []).filter((b) => b.status === "accepted");
   const pending = (social.buddies || []).filter((b) => b.status === "pending");
-  const initial = String(session.handle || "B").trim().slice(0, 1).toUpperCase();
-  const received = (bb.content.peerReviews || [])
-    .filter((review) => review.to === session.handle)
-    .sort((a, b) => (b.at || 0) - (a.at || 0));
+  const initial = String((guest || session.handle) || "B").trim().slice(0, 1).toUpperCase();
+  const received = commentsAbout(guest || session.handle, bb.content);
   const shown = received.slice(page * 3, page * 3 + 3);
   const canRate = peopleYouCanRate(bb.content, session.handle);
   const stats = historyOf(session, bb.content);
+  const open = canSeeComments(bb);
+  const locked = !!guest && !open;
   const who = [form.gender, form.ageRange, form.orientation].filter(Boolean).join(" · ");
   const where = [form.neighborhood && `Lives in ${form.neighborhood}`, form.occupation && `Works in ${form.occupation}`].filter(Boolean).join(" · ");
 
   function openPanel(next) {
     setPanel(next);
     setBuddy(null);
+    setGuest(null);
     setPage(0);
   }
 
@@ -105,10 +164,17 @@ export default function ProfilePage() {
       <div className="grid items-start gap-8 md:block">
         <section className="flex flex-col overflow-y-auto rounded-[28px] bg-[#141414] px-6 py-8 text-[#f5f5f5] ring-1 ring-white/10 md:fixed md:left-[15.28vw] md:top-[18.44vh] md:h-[71.75vh] md:w-[30.76vw] md:px-8">
           <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-4xl ${paint.className}`} style={paint.style}>{initial}</div>
-          <h1 className="mt-4 text-center text-3xl font-bold tracking-tight">{session.handle}</h1>
-          {form.showIdentity && who && <p className="mt-2 text-center text-sm text-white/45">{who}</p>}
-          {form.showPlace && where && <p className="text-center text-sm text-white/45">{where}</p>}
-          <p className="mt-1 text-center text-sm text-white/70">{points} points{off ? ` · ${off}% off` : ""}</p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">{guest || session.handle}</h1>
+            <StarMark score={starScore(received)} />
+          </div>
+          {!guest && form.showIdentity && who && <p className="mt-2 text-center text-sm text-white/45">{who}</p>}
+          {!guest && form.showPlace && where && <p className="text-center text-sm text-white/45">{where}</p>}
+          {!guest && <p className="mt-1 text-center text-sm text-white/70">{points} points{off ? ` · ${off}% off` : ""}</p>}
+          {guest && (
+            <button type="button" className="mt-3 text-xs text-white/45" onClick={() => { setGuest(null); setPage(0); }}>Back</button>
+          )}
+          {!guest && (
           <div className="mt-6 grid grid-cols-3 gap-3">
             {[
               ["info", String(stats.joined + stats.invited + stats.quick + stats.privJoin + stats.privHost).padStart(2, "0"), "Info"],
@@ -126,8 +192,9 @@ export default function ProfilePage() {
               </button>
             ))}
           </div>
+          )}
 
-          {panel === "info" && (
+          {panel === "info" && !guest && (
             <div className="mt-4 rounded-3xl bg-[#1c1c1c] px-5 py-4 text-left text-sm shadow-sm">
               <p className="flex justify-between text-white/70"><span>Joined</span><span>{stats.joined}</span></p>
               <p className="mt-2 flex justify-between text-white/70"><span>Invited</span><span>{stats.invited}</span></p>
@@ -137,7 +204,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {panel === "buddies" && !buddy && (
+          {panel === "buddies" && !buddy && !guest && (
             <div className="mt-3">
               {!buddies.length && !pending.length && <p className="text-sm text-white/45">No buddies yet.</p>}
               <div className="flex flex-wrap gap-2">
@@ -147,14 +214,14 @@ export default function ProfilePage() {
                   </button>
                 ))}
                 {buddies.map((b) => (
-                  <button key={b.id} type="button" title={b.name} onClick={() => setBuddy(b)} className="grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-[#1c1c1c] font-serif text-lg">
+                  <button key={b.id} type="button" title={b.name} onClick={() => { setGuest(b.name); setPage(0); }} className="grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-[#1c1c1c] font-serif text-lg">
                     {b.name.slice(0, 1).toUpperCase()}
                   </button>
                 ))}
               </div>
             </div>
           )}
-          {panel === "buddies" && buddy && (
+          {panel === "buddies" && buddy && !guest && (
             <div className="mt-3 rounded-3xl bg-[#1c1c1c] p-4 text-left shadow-sm">
               <button type="button" className="text-xs text-white/45" onClick={() => setBuddy(null)}>Back</button>
               <div className="mt-3 grid h-14 w-14 place-items-center rounded-full bg-[#1c1c1c] font-serif text-2xl">{buddy.name.slice(0, 1).toUpperCase()}</div>
@@ -171,14 +238,16 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {panel === "review" && (
+          {(guest || panel === "review") && (
             <div className="mt-3">
-              <div className="mb-3 flex justify-end">
-                <button type="button" onClick={() => { setRateOpen((open) => !open); setTarget(null); setNote(""); }} className="rounded-full bg-[#1c1c1c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">
-                  Rate someone
-                </button>
-              </div>
-              {rateOpen && (
+              {!guest && (
+                <div className="mb-3 flex justify-end">
+                  <button type="button" onClick={() => { if (!open) { setPlans(true); return; } setRateOpen((on) => !on); setTarget(null); setNote(""); }} className="rounded-full bg-[#1c1c1c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">
+                    Rate someone
+                  </button>
+                </div>
+              )}
+              {rateOpen && open && !guest && (
                 <div className="mb-3 rounded-3xl bg-[#1c1c1c] p-4 text-left shadow-sm">
                   {!target && (
                     <>
@@ -222,22 +291,31 @@ export default function ProfilePage() {
                   )}
                 </div>
               )}
-              <div className="space-y-3">
-                {!shown.length && <p className="text-sm text-white/45">No comments yet.</p>}
-                {shown.map((review) => (
-                  <article key={review.id} className="rounded-3xl bg-[#1c1c1c] px-5 py-4 text-left shadow-sm">
-                    <div className="flex items-start justify-between gap-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em]">{review.from}</p>
-                      <p className="text-sm tracking-widest text-ember">
-                        {"★★★★★".slice(0, review.stars || 0)}
-                        <span className="text-white/25">{"☆☆☆☆☆".slice(review.stars || 0)}</span>
-                      </p>
-                    </div>
-                    <p className="mt-3 text-[15px] leading-relaxed text-white/80">{review.body}</p>
-                  </article>
-                ))}
+              <div className="relative min-h-[9rem]">
+                <div className={`space-y-3 ${locked ? "pointer-events-none select-none blur-md" : ""}`}>
+                  {!shown.length && <p className="text-sm text-white/45">No comments yet.</p>}
+                  {shown.map((review) => (
+                    <article key={review.id} className="rounded-3xl bg-[#1c1c1c] px-5 py-4 text-left shadow-sm">
+                      <div className="flex items-start justify-between gap-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em]">{review.from}</p>
+                        <p className="text-sm tracking-widest text-ember">
+                          {"★★★★★".slice(0, review.stars || 0)}
+                          <span className="text-white/25">{"☆☆☆☆☆".slice(review.stars || 0)}</span>
+                        </p>
+                      </div>
+                      <p className="mt-3 text-[15px] leading-relaxed text-white/80">{review.body}</p>
+                    </article>
+                  ))}
+                </div>
+                {locked && (
+                  <div className="absolute inset-0 grid place-items-center">
+                    <button type="button" onClick={() => setPlans(true)} className="rounded-full bg-white px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-black">
+                      Unlock
+                    </button>
+                  </div>
+                )}
               </div>
-              {received.length > 3 && (
+              {!locked && received.length > 3 && (
                 <div className="mt-4 flex justify-end gap-2">
                   {page > 0 && (
                     <button type="button" aria-label="Previous comments" onClick={() => setPage((n) => Math.max(0, n - 1))} className="grid h-10 w-10 place-items-center rounded-full bg-[#1c1c1c] text-white shadow-sm">‹</button>
@@ -250,8 +328,8 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <button type="button" className="mt-4 block text-xs text-white/45" onClick={() => setEdit((v) => !v)}>{edit ? "Close" : "Edit details"}</button>
-          {edit && (
+          {!guest && <button type="button" className="mt-4 block text-xs text-white/45" onClick={() => setEdit((v) => !v)}>{edit ? "Close" : "Edit details"}</button>}
+          {edit && !guest && (
             <form className="mt-3 space-y-2 text-left" onSubmit={(e) => { e.preventDefault(); bb.updateProfile(form); setDraft(null); setEdit(false); }}>
               <label className="block text-xs text-white/45">Username
                 <input value={form.handle} onChange={(e) => setDraft({ ...form, handle: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-[#1c1c1c] px-3 py-2 text-sm text-white" />
@@ -294,6 +372,7 @@ export default function ProfilePage() {
           <JoinedEvents />
         </section>
       </div>
+      {plans && <PlanWindow onClose={() => setPlans(false)} />}
     </main>
   );
 }

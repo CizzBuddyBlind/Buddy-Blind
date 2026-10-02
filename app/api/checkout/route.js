@@ -164,11 +164,12 @@ export async function POST(request) {
   if (!price) return Response.json({ ok: false, reason: "Card checkout is not ready yet." });
 
   const embedded = true;
+  const next = typeof body.next === "string" && body.next.startsWith("/") && !body.next.startsWith("//") ? body.next : "/subscribe";
   const params = new URLSearchParams({
     mode: kind === "fee" ? "payment" : "subscription",
     ui_mode: "embedded_page",
     redirect_on_completion: "if_required",
-    return_url: `${base}${kind === "fee" ? "/" : "/subscribe"}?session_id={CHECKOUT_SESSION_ID}`,
+    return_url: `${base}${kind === "fee" ? "/" : next}?session_id={CHECKOUT_SESSION_ID}`,
     "line_items[0][price]": price,
     "line_items[0][quantity]": "1",
     "metadata[kind]": kind,
