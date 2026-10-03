@@ -219,8 +219,8 @@ export function StoreApp() {
           if (idName === "how") {
             return (
               <button key={idName} type="button" onClick={() => go("how")} className="flex items-center justify-center" aria-label="Me Time">
-                <span className={`grid h-14 w-14 -translate-y-3 place-items-center overflow-hidden rounded-full shadow-lg ${on ? "ring-2 ring-ember" : ""}`}>
-                  <MeTimeMark className="h-14 w-14" />
+                <span className={`grid h-14 w-14 -translate-y-3 place-items-center overflow-hidden rounded-full ${on ? "shadow-lg" : ""}`}>
+                  <MeTimeMark on={on} className="h-14 w-14" />
                 </span>
               </button>
             );

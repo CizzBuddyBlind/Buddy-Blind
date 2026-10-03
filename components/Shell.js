@@ -328,8 +328,8 @@ export function Shell({ children }) {
                 if (item.center) {
                   return (
                     <Link key={item.href} href={item.href} className="flex items-center justify-center pb-1">
-                      <span className={`grid h-14 w-14 -translate-y-3 place-items-center overflow-hidden rounded-full shadow-lg ${active ? "ring-2 ring-ember" : ""}`}>
-                        <MeTimeMark className="h-14 w-14" />
+                      <span className={`grid h-14 w-14 -translate-y-3 place-items-center overflow-hidden rounded-full ${active ? "shadow-lg" : ""}`}>
+                        <MeTimeMark on={active} className="h-14 w-14" />
                       </span>
                     </Link>
                   );
