@@ -86,7 +86,12 @@ export function peopleYouCanRate(content, handle) {
       ...(event.participants || []).map((p) => p.handle),
     ]);
   });
-  return [...found.values()];
+  const list = [...found.values()];
+  if (handle && handle !== "Alex" && !list.some((person) => person.handle === "Alex")) {
+    const reviewed = (content.peerReviews || []).some((review) => review.from === handle && review.to === "Alex");
+    list.unshift({ handle: "Alex", eventId: "review-sample", label: "Last supper", reviewed });
+  }
+  return list;
 }
 
 function clone(value) {
@@ -913,7 +918,8 @@ export function BuddyProvider({ children }) {
     const target = String(to || "").trim();
     const score = Math.min(5, Math.max(1, Number(stars) || 0));
     if (!session) return { error: "Log in first." };
-    if (!(plan === "lite" || plan === "premium" || trialOk)) return { error: "Comments and stars are on Lite and Premium." };
+    const staffReview = session.role === "founder" || session.role === "admin";
+    if (!(plan === "lite" || plan === "premium" || trialOk || staffReview)) return { error: "Comments and stars are on Lite and Premium." };
     if (!score || !target) return { error: "Pick someone and a star." };
     if (target === session.handle) return { error: "You can't rate yourself." };
     const allowed = peopleYouCanRate(publishedRef.current, session.handle);
