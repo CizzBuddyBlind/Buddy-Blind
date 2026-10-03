@@ -219,7 +219,7 @@ export function StoreApp() {
           if (idName === "how") {
             return (
               <button key={idName} type="button" onClick={() => go("how")} className="flex items-center justify-center border-0 bg-transparent p-0 outline-none" aria-label="Me Time">
-                <span className={`grid h-14 w-14 -translate-y-3 place-items-center rounded-full border-0 ${on ? "bg-[#F8C907]" : "bg-transparent"}`}>
+                <span className={`grid h-14 w-14 -translate-y-3 place-items-center rounded-full border-0 ${on ? "bg-[#F8C907]" : "bg-transparent opacity-40"}`}>
                   <MeTimeMark on={on} className="h-14 w-14" />
                 </span>
               </button>
