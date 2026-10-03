@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useBB, peopleYouCanRate } from "@/components/Providers";
+import { usePeople } from "@/components/People";
 import { PlanWindow } from "@/components/PlanWindow";
 import { AGE_RANGES, badgePaint, discountPercent } from "@/lib/bible";
 import { FinishedEvents, pastStats } from "@/components/PhoneApp";
@@ -83,24 +85,26 @@ function canSeeComments(bb) {
   return bb.plan === "lite" || bb.plan === "premium" || trialOn;
 }
 
-export default function ProfilePage() {
+function ProfilePage() {
   const bb = useBB();
+  const people = usePeople();
+  const search = useSearchParams();
   const { session, social } = bb;
   const [draft, setDraft] = useState(null);
   const [edit, setEdit] = useState(false);
   const [panel, setPanel] = useState("info");
   const [buddy, setBuddy] = useState(null);
   const [page, setPage] = useState(0);
-  const [rateOpen, setRateOpen] = useState(false);
-  const [target, setTarget] = useState(null);
-  const [stars, setStars] = useState(5);
-  const [note, setNote] = useState("");
   const [guest, setGuest] = useState(null);
   const [plans, setPlans] = useState(false);
   useEffect(() => {
+    const named = search.get("u");
+    if (named) setGuest(named);
+  }, [search]);
+  useEffect(() => {
     if (!bb.ready) return;
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get("session_id");
+    const query = new URLSearchParams(window.location.search);
+    const sessionId = query.get("session_id");
     if (!sessionId) return;
     let stop = false;
     (async () => {
@@ -240,57 +244,17 @@ export default function ProfilePage() {
 
           {(guest || panel === "review") && (
             <div className="mt-3">
-              {!guest && (
-                <div className="mb-3 flex justify-end">
-                  <button type="button" onClick={() => { if (!open) { setPlans(true); return; } setRateOpen((on) => !on); setTarget(null); setNote(""); }} className="rounded-full bg-[#1c1c1c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">
-                    Rate someone
-                  </button>
-                </div>
-              )}
-              {rateOpen && open && !guest && (
-                <div className="mb-3 rounded-3xl bg-[#1c1c1c] p-4 text-left shadow-sm">
-                  {!target && (
-                    <>
-                      {!canRate.length && <p className="text-sm text-white/45">No one to rate yet. It opens an hour after you sit down together.</p>}
-                      <div className="flex flex-wrap gap-2">
-                        {canRate.map((person) => (
-                          <button key={person.handle} type="button" onClick={() => setTarget(person)} className="rounded-full bg-[#1c1c1c] px-4 py-2 text-sm">
-                            {person.handle} · {person.label}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  {target && (
-                    <form
-                      className="space-y-3"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const res = bb.addReview(stars, note, target.handle, target.eventId);
-                        if (res?.error) {
-                          bb.notify(res.error);
-                          return;
-                        }
-                        setNote("");
-                        setTarget(null);
-                        setRateOpen(false);
-                      }}
-                    >
-                      <p className="text-sm">{target.handle}</p>
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <button key={n} type="button" onClick={() => setStars(n)} className={`text-lg ${n <= stars ? "text-ember" : "text-white/25"}`}>★</button>
-                        ))}
-                      </div>
-                      <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="A short line" className="w-full rounded-xl border border-white/15 bg-black text-white" />
-                      <div className="flex gap-2">
-                        <button type="button" className="rounded-full bg-[#1c1c1c] px-4 py-2 text-sm" onClick={() => setTarget(null)}>Back</button>
-                        <button type="submit" className="rounded-full bg-ember px-4 py-2 text-sm font-semibold text-white">Save</button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-              )}
+              {(() => {
+                const them = guest && canRate.find((person) => person.handle === guest);
+                if (guest && !them) return null;
+                return (
+                  <div className="mb-3 flex justify-end">
+                    <button type="button" onClick={() => { if (!open) { setPlans(true); return; } people?.openReview(them || null); }} className="rounded-full bg-[#1c1c1c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">
+                      {guest ? "Rate them" : "Rate someone"}
+                    </button>
+                  </div>
+                );
+              })()}
               <div className="relative min-h-[9rem]">
                 <div className={`space-y-3 ${locked ? "pointer-events-none select-none blur-md" : ""}`}>
                   {!shown.length && <p className="text-sm text-white/45">No comments yet.</p>}
@@ -372,5 +336,13 @@ export default function ProfilePage() {
       </div>
       {plans && <PlanWindow onClose={() => setPlans(false)} />}
     </main>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <ProfilePage />
+    </Suspense>
   );
 }

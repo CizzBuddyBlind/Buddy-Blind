@@ -5,6 +5,7 @@ import { fileToCover } from "./Bits";
 import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
 import { localPrice } from "@/lib/market";
+import { peopleApi } from "./peopleNav";
 import {
   AGE_RANGES,
   TIMES,
@@ -19,7 +20,7 @@ import {
   tablePrefs,
 } from "@/lib/bible";
 
-export function HostBadge({ handle = "?", tier = "", size = "host" }) {
+export function HostBadge({ handle = "?", tier = "", size = "host", quiet = false }) {
   const bb = useBB();
   const mine = bb.session?.handle && bb.session.handle === handle;
   const paint = mine
@@ -27,9 +28,31 @@ export function HostBadge({ handle = "?", tier = "", size = "host" }) {
     : badgePaint(tier === "gold" ? 500 : tier === "silver" ? 300 : tier === "bronze" ? 1 : 0, null, "dark");
   const letter = String(handle || "?").slice(0, 1).toUpperCase();
   const box = size === "joiner" ? "h-4 w-4 text-[8px]" : size === "feature" ? "h-9 w-9 text-sm" : "h-5 w-5 text-[10px]";
-  return (
+  const face = (
     <span className={`grid shrink-0 place-items-center rounded-full font-serif font-semibold ${box} ${paint.className}`} style={paint.style} title={`${handle} · ${paint.tier}`}>
       {letter}
+    </span>
+  );
+  if (quiet) return face;
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      className="inline-grid cursor-pointer"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        peopleApi().openProfile(handle);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.stopPropagation();
+          peopleApi().openProfile(handle);
+        }
+      }}
+    >
+      {face}
     </span>
   );
 }

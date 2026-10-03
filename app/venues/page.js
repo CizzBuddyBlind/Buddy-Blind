@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { Copy, Editable, Photo } from "@/components/Bits";
 import { HostBadge } from "@/components/Flows";
+import { JoinerStack } from "@/components/People";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
@@ -197,14 +198,7 @@ function Home() {
                             const host = preview.table.hostHandle;
                             const joiners = (preview.table.participants || []).filter((p) => p && p.handle && p.handle !== host && p.role !== "host");
                             if (!joiners.length) return null;
-                            return (
-                              <span className="ml-auto flex items-center">
-                                {joiners.slice(0, 3).map((person) => (
-                                  <span key={person.handle} className="-ml-1 first:ml-0"><HostBadge handle={person.handle} tier={person.tier || "bronze"} size="joiner" /></span>
-                                ))}
-                                {joiners.length > 3 && <span className="ml-1 text-xs text-ember">+</span>}
-                              </span>
-                            );
+                            return <JoinerStack people={joiners} cap={6} />;
                           })()}
                         </p>
                       </div>

@@ -65,10 +65,11 @@ export function peopleYouCanRate(content, handle) {
     const people = [...new Set((names || []).filter(Boolean))];
     if (!people.includes(handle)) return;
     const start = tableStart({ dateISO, time: time || "7:00 PM" }).getTime();
-    if (!dateISO || Number.isNaN(start) || now < start + 60 * 60 * 1000) return;
+    if (!dateISO || Number.isNaN(start) || now < start) return;
     people.forEach((name) => {
       if (name === handle || found.has(name)) return;
-      found.set(name, { handle: name, eventId, label });
+      const reviewed = (content.peerReviews || []).some((review) => review.from === handle && review.to === name);
+      found.set(name, { handle: name, eventId, label, reviewed });
     });
   };
   (content.venues || []).forEach((venue) => {
@@ -906,20 +907,23 @@ export function BuddyProvider({ children }) {
     return { ok: true };
   }, [notify, pushNote, social]);
 
-  const addReview = useCallback((stars, body, to, eventId) => {
-    const text = String(body || "").trim();
+  const addReview = useCallback((stars, body, to, eventId, tags) => {
+    const picked = (Array.isArray(tags) ? tags : []).map((tag) => String(tag).trim()).filter(Boolean);
+    const text = [picked.join(" · "), String(body || "").trim()].filter(Boolean).join("\n");
     const target = String(to || "").trim();
+    const score = Math.min(5, Math.max(1, Number(stars) || 0));
     if (!session) return { error: "Log in first." };
     if (!(plan === "lite" || plan === "premium" || trialOk)) return { error: "Comments and stars are on Lite and Premium." };
-    if (!text || !target) return { error: "Pick someone and write a line." };
+    if (!score || !target) return { error: "Pick someone and a star." };
     if (target === session.handle) return { error: "You can't rate yourself." };
     const allowed = peopleYouCanRate(publishedRef.current, session.handle);
     const match = allowed.find((person) => person.handle === target);
     if (!match) return { error: "You can only rate someone who sat with you." };
     const review = {
       id: `r-${Date.now()}`,
-      stars: Math.min(5, Math.max(1, Number(stars) || 5)),
+      stars: score,
       body: text,
+      tags: picked,
       from: session.handle,
       to: target,
       eventId: eventId || match.eventId || "",

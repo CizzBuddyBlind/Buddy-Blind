@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Editable, Photo } from "@/components/Bits";
 import { HostBadge, ShareSheet } from "@/components/Flows";
+import { JoinerStack } from "@/components/People";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
@@ -166,18 +167,7 @@ export default function VenuePage() {
                           <p className="text-sm">{prettyDate(table.dateISO, lang)} · {table.time}</p>
                           <p className="mt-1 flex items-center gap-2 text-xs text-mute">
                             <span>{tablePrefs(table) || "Meet friends"} · {hold.places} left</span>
-                            {(() => {
-                              const joiners = people.filter((p) => p && p.handle && p.handle !== table.hostHandle && p.role !== "host");
-                              if (!joiners.length) return null;
-                              return (
-                                <span className="ml-auto flex items-center">
-                                  {joiners.slice(0, 3).map((person) => (
-                                    <span key={person.handle} className="-ml-1 first:ml-0"><HostBadge handle={person.handle} tier={person.tier || "bronze"} size="joiner" /></span>
-                                  ))}
-                                  {joiners.length > 3 && <span className="ml-1 text-ember">+</span>}
-                                </span>
-                              );
-                            })()}
+                            <JoinerStack people={people} host={table.hostHandle} cap={6} />
                           </p>
                         </div>
                         <button

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Copy, Editable, Photo } from "@/components/Bits";
 import { DoneShare, HostBadge, PayDialog, rememberReturn } from "@/components/Flows";
+import { JoinerStack } from "@/components/People";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
@@ -127,6 +128,7 @@ export default function PrivatePage() {
                   <span className="flex min-w-0 items-center gap-2">
                     <HostBadge handle={night.hostName || "Host"} tier={night.hostTier || "bronze"} />
                     <span className="truncate">{night.hostName || night.hostLabel}</span>
+                    <JoinerStack people={night.participants} host={night.hostName} cap={20} />
                   </span>
                   <span className="bb-night-copy shrink-0 font-medium">{(night.spots || 0) <= 0 ? t("priv.full") : `${night.spots} places`}</span>
               </div>

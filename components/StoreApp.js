@@ -9,6 +9,7 @@ import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso
 import { resolveCopy, translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
 import { MeTimeMark } from "./MeTimeMark";
+import { JoinerStack, usePeople } from "./People";
 import { mySeats, pastStats } from "./PhoneApp";
 
 function initials(session) {
@@ -67,19 +68,8 @@ function Dock({ children }) {
   return createPortal(children, document.body);
 }
 
-function Joiners({ people, host }) {
-  const list = (people || []).filter((person) => person?.handle && person.handle !== host && person.role !== "host");
-  if (!list.length) return null;
-  return (
-    <span className="inline-flex items-center">
-      {list.slice(0, 3).map((person) => (
-        <span key={person.handle} className="-ml-1 first:ml-0">
-          <HostBadge handle={person.handle} tier={person.tier || "bronze"} size="joiner" />
-        </span>
-      ))}
-      {list.length > 3 && <span className="ml-1 text-[10px]">+</span>}
-    </span>
-  );
+function Joiners({ people, host, cap = 6 }) {
+  return <JoinerStack people={people} host={host} cap={cap} />;
 }
 
 function Icon({ tab }) {
@@ -106,6 +96,7 @@ export function StoreApp() {
   const paint = bb.session ? badgePaint(bb.session.points, bb.content?.pointThresholds, "dark") : null;
   const unread = (bb.social?.notes || []).filter((n) => !n.read).length;
 
+  const people = usePeople();
   const scroller = useRef(null);
 
   useEffect(() => {
@@ -114,8 +105,12 @@ export function StoreApp() {
   }, []);
 
   useEffect(() => {
-    scroller.current?.scrollTo(0, 0);
-  }, [tab, venueId, eventId]);
+    people?.bindApp(() => {
+      setTab("profile");
+      setVenueId("");
+      setEventId("");
+    });
+  }, [people]);
 
   useEffect(() => {
     if (bb.session?.role === "admin") {
@@ -125,6 +120,7 @@ export function StoreApp() {
   }, [bb.session?.role]);
 
   function go(next) {
+    people?.clearGuest();
     setTab(next);
     setVenueId("");
     setEventId("");
@@ -310,7 +306,7 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
             <h2 className="font-serif text-[clamp(1.6rem,7vw,2rem)] leading-none" {...(featured.kind === "table" ? { "data-keep": "1" } : {})}>{featured.name}</h2>
             <div className="mt-3 flex items-center gap-2">
               <HostBadge handle={featured.host || "C"} tier={featured.tier || "bronze"} />
-              <Joiners people={featured.kind === "table" ? featured.table.participants : featured.event.participants} host={featured.host} />
+              <Joiners people={featured.kind === "table" ? featured.table.participants : featured.event.participants} host={featured.host} cap={featured.kind === "private" ? 20 : 6} />
             </div>
             <p className="mt-3 text-sm leading-relaxed text-white/70">
               {say(bb.lang, featured.kind === "private" ? (featured.event.description || featured.event.forWhom) : featured.venue.about)}
@@ -623,7 +619,7 @@ function Private({ onOpen }) {
               <span className="mt-2 flex items-center justify-between gap-2">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <HostBadge handle={night.hostName || "Host"} tier={night.hostTier || "bronze"} />
-                  <Joiners people={night.participants} host={night.hostName} />
+                  <Joiners people={night.participants} host={night.hostName} cap={20} />
                 </span>
                 <span className="shrink-0 rounded-full bg-black px-3 py-1.5 text-[10px] font-semibold text-white">{translate(bb.lang, "btn.join")}</span>
               </span>
@@ -671,6 +667,7 @@ function PrivateDetail({ id, onBack }) {
 
 function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   const bb = useBB();
+  const people = usePeople();
   const [panel, setPanel] = useState("info");
   if (!bb.session) {
     return (
@@ -682,6 +679,27 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
     );
   }
   const session = bb.session;
+  const guestName = people?.guest && people.guest !== session.handle ? people.guest : "";
+  if (guestName) {
+    const person = (bb.users || []).find((user) => user.handle === guestName);
+    const theirs = (bb.content.peerReviews || []).filter((review) => review.to === guestName);
+    const them = peopleYouCanRate(bb.content, session.handle).find((item) => item.handle === guestName);
+    const paintGuest = badgePaint(person?.points || 0, bb.content?.pointThresholds, "light");
+    return (
+      <section className="px-[5vw] pb-8 pt-3 text-center">
+        <button type="button" onClick={() => people.clearGuest()} className="text-xs uppercase tracking-[0.14em] text-white/45">Back</button>
+        <div className={`mx-auto mt-4 grid h-20 w-20 place-items-center rounded-full font-serif text-3xl ${paintGuest.className}`} style={paintGuest.style}>{guestName.slice(0, 1).toUpperCase()}</div>
+        <h1 className="mt-3 text-2xl font-bold">{guestName}</h1>
+        {them && <button type="button" onClick={() => people.openReview(them)} className="mt-4 rounded-full bg-[#1c1c1c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/80">Rate them</button>}
+        <div className="mt-5 space-y-3 text-left">
+          {theirs.slice(0, 3).map((review) => (
+            <p key={review.id || review.at} className="rounded-2xl bg-[#161616] px-4 py-3 text-sm text-white/75">{review.body || `${review.stars || 0} stars`}</p>
+          ))}
+          {!theirs.length && <p className="text-center text-sm text-white/45">No reviews yet.</p>}
+        </div>
+      </section>
+    );
+  }
   const paint = badgePaint(session.points, bb.content?.pointThresholds, "light");
   const buddies = (bb.social?.buddies || []).filter((b) => b.status === "accepted");
   const who = [session.gender, session.ageRange, session.orientation].filter(Boolean).join(" · ");
@@ -740,6 +758,9 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
       )}
       {panel === "review" && (
         <div className="mt-5 space-y-3 text-left">
+          <div className="flex justify-end">
+            <button type="button" onClick={() => people?.openReview()} className="rounded-full bg-[#1c1c1c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">Rate someone</button>
+          </div>
           {reviews.slice(0, 3).map((review) => (
             <p key={review.id || review.at} className="rounded-2xl bg-[#161616] px-4 py-3 text-sm text-white/75">{say(bb.lang, review.body || review.note, false)}</p>
           ))}

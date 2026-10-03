@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Inter, Playfair_Display } from "next/font/google";
 import { BuddyProvider } from "@/components/Providers";
+import { PeopleProvider } from "@/components/People";
 import { Shell } from "@/components/Shell";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -39,7 +40,9 @@ export default function RootLayout({ children }) {
           }}
         />
         <BuddyProvider>
-          <Shell>{children}</Shell>
+          <PeopleProvider>
+            <Shell>{children}</Shell>
+          </PeopleProvider>
         </BuddyProvider>
       </body>
     </html>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Editable, Photo } from "@/components/Bits";
 import { HostBadge, PayDialog } from "@/components/Flows";
+import { JoinerStack } from "@/components/People";
 import { useBB } from "@/components/Providers";
 import { queryHits } from "@/lib/bible";
 import { say } from "@/lib/say";
@@ -135,6 +136,7 @@ export default function QuickPage() {
                   <Editable locked={row.locked} value={placeInfo.name} onChange={(name) => update((d) => { const item = d.events.find((x) => x.id === row.id); if (item) item.name = name; })} />
                 </div>
                 <HostBadge handle={row.hostName || "CJ"} tier={row.hostTier || "gold"} />
+                <JoinerStack people={row.participants} host={row.hostName} cap={6} />
               </div>
               <div className="text-xs text-mute">{say(lang, placeInfo.address)}</div>
               <div className="text-xs text-mute">{say(lang, placeInfo.cuisine)}</div>
