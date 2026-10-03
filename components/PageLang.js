@@ -92,7 +92,14 @@ function paint(book, lang, leaveApp) {
       const text = raw.trim().slice(0, 450);
       if (text) {
         let value = raw;
-        if (lang && lang !== "en") {
+        if (!lang || lang === "en") {
+          const hit = wordingFor("en", text);
+          if (hit) {
+            const lead = raw.match(/^\s*/)[0];
+            const tail = raw.match(/\s*$/)[0];
+            value = `${lead}${hit}${tail}`;
+          }
+        } else {
           const hit = localLine(lang, text) || (!isSavedWording(text) ? mem.get(`${lang}\n${text}`) || "" : "");
           if (hit) {
             const lead = raw.match(/^\s*/)[0];

@@ -117,6 +117,17 @@ function siteLines(content) {
   ["kickerLeft", "kickerRight", "title", "accent", "sub"].forEach((key) => addLine(rows, seen, "Private", night[key]));
   ["priv.campaign", "priv.search", "priv.full", "btn.host"].forEach((key) => fromKey(rows, seen, "Private", key));
   [
+    "Me Time",
+    "Today, and what’s next.",
+    "Log in to see the seats you joined.",
+    "Log in",
+    "Seats you joined",
+    "Today",
+    "Upcoming",
+    "None yet.",
+    "Loading…",
+  ].forEach((line) => addLine(rows, seen, "Me Time", line));
+  [
     "How it works",
     "See venue, see vibe",
     "Take a seat.",
@@ -245,13 +256,16 @@ function WordingEditor({ bb }) {
   function shown(row) {
     const id = `${row.page}\u0000${row.english}`;
     if (Object.prototype.hasOwnProperty.call(edits, id)) return edits[id];
-    return shownValue(bag, row);
+    const saved = shownValue(bag, row);
+    if (lang === "en") return saved || row.english;
+    return saved;
   }
 
   async function save() {
     setBusy(true);
     bb.update((draft) => {
-      if (!draft.wording) draft.wording = { zh: {}, "zh-HK": {} };
+      if (!draft.wording) draft.wording = { en: {}, zh: {}, "zh-HK": {} };
+      if (!draft.wording.en) draft.wording.en = {};
       if (!draft.wording[lang] || typeof draft.wording[lang] !== "object") draft.wording[lang] = {};
       Object.entries(edits).forEach(([id, value]) => {
         const cut = id.indexOf("\u0000");
@@ -272,9 +286,10 @@ function WordingEditor({ bb }) {
   return (
     <section data-keep>
       <h1 className="font-serif text-5xl">Wording</h1>
-      <p className="mt-2 max-w-xl text-sm text-mute">One page at a time. Traditional and Simplified stay separate. An empty line on the site has no box.</p>
-      <div className="mt-4 flex gap-2">
+      <p className="mt-2 max-w-xl text-sm text-mute">One page at a time. English, Traditional, and Simplified stay separate. An empty Chinese line keeps the current wording. Clearing English puts the original line back.</p>
+      <div className="mt-4 flex flex-wrap gap-2">
         {[
+          ["en", "EN English"],
           ["zh-HK", "繁 Traditional"],
           ["zh", "简 Simplified"],
         ].map(([id, label]) => (
