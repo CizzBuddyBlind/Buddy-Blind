@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
 import { JoinWizard, OpenTableWizard, PrivateWizard, TodayPopup, TrialGate } from "./Flows";
@@ -74,6 +74,37 @@ const BOTTOM = [
 
 export function Shell({ children }) {
   const path = usePathname() || "/";
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const apply = () => {
+      const app = location.pathname === "/m" || location.pathname.startsWith("/m/") || location.pathname === "/gate";
+      const w = window.innerWidth;
+      const design = 1440;
+      const scale = app ? 1 : Math.min(1, w / design);
+      if (scale >= 0.999) {
+        root.classList.remove("bb-fit");
+        root.style.removeProperty("--bb-fit");
+        root.style.removeProperty("--bb-dh");
+        document.body.style.minHeight = "";
+        return;
+      }
+      root.classList.add("bb-fit");
+      root.style.setProperty("--bb-fit", String(scale));
+      root.style.setProperty("--bb-dh", `${window.innerHeight / scale}px`);
+      const site = document.querySelector(".bb-site");
+      document.body.style.minHeight = site ? `${site.getBoundingClientRect().height}px` : "";
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    const site = document.querySelector(".bb-site");
+    const watch = new ResizeObserver(apply);
+    if (site) watch.observe(site);
+    return () => {
+      window.removeEventListener("resize", apply);
+      watch.disconnect();
+      document.body.style.minHeight = "";
+    };
+  }, [path]);
   const light = path === "/quick" || path.startsWith("/private");
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
