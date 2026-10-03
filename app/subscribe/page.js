@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useBB } from "@/components/Providers";
-import { localPrice } from "@/lib/market";
 import { say } from "@/lib/say";
 
 const RANK = { free: 0, lite: 1, premium: 2 };
@@ -44,8 +43,8 @@ export default function SubscribePage() {
         "Create private up to 20",
         "Industry / wine / 50+ social / hike",
         "Host badge gold",
-        localPrice(say(bb.lang, "HK$5 admin fee per event"), market),
-      ],
+        "HK$5 admin fee per event",
+      ].map((line) => say(bb.lang, line)),
     },
   ];
   const trialOpened = useRef(false);
@@ -240,7 +239,7 @@ function PlanCard({ card, plan, busy, onPay, light, split, fee = "HK$5" }) {
       <p data-bb-live className="mt-8 text-5xl tracking-tight md:text-6xl">{card.price}</p>
       <ul className={`mt-8 space-y-3 text-[11px] font-medium uppercase leading-relaxed tracking-[0.08em] ${light ? "text-ink/70" : "text-white/55"}`}>
         {card.perks.map((perk) => (
-          <li key={perk} data-bb-live={perk.includes("$") ? "1" : undefined}>— {perk}</li>
+          <li key={perk}>— {perk}</li>
         ))}
       </ul>
       <div className="mt-auto pt-8">
