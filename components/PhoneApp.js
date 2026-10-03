@@ -568,7 +568,7 @@ export function FinishedEvents() {
   const seats = mySeats(bb, "finished");
   return (
     <div className="min-w-0">
-      <p className="text-[0.7rem] uppercase tracking-[0.14em] text-mute">Finished</p>
+      <p className="text-[0.7rem] uppercase tracking-[0.14em] text-mute">Past</p>
       {!seats.length && <p className="mt-4 text-sm text-mute">None yet.</p>}
       <div className="mt-4 grid grid-cols-2 gap-3">
         {seats.map((item) => {

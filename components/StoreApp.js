@@ -720,7 +720,7 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
         </div>
       )}
       <div className="mt-8 text-left">
-        <p className="text-[0.68rem] uppercase tracking-[0.14em] text-white/45">{say(bb.lang, "Finished")}</p>
+        <p className="text-[0.68rem] uppercase tracking-[0.14em] text-white/45">{say(bb.lang, "Past")}</p>
         {!done.length && <p className="mt-3 text-sm text-white/45">{say(bb.lang, "None yet.")}</p>}
         <div className="mt-3 grid grid-cols-2 gap-3">
           {done.map((seat) => (
