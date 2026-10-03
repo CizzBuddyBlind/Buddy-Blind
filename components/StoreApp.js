@@ -684,6 +684,27 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   const off = discountPercent(session.points, bb.content?.pointThresholds);
   const reviews = (bb.content.peerReviews || []).filter((review) => review.to === session.handle);
   const done = mySeats(bb, "finished");
+  const joined = done.filter((seat) => !seat.created);
+  const created = done.filter((seat) => seat.created);
+  const row = (title, items) => (
+    <div>
+      <p className="text-[0.68rem] uppercase tracking-[0.14em] text-white/45">{say(bb.lang, title)}</p>
+      {!items.length && <p className="mt-3 text-sm text-white/45">{say(bb.lang, "None yet.")}</p>}
+      <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+        {items.map((seat) => (
+          <button key={`${seat.name}-${seat.date}-${title}`} type="button" onClick={() => (seat.eventId && seat.href?.startsWith("/private") ? onOpenEvent(seat.eventId) : seat.venueId && onOpenVenue(seat.venueId))} className="w-[42vw] shrink-0 overflow-hidden rounded-2xl border border-white/10 text-left">
+            <div className="relative aspect-square bg-black/40">
+              <Photo src={seat.image} fallback={seat.fallback} alt="" />
+            </div>
+            <div className="p-2">
+              <p className="truncate text-sm">{say(bb.lang, seat.name, false)}</p>
+              <p className="text-[11px] text-white/45">{seat.date} · {seat.time}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <section className="px-[5vw] pb-8 pt-6 text-center">
@@ -719,22 +740,10 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
           {peopleYouCanRate(bb.content, session.handle).length > 0 && <p className="text-center text-xs text-white/40">{say(bb.lang, "Rate someone after you have shared a table.")}</p>}
         </div>
       )}
-      <div className="mt-8 text-left">
+      <div className="mt-8 space-y-6 text-left">
         <p className="text-[0.68rem] uppercase tracking-[0.14em] text-white/45">{say(bb.lang, "Past")}</p>
-        {!done.length && <p className="mt-3 text-sm text-white/45">{say(bb.lang, "None yet.")}</p>}
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          {done.map((seat) => (
-            <button key={`${seat.name}-${seat.date}`} type="button" onClick={() => (seat.eventId && seat.href?.startsWith("/private") ? onOpenEvent(seat.eventId) : seat.venueId && onOpenVenue(seat.venueId))} className="overflow-hidden rounded-2xl border border-white/10 text-left">
-              <div className="relative aspect-square bg-black/40">
-                <Photo src={seat.image} fallback={seat.fallback} alt="" />
-              </div>
-              <div className="p-2">
-                <p className="truncate text-sm">{say(bb.lang, seat.name, false)}</p>
-                <p className="text-[11px] text-white/45">{seat.date} · {seat.time}</p>
-              </div>
-            </button>
-          ))}
-        </div>
+        {row("Joined", joined)}
+        {row("Created", created)}
       </div>
     </section>
   );

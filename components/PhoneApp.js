@@ -256,13 +256,21 @@ export function mySeats(bb, which = "upcoming") {
     if (!seat.date) return;
     if (which === "finished" ? !past(seat) : past(seat)) return;
     const key = `${seat.venueId || ""}-${seat.tableId || seat.eventId || seat.name}-${seat.date}`;
-    if (seen.has(key)) return;
+    if (seen.has(key)) {
+      if (seat.created) {
+        const hit = seats.find((item) => `${item.venueId || ""}-${item.tableId || item.eventId || item.name}-${item.date}` === key);
+        if (hit) hit.created = true;
+      }
+      return;
+    }
     seen.add(key);
     seats.push(seat);
   };
+  const handle = bb.session?.handle;
   (bb.session?.bookings || []).forEach((booking) => {
     if (booking.kind === "private") {
       const event = (bb.content.events || []).find((item) => item.id === booking.id);
+      const created = event?.hostName === handle || booking.mode === "create" || booking.mode === "invite" || booking.mode === "host";
       add({
         name: event?.name || booking.name,
         date: event?.dateISO || booking.dateISO,
@@ -275,11 +283,13 @@ export function mySeats(bb, which = "upcoming") {
         people: (event?.participants || []).map((p) => p.handle).filter(Boolean),
         venueId: "",
         eventId: booking.id,
+        created,
       });
       return;
     }
     const venue = (bb.content.venues || []).find((item) => item.id === booking.venueId);
     const table = venue?.tables?.find((item) => item.id === booking.id);
+    const created = table?.hostHandle === handle || booking.mode === "invite" || booking.mode === "create";
     add({
       name: venue?.name || booking.name,
       date: table?.dateISO || booking.dateISO,
@@ -292,9 +302,9 @@ export function mySeats(bb, which = "upcoming") {
       people: (table?.participants || []).map((p) => p.handle).filter(Boolean),
       venueId: booking.venueId || venue?.id || "",
       tableId: booking.id,
+      created,
     });
   });
-  const handle = bb.session?.handle;
   if (handle) {
     (bb.content.venues || []).forEach((venue) => {
       (venue.tables || []).forEach((table) => {
@@ -312,6 +322,7 @@ export function mySeats(bb, which = "upcoming") {
           people: (table.participants || []).map((p) => p.handle).filter(Boolean),
           venueId: venue.id,
           tableId: table.id,
+          created: table.hostHandle === handle,
         });
       });
     });
@@ -332,6 +343,7 @@ export function mySeats(bb, which = "upcoming") {
         people: (event.participants || []).map((p) => p.handle).filter(Boolean),
         venueId: event.venueId || "",
         eventId: event.id,
+        created: event.hostName === handle,
       });
     });
   }
@@ -566,12 +578,14 @@ export function FinishedEvents() {
   const bb = useBB();
   if (!bb.session) return null;
   const seats = mySeats(bb, "finished");
-  return (
-    <div className="min-w-0">
-      <p className="text-[0.7rem] uppercase tracking-[0.14em] text-mute">Past</p>
-      {!seats.length && <p className="mt-4 text-sm text-mute">None yet.</p>}
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        {seats.map((item) => {
+  const joined = seats.filter((item) => !item.created);
+  const created = seats.filter((item) => item.created);
+  const block = (title, items) => (
+    <section>
+      <h2 className="mb-3 text-[0.7rem] uppercase tracking-[0.14em] text-mute">{title}</h2>
+      {!items.length && <p className="rounded-2xl border border-white/10 px-4 py-3 text-sm text-mute">None yet.</p>}
+      <div className="flex gap-3 overflow-x-auto pb-1">
+        {items.map((item) => {
           const card = (
             <>
               <div className="relative aspect-square w-full overflow-hidden bg-black/30">
@@ -584,7 +598,7 @@ export function FinishedEvents() {
               </div>
             </>
           );
-          const box = "block overflow-hidden rounded-2xl border border-white/10 bg-card text-left";
+          const box = "block w-[calc((100%-1.5rem)/3)] shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-card text-left";
           return item.href ? (
             <Link key={`${item.href}-${item.date}`} href={item.href} className={box}>{card}</Link>
           ) : (
@@ -592,6 +606,13 @@ export function FinishedEvents() {
           );
         })}
       </div>
+    </section>
+  );
+  return (
+    <div className="flex min-w-0 flex-col justify-start gap-8">
+      <p className="text-[0.7rem] uppercase tracking-[0.14em] text-mute">Past</p>
+      {block("Joined", joined)}
+      {block("Created", created)}
     </div>
   );
 }
