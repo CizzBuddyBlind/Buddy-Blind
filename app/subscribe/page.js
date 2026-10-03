@@ -15,14 +15,14 @@ export default function SubscribePage() {
   const bb = useBB();
   const [busy, setBusy] = useState("");
   const [sheet, setSheet] = useState(null);
-  const market = bb.market || { id: "HK", fee: "HK$5", lite: "HK$10", premium: "HK$50" };
+  const market = bb.market || { id: "HK", fee: "HK$5", free: "HK$0", lite: "HK$10", premium: "HK$50" };
   const plan = bb.plan || "free";
   const cards = [
     {
       id: "free",
       name: "Free",
       cadence: "Try once",
-      price: market.id === "NZ" ? "NZ$0" : market.id === "AU" ? "A$0" : "HK$0",
+      price: market.free || "HK$0",
       perks: ["1 blind box / month", "Venues only", "No private creation"],
     },
     {

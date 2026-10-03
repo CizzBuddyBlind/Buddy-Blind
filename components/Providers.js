@@ -173,9 +173,8 @@ export function BuddyProvider({ children }) {
   }, [draft]);
 
   useEffect(() => {
-    const saved = session?.market;
-    if (saved === "HK" || saved === "NZ" || saved === "AU") {
-      setMarket(marketFromCode(saved));
+    if (session?.marketLocked && (session.market === "HK" || session.market === "NZ" || session.market === "AU")) {
+      setMarket(marketFromCode(session.market));
       return undefined;
     }
     let cancel = false;
@@ -188,7 +187,7 @@ export function BuddyProvider({ children }) {
     return () => {
       cancel = true;
     };
-  }, [session?.market]);
+  }, [session?.market, session?.marketLocked]);
 
   useEffect(() => {
     let cancel = false;
@@ -451,7 +450,8 @@ export function BuddyProvider({ children }) {
         phone: extra.phone || found.phone || "",
         verified: extra.verified ?? !!found.verified,
         bookings: books[found.email] || [],
-        market: extra.market || found.market || market.id,
+        market: extra.market || found.market || "",
+        marketLocked: !!(extra.marketLocked || found.marketLocked),
       };
       persistSession(ses);
       if (ses.role === "admin" || ses.role === "founder") {
@@ -498,6 +498,7 @@ export function BuddyProvider({ children }) {
       showPlace: true,
       verified: !!input.verified,
       market: input.market || market.id,
+      marketLocked: true,
     });
     const next = [...read(USERS, []), nextUser];
     write(USERS, next);
