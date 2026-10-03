@@ -32,9 +32,25 @@ const PLAN = "bb_plan_v1";
 const SOCIAL = "bb_social_v1";
 const PROFILES = "bb_profile_v1";
 const LANG = "bb_lang_v1";
+const WORDING = "bb_wording_v1";
 
 function emptySocial() {
   return { buddies: [], reviews: [], notes: [], notesOn: true };
+}
+
+function rememberWording(content) {
+  if (!content?.wording) return;
+  write(WORDING, { at: Number(content.savedAt) || Date.now(), wording: content.wording });
+}
+
+function applyRemembered(content) {
+  const box = read(WORDING, null);
+  if (!content || !box?.wording) return content;
+  if ((Number(box.at) || 0) >= (Number(content.savedAt) || 0)) {
+    content.wording = box.wording;
+    if (box.at) content.savedAt = box.at;
+  }
+  return content;
 }
 
 function stripHeavy(node, seen = new Set()) {
@@ -247,7 +263,7 @@ export function BuddyProvider({ children }) {
       if (!res.ok) {
         setRemote(res.reason === "missing-env" ? "off" : "error");
       } else if (res.content) {
-        pub = res.content;
+        pub = Number(local?.savedAt) > Number(res.content.savedAt || 0) ? local : res.content;
         setRemote("live");
       } else {
         try {
@@ -260,10 +276,12 @@ export function BuddyProvider({ children }) {
       }
 
       stripHeavy(pub);
+      applyRemembered(pub);
       const clean = normalizeContent(pub);
       publishedRef.current = clean;
       setPublished(clean);
       write(PUB, clean);
+      rememberWording(clean);
       const normalizedDraft = dr ? normalizeContent(dr) : null;
       setDraft(normalizedDraft);
       const start = normalizedDraft || clone(pub);
@@ -320,6 +338,7 @@ export function BuddyProvider({ children }) {
       const base = clone(draftRef.current || publishedRef.current);
       mutator(base);
       commit(base);
+      return draftRef.current;
     },
     [commit],
   );
@@ -389,6 +408,7 @@ export function BuddyProvider({ children }) {
     publishedRef.current = slim;
     setPublished(slim);
     setWording(slim.wording);
+    rememberWording(slim);
     try { write(PUB, slim); } catch { /* the live copy still updates in this tab */ }
     if (supabaseReady) {
       const saved = await saveSharedContent(slim);
@@ -398,8 +418,10 @@ export function BuddyProvider({ children }) {
     return { ok: true };
   }, []);
 
-  const publish = useCallback(async () => {
-    const next = clone(draftRef.current || publishedRef.current);
+  const publish = useCallback(async (explicit) => {
+    const next = clone(explicit || draftRef.current || publishedRef.current);
+    next.savedAt = Date.now();
+    rememberWording(next);
     setDraft(next);
     try { write(DRAFT, next); } catch { /* ignore quota */ }
     try {

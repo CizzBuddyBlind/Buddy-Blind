@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useBB } from "./Providers";
-import { isSavedWording, pageFromPath, say, setWordingPage, wordingFor } from "@/lib/say";
+import { hasSavedSource, isSavedWording, pageFromPath, say, setWordingPage, wordingFor } from "@/lib/say";
 
 const mem = new Map();
 const HOLD = "\u2060";
@@ -33,7 +33,7 @@ function writeCache() {
 }
 
 async function fill(texts, to) {
-  const missing = [...new Set(texts.filter((text) => text && !isSavedWording(text) && !hasHan(text) && !mem.has(`${to}\n${text}`)))];
+  const missing = [...new Set(texts.filter((text) => text && !hasSavedSource(to, text) && !isSavedWording(text) && !hasHan(text) && !mem.has(`${to}\n${text}`)))];
   for (let start = 0; start < missing.length; start += 10) {
     const slice = missing.slice(start, start + 10);
     const res = await fetch("/api/tr", {
@@ -98,9 +98,12 @@ function paint(book, lang, leaveApp) {
           if (hit != null) value = hit;
         } else {
           const own = wordingFor(lang, text);
-          const hit = own != null ? own : (localLine(lang, text) || (!isSavedWording(text) ? mem.get(`${lang}\n${text}`) || "" : ""));
-          if (own != null || hit) value = hit;
-          else if (!hasHan(text)) missing.push(text);
+          if (own != null) value = own;
+          else if (!hasSavedSource(lang, text)) {
+            const hit = localLine(lang, text) || mem.get(`${lang}\n${text}`) || "";
+            if (hit) value = hit;
+            else if (!hasHan(text)) missing.push(text);
+          }
         }
         if (node.nodeValue !== value) node.nodeValue = value;
       }

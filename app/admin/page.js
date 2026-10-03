@@ -265,7 +265,7 @@ function WordingEditor({ bb }) {
 
   async function save() {
     setBusy(true);
-    bb.update((draft) => {
+    const next = bb.update((draft) => {
       if (!draft.wording) draft.wording = { en: {}, zh: {}, "zh-HK": {} };
       if (!draft.wording.en) draft.wording.en = {};
       if (!draft.wording[lang] || typeof draft.wording[lang] !== "object") draft.wording[lang] = {};
@@ -273,15 +273,28 @@ function WordingEditor({ bb }) {
         const cut = id.indexOf("\u0000");
         const editPage = id.slice(0, cut);
         const english = id.slice(cut + 1);
-        const current = draft.wording[lang][editPage];
-        if (!current || typeof current !== "object") draft.wording[lang][editPage] = {};
         const clean = String(value ?? "");
-        draft.wording[lang][editPage][english] = clean;
+        const pages = editPage === "How" || editPage === "About" ? ["How", "About"] : [editPage];
+        pages.forEach((name) => {
+          if (!draft.wording[lang][name] || typeof draft.wording[lang][name] !== "object") draft.wording[lang][name] = {};
+          draft.wording[lang][name][english] = clean;
+        });
       });
     });
-    const saved = await bb.publish();
+    const saved = await bb.publish(next);
     setBusy(false);
-    if (saved?.ok) setEdits({});
+    if (saved?.ok) {
+      try {
+        const cache = JSON.parse(localStorage.getItem("bb_tr") || "{}");
+        Object.keys(edits).forEach((id) => {
+          const english = id.slice(id.indexOf("\u0000") + 1).trim();
+          delete cache[`zh\n${english}`];
+          delete cache[`zh-HK\n${english}`];
+        });
+        localStorage.setItem("bb_tr", JSON.stringify(cache));
+      } catch { /* the saved line still wins */ }
+      setEdits({});
+    }
   }
 
   return (
