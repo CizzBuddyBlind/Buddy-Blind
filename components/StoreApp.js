@@ -683,6 +683,7 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   const showWhere = session.showPlace !== false && where;
   const off = discountPercent(session.points, bb.content?.pointThresholds);
   const reviews = (bb.content.peerReviews || []).filter((review) => review.to === session.handle);
+  const done = mySeats(bb, "finished");
 
   return (
     <section className="px-[5vw] pb-8 pt-6 text-center">
@@ -718,6 +719,23 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
           {peopleYouCanRate(bb.content, session.handle).length > 0 && <p className="text-center text-xs text-white/40">{say(bb.lang, "Rate someone after you have shared a table.")}</p>}
         </div>
       )}
+      <div className="mt-8 text-left">
+        <p className="text-[0.68rem] uppercase tracking-[0.14em] text-white/45">{say(bb.lang, "Finished")}</p>
+        {!done.length && <p className="mt-3 text-sm text-white/45">{say(bb.lang, "None yet.")}</p>}
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          {done.map((seat) => (
+            <button key={`${seat.name}-${seat.date}`} type="button" onClick={() => (seat.eventId && seat.href?.startsWith("/private") ? onOpenEvent(seat.eventId) : seat.venueId && onOpenVenue(seat.venueId))} className="overflow-hidden rounded-2xl border border-white/10 text-left">
+              <div className="relative aspect-square bg-black/40">
+                <Photo src={seat.image} fallback={seat.fallback} alt="" />
+              </div>
+              <div className="p-2">
+                <p className="truncate text-sm">{say(bb.lang, seat.name, false)}</p>
+                <p className="text-[11px] text-white/45">{seat.date} · {seat.time}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }

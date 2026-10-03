@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useBB, peopleYouCanRate } from "@/components/Providers";
 import { PlanWindow } from "@/components/PlanWindow";
 import { AGE_RANGES, badgePaint, discountPercent } from "@/lib/bible";
+import { FinishedEvents } from "@/components/PhoneApp";
 
 function historyOf(session, content) {
   const handle = session.handle;
@@ -159,8 +160,8 @@ export default function ProfilePage() {
   const off = discountPercent(points, bb.content.pointThresholds);
 
   return (
-    <main className="bb-frame flex min-h-[calc(100dvh-4rem)] items-center justify-center bg-ink py-10">
-      <div className="w-full max-w-md">
+    <main className="bb-frame flex min-h-[calc(100dvh-4rem)] items-center bg-ink py-10">
+      <div className={`grid w-full items-start gap-10 ${guest ? "mx-auto max-w-md" : "md:grid-cols-2"}`}>
         <section className="flex flex-col rounded-[28px] bg-[#141414] px-6 py-8 text-[#f5f5f5] ring-1 ring-white/10 md:px-8">
           <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-4xl ${paint.className}`} style={paint.style}>{initial}</div>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
@@ -367,6 +368,7 @@ export default function ProfilePage() {
             </form>
           )}
         </section>
+        {!guest && <FinishedEvents />}
       </div>
       {plans && <PlanWindow onClose={() => setPlans(false)} />}
     </main>

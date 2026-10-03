@@ -242,13 +242,20 @@ function EventsTab() {
   );
 }
 
-export function mySeats(bb) {
-  const today = iso(0);
+export function mySeats(bb, which = "upcoming") {
   const seats = [];
   const seen = new Set();
+  const past = (seat) => {
+    if (!seat.date) return false;
+    const start = tableStart({ dateISO: seat.date, time: seat.time || "" });
+    const ms = start instanceof Date ? start.getTime() : NaN;
+    if (!Number.isFinite(ms)) return seat.date < iso(0);
+    return ms <= Date.now();
+  };
   const add = (seat) => {
-    if (!seat.date || seat.date < today) return;
-    const key = `${seat.venueId || ""}-${seat.tableId || seat.eventId || seat.name}`;
+    if (!seat.date) return;
+    if (which === "finished" ? !past(seat) : past(seat)) return;
+    const key = `${seat.venueId || ""}-${seat.tableId || seat.eventId || seat.name}-${seat.date}`;
     if (seen.has(key)) return;
     seen.add(key);
     seats.push(seat);
@@ -328,7 +335,10 @@ export function mySeats(bb) {
       });
     });
   }
-  return seats.sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+  return seats.sort((a, b) => {
+    const order = `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`);
+    return which === "finished" ? -order : order;
+  });
 }
 
 function phaseOf(date, time) {
@@ -548,6 +558,40 @@ function ProfileTab() {
         </div>
       )}
       <button type="button" onClick={() => bb.logout()} className="mt-4 w-full rounded-2xl bg-white py-3 text-sm text-red-600 shadow-sm">Sign out</button>
+    </div>
+  );
+}
+
+export function FinishedEvents() {
+  const bb = useBB();
+  if (!bb.session) return null;
+  const seats = mySeats(bb, "finished");
+  return (
+    <div className="min-w-0">
+      <p className="text-[0.7rem] uppercase tracking-[0.14em] text-mute">Finished</p>
+      {!seats.length && <p className="mt-4 text-sm text-mute">None yet.</p>}
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        {seats.map((item) => {
+          const card = (
+            <>
+              <div className="relative aspect-square w-full overflow-hidden bg-black/30">
+                <Cover src={item.image} fallback={item.fallback} alt="" />
+              </div>
+              <div className="p-2.5">
+                <p className="truncate text-sm">{item.name}</p>
+                <p className="mt-1 truncate text-[11px] text-mute">{item.date} · {item.time}</p>
+                {item.place && <p className="truncate text-[11px] text-mute">{item.place}</p>}
+              </div>
+            </>
+          );
+          const box = "block overflow-hidden rounded-2xl border border-white/10 bg-card text-left";
+          return item.href ? (
+            <Link key={`${item.href}-${item.date}`} href={item.href} className={box}>{card}</Link>
+          ) : (
+            <div key={`${item.name}-${item.date}`} className={box}>{card}</div>
+          );
+        })}
+      </div>
     </div>
   );
 }
