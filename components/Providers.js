@@ -8,7 +8,7 @@ import { bookingHold, iso, logEntry, normalizeContent, privateEditOpen, tableSta
 import { notifyRestaurant } from "@/lib/notify";
 import { putMedia } from "@/lib/media";
 import { pageFromPath, setWording, setWordingPage } from "@/lib/say";
-import { marketFromCode } from "@/lib/market";
+import { marketFromCode, marketFromTimezone } from "@/lib/market";
 
 const Ctx = createContext(null);
 export function useBB() {
@@ -177,11 +177,19 @@ export function BuddyProvider({ children }) {
       setMarket(marketFromCode(session.market));
       return undefined;
     }
+    let zone = null;
+    try {
+      zone = marketFromTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    } catch {
+      zone = null;
+    }
+    if (zone) setMarket(zone);
     let cancel = false;
-    fetch("/api/market")
+    fetch("/api/market", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        if (!cancel && data?.id) setMarket(marketFromCode(data.id));
+        if (cancel || !data?.id) return;
+        if (data.id === "NZ" || data.id === "AU" || !zone) setMarket(marketFromCode(data.id));
       })
       .catch(() => {});
     return () => {

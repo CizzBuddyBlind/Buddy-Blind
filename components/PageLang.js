@@ -51,6 +51,7 @@ function skip(el, leaveApp) {
   if (!el || el.closest("script, style, noscript, textarea, svg, select, option, input")) return true;
   const keep = el.closest("[data-keep]");
   if (keep && keep.getAttribute("data-keep") !== "said") return true;
+  if (el.closest("[data-bb-live]")) return true;
   if (leaveApp && el.closest(".bb-store")) return true;
   return false;
 }

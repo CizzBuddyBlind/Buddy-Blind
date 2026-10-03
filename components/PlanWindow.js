@@ -122,7 +122,7 @@ export function PlanWindow({ onClose }) {
               >
                 <span className="flex items-baseline justify-between gap-3">
                   <span className="font-serif text-2xl">{card.name}</span>
-                  <span className="text-sm">{card.id === "lite" ? market.lite : market.premium}</span>
+                  <span data-bb-live className="text-sm">{card.id === "lite" ? market.lite : market.premium}</span>
                 </span>
                 <span className={`mt-1 block text-xs ${kind === card.id ? "text-ink/50" : "text-white/45"}`}>{card.note}</span>
               </button>

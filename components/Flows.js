@@ -114,9 +114,9 @@ function PayStep({ checked, setChecked, onConfirm, busy, error }) {
   return (
     <div className="space-y-3 text-sm">
       <div className="rounded-xl border border-white/10 p-3">
-        <div className="flex justify-between"><span>{t("pay.admin")}</span><span>{label}</span></div>
+        <div className="flex justify-between"><span>{t("pay.admin")}</span><span data-bb-live>{label}</span></div>
         <p className="mt-2 text-xs text-mute">Points do not change this fee.</p>
-        <div className="mt-2 flex justify-between font-semibold"><span>{t("pay.total")}</span><span>{label}</span></div>
+        <div className="mt-2 flex justify-between font-semibold"><span>{t("pay.total")}</span><span data-bb-live>{label}</span></div>
       </div>
       <p className="text-mute">{paid ? t("pay.why") : t("pay.free")}</p>
       <label className="flex items-start gap-2 text-sm">
@@ -500,11 +500,11 @@ export function TrialGate() {
       </div>
       <div className="bb-sheet w-full max-w-lg rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl">
         <p className="bb-kicker text-ember">{t("trial.kicker")}</p>
-        <h2 className="mt-2 font-serif text-3xl">{local("trial.title")}</h2>
+        <h2 data-bb-live className="mt-2 font-serif text-3xl">{local("trial.title")}</h2>
         <p className="mt-3 text-sm leading-relaxed text-mute">{t("trial.body")}</p>
         <label className="mt-4 flex items-start gap-2 text-sm">
           <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
-          <span>{local("trial.check")}</span>
+          <span data-bb-live>{local("trial.check")}</span>
         </label>
         <button type="button" disabled={!checked} onClick={bb.acceptTrial} className="mt-5 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink disabled:opacity-40">
           {t("trial.start")}

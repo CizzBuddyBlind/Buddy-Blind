@@ -237,10 +237,10 @@ function PlanCard({ card, plan, busy, onPay, light, split, fee = "HK$5" }) {
           {card.cadence}
         </p>
       </div>
-      <p className="mt-8 text-5xl tracking-tight md:text-6xl">{card.price}</p>
+      <p data-bb-live className="mt-8 text-5xl tracking-tight md:text-6xl">{card.price}</p>
       <ul className={`mt-8 space-y-3 text-[11px] font-medium uppercase leading-relaxed tracking-[0.08em] ${light ? "text-ink/70" : "text-white/55"}`}>
         {card.perks.map((perk) => (
-          <li key={perk}>— {perk}</li>
+          <li key={perk} data-bb-live={perk.includes("$") ? "1" : undefined}>— {perk}</li>
         ))}
       </ul>
       <div className="mt-auto pt-8">
@@ -254,7 +254,7 @@ function PlanCard({ card, plan, busy, onPay, light, split, fee = "HK$5" }) {
         >
           {busy === card.id ? "One moment…" : label}
         </button>
-        <p className={`mt-4 min-h-[2.4rem] text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.12em] ${light ? "text-ink/40" : "invisible"}`}>
+        <p data-bb-live className={`mt-4 min-h-[2.4rem] text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.12em] ${light ? "text-ink/40" : "invisible"}`}>
           90 days trial · Cancel anytime · {fee} admin fee per confirmed join
         </p>
       </div>
