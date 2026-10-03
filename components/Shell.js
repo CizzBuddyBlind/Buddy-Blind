@@ -329,7 +329,7 @@ export function Shell({ children }) {
                   return (
                     <Link key={item.href} href={item.href} className="flex items-center justify-center border-0 bg-transparent pb-1 outline-none">
                       <span className={`grid h-14 w-14 -translate-y-3 place-items-center rounded-full border-0 ${active ? "bg-[#F8C907]" : "bg-transparent"}`}>
-                        <MeTimeMark on={active} className="h-14 w-14" />
+                        <MeTimeMark on={active} ink={light ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.55)"} className="h-14 w-14" />
                       </span>
                     </Link>
                   );
