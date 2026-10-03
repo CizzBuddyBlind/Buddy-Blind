@@ -6,13 +6,13 @@ import { useBB } from "@/components/Providers";
 import { AGE_RANGES } from "@/lib/bible";
 import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
+import { localPrice } from "@/lib/market";
 import { LangSwitch } from "@/components/Flows";
 
 export default function RegisterPage() {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
-  const price = bb.market?.premium || "HK$50";
-  const local = (key) => t(key).replaceAll("HK$50", price);
+  const local = (key) => localPrice(t(key), bb.market);
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");

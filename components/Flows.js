@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { fileToCover } from "./Bits";
 import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
+import { localPrice } from "@/lib/market";
 import {
   AGE_RANGES,
   TIMES,
@@ -490,8 +491,7 @@ export function LangSwitch({ light = false }) {
 export function TrialGate() {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
-  const price = bb.market?.premium || "HK$50";
-  const local = (key) => t(key).replaceAll("HK$50", price);
+  const local = (key) => localPrice(t(key), bb.market);
   const [checked, setChecked] = useState(false);
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-4">
