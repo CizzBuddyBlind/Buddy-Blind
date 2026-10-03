@@ -616,9 +616,12 @@ function Private({ onOpen }) {
               <h2 className="font-serif text-[clamp(1rem,4vw,1.15rem)] leading-tight">{say(bb.lang, night.name, false)}</h2>
               <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-black/45">{say(bb.lang, night.typeLabel)}</p>
               <p className="mt-1 text-xs text-black/55">{say(bb.lang, night.upcomingLabel || `${night.spots} places`)}</p>
-              <span className="mt-2 flex items-center gap-1.5">
-                <HostBadge handle={night.hostName || "Host"} tier={night.hostTier || "bronze"} />
-                <Joiners people={night.participants} host={night.hostName} />
+              <span className="mt-2 flex items-center justify-between gap-2">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <HostBadge handle={night.hostName || "Host"} tier={night.hostTier || "bronze"} />
+                  <Joiners people={night.participants} host={night.hostName} />
+                </span>
+                <span className="shrink-0 rounded-full bg-black px-3 py-1.5 text-[10px] font-semibold text-white">{translate(bb.lang, "btn.join")}</span>
               </span>
             </div>
           </button>

@@ -75,11 +75,13 @@ export default function PrivatePage() {
               <p className="bb-night-line mt-3 text-sm text-paper/70">{campaign.dateISO} · {campaign.timeLabel} · {campaign.spots} places</p>
               <p className="bb-night-line mt-3 line-clamp-2 text-sm text-paper/80">{campaign.description || campaign.forWhom || campaign.typeLabel}</p>
             </div>
-            <p className="mt-2 flex items-center gap-2 text-sm text-paper/70">
-              <HostBadge handle={campaign.hostName || "Host"} tier={campaign.hostTier || "bronze"} />
-              <span>{campaign.hostName || campaign.hostLabel}</span>
+            <p className="mt-4 flex items-center justify-between gap-3 text-sm text-paper/70">
+              <span className="flex min-w-0 items-center gap-2">
+                <HostBadge handle={campaign.hostName || "Host"} tier={campaign.hostTier || "bronze"} />
+                <span className="truncate">{campaign.hostName || campaign.hostLabel}</span>
+              </span>
+              <span className="shrink-0 rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">{t("btn.join")}</span>
             </p>
-            <span className="mt-4 inline-flex w-fit rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">JOIN</span>
           </div>
         </Link>
       )}
