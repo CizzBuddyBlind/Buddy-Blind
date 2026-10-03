@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useBB } from "./Providers";
-import { isSavedWording, pageFromPath, say, setWordingPage } from "@/lib/say";
+import { isSavedWording, pageFromPath, say, setWordingPage, wordingFor } from "@/lib/say";
 
 const mem = new Map();
 const HOLD = "\u2060";
@@ -48,86 +48,66 @@ async function fill(texts, to) {
 }
 
 function skip(el, leaveApp) {
-  if (!el || el.closest("[data-keep], script, style, noscript, textarea, svg, select, option, input")) return true;
+  if (!el || el.closest("script, style, noscript, textarea, svg, select, option, input")) return true;
+  const keep = el.closest("[data-keep]");
+  if (keep && keep.getAttribute("data-keep") !== "said") return true;
   if (leaveApp && el.closest(".bb-store")) return true;
   return false;
-}
-
-function storedLang() {
-  try {
-    const raw = localStorage.getItem("bb_lang_v1");
-    if (!raw) return "en";
-    return raw.charAt(0) === "\"" ? JSON.parse(raw) : raw;
-  } catch {
-    return "en";
-  }
-}
-
-function knownLine(lang, text, preferDict) {
-  if (isSavedWording(text)) return text;
-  if (preferDict) {
-    const line = say(lang, text);
-    if (line && line !== text) return line;
-    if (isSavedWording(line)) return line;
-  }
-  if (hasHan(text)) return "";
-  return mem.get(`${lang}\n${text}`) || "";
 }
 
 function hasHan(text) {
   return /[\u3400-\u9fff]/.test(text || "");
 }
 
-function collect(book, leaveApp) {
-  const list = [];
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-  let node = walker.nextNode();
-  while (node) {
-    const el = node.parentElement;
-    const current = node.nodeValue || "";
-    if (!skip(el, leaveApp) && !hasHan(current) && !isSavedWording(current)) {
-      if (current !== HOLD && book.applied.get(node) !== current) book.source.set(node, current);
-      const raw = book.source.get(node) || "";
-      const text = raw.trim();
-      if (text && /[A-Za-z]/.test(text) && !hasHan(text) && !isSavedWording(text)) list.push({ node, raw, text: text.slice(0, 450) });
-    }
-    node = walker.nextNode();
-  }
-  return list;
+function localLine(lang, text) {
+  const own = wordingFor(lang, text);
+  if (own) return own;
+  const line = say(lang, text);
+  return line && line !== text ? line : "";
 }
 
-function write(book, node, value) {
-  book.applied.set(node, value);
-  if (node.nodeValue !== value) node.nodeValue = value;
+function englishOf(node, book) {
   const parent = node.parentElement;
-  if (parent && parent.childNodes.length === 1 && (isSavedWording(value) || (hasHan(value) && /[A-Za-z]/.test(value)))) parent.setAttribute("data-keep", "said");
+  const marked = parent?.getAttribute("data-bb-src") || "";
+  if (marked) return marked;
+  const stored = book.source.get(node);
+  if (stored && stored !== HOLD && !hasHan(stored)) return stored;
+  const current = node.nodeValue || "";
+  if (!current || current === HOLD || hasHan(current) || isSavedWording(current) || !/[A-Za-z]/.test(current)) return "";
+  book.source.set(node, current);
+  if (parent && parent.childNodes.length === 1) parent.setAttribute("data-bb-src", current.trim());
+  return current;
 }
 
-function apply(book, lang, preferDict) {
+function paint(book, lang, leaveApp) {
   if (typeof location !== "undefined") setWordingPage(pageFromPath(location.pathname));
   book.lock = true;
   const missing = [];
-  try {
-    const list = collect(book, preferDict);
-    if (!lang || lang === "en") {
-      list.forEach(({ node, raw }) => write(book, node, raw));
-      return missing;
-    }
-    list.forEach(({ node, raw, text }) => {
-      const hit = knownLine(lang, text, preferDict);
-      if (!hit) {
-        missing.push(text);
-        return;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    const next = walker.nextNode();
+    if (!skip(node.parentElement, leaveApp)) {
+      const raw = englishOf(node, book);
+      const text = raw.trim().slice(0, 450);
+      if (text) {
+        let value = raw;
+        if (lang && lang !== "en") {
+          const hit = localLine(lang, text) || (!isSavedWording(text) ? mem.get(`${lang}\n${text}`) || "" : "");
+          if (hit) {
+            const lead = raw.match(/^\s*/)[0];
+            const tail = raw.match(/\s*$/)[0];
+            value = `${lead}${hit}${tail}`;
+          } else if (!hasHan(text)) missing.push(text);
+        }
+        if (node.nodeValue !== value) node.nodeValue = value;
       }
-      const lead = raw.match(/^\s*/)[0];
-      const tail = raw.match(/\s*$/)[0];
-      write(book, node, `${lead}${hit}${tail}`);
-    });
-  } finally {
-    queueMicrotask(() => {
-      book.lock = false;
-    });
+    }
+    node = next;
   }
+  queueMicrotask(() => {
+    book.lock = false;
+  });
   return [...new Set(missing)];
 }
 
@@ -143,87 +123,41 @@ export function PageLang() {
   }, [lang, path, website]);
 
   useLayoutEffect(() => {
-    if (!website) {
-      document.documentElement.classList.remove("bb-lang-wait");
-      return;
-    }
-    const waiting = (!lang || lang === "en") && storedLang() !== "en";
-    if (waiting) {
-      document.documentElement.classList.add("bb-lang-wait");
-      return;
-    }
-    const missing = apply(book.current, lang, true);
-    if (!missing.length) document.documentElement.classList.remove("bb-lang-wait");
-  });
+    if (!website) return;
+    document.querySelectorAll("[data-keep='said']").forEach((el) => el.removeAttribute("data-keep"));
+    paint(book.current, lang, false);
+    document.documentElement.classList.remove("bb-lang-wait");
+  }, [lang, path, website]);
 
   useEffect(() => {
     if (!website) return undefined;
-    let timer = 0;
-    let safety = 0;
     let dead = false;
-
-    async function load(texts) {
-      if (dead || !texts.length || !lang || lang === "en") {
-        document.documentElement.classList.remove("bb-lang-wait");
-        return;
-      }
-      try {
-        await fill(texts, lang);
-      } catch {
-        /* show the page even if a line stays in English */
-      }
-      if (dead) return;
-      apply(book.current, lang, true);
-      document.documentElement.classList.remove("bb-lang-wait");
+    let timer = 0;
+    const missing = paint(book.current, lang, false);
+    if (missing.length && lang && lang !== "en") {
+      fill(missing, lang).then(() => {
+        if (!dead) paint(book.current, lang, false);
+      }).catch(() => {});
     }
 
-    function arm(texts, hide) {
-      if (!texts.length) {
-        document.documentElement.classList.remove("bb-lang-wait");
-        return;
-      }
-      if (hide) document.documentElement.classList.add("bb-lang-wait");
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => load(texts), 0);
-      if (hide) {
-        window.clearTimeout(safety);
-        safety = window.setTimeout(() => document.documentElement.classList.remove("bb-lang-wait"), 2500);
-      }
-    }
-
-    const waiting = (!lang || lang === "en") && storedLang() !== "en";
-    if (!waiting) arm(apply(book.current, lang, true), true);
-
-    function onClick(event) {
-      if (!lang || lang === "en") return;
-      const link = event.target.closest?.("a");
-      if (!link || link.target === "_blank" || !link.href) return;
-      let url;
-      try {
-        url = new URL(link.href, location.origin);
-      } catch {
-        return;
-      }
-      if (url.origin !== location.origin) return;
-      if (url.pathname === "/m" || url.pathname.startsWith("/m/")) return;
-      if (url.pathname === location.pathname && url.search === location.search) return;
-      document.documentElement.classList.add("bb-lang-wait");
-    }
-
-    document.addEventListener("click", onClick, true);
     const obs = new MutationObserver(() => {
       if (book.current.lock) return;
-      const missing = apply(book.current, lang, true);
-      if (missing.length) arm(missing, false);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        if (dead || book.current.lock) return;
+        const left = paint(book.current, lang, false);
+        if (left.length && lang && lang !== "en") {
+          fill(left, lang).then(() => {
+            if (!dead) paint(book.current, lang, false);
+          }).catch(() => {});
+        }
+      }, 40);
     });
     obs.observe(document.body, { subtree: true, childList: true, characterData: true });
-
     return () => {
       dead = true;
       window.clearTimeout(timer);
-      window.clearTimeout(safety);
       obs.disconnect();
-      document.removeEventListener("click", onClick, true);
     };
   }, [lang, path, website]);
 
@@ -231,81 +165,30 @@ export function PageLang() {
 }
 
 function watchApp(lang, book) {
+  let dead = false;
   let timer = 0;
-  let lock = false;
-
-  function conceal(node) {
-    const el = node.parentElement;
-    if (!el || el.dataset.bbHold || el.childElementCount > 6) return;
-    el.dataset.bbHold = el.style.color || "inherit";
-    el.style.color = "transparent";
+  const missing = paint(book, lang, false);
+  if (missing.length && lang && lang !== "en") {
+    fill(missing, lang).then(() => {
+      if (!dead) paint(book, lang, false);
+    }).catch(() => {});
   }
-
-  function reveal(node) {
-    const el = node.parentElement;
-    if (!el?.dataset.bbHold) return;
-    el.style.color = el.dataset.bbHold === "inherit" ? "" : el.dataset.bbHold;
-    delete el.dataset.bbHold;
-  }
-
-  function applyApp() {
-    lock = true;
-    const missing = [];
-    try {
-      const list = collect(book, false);
-      if (!lang || lang === "en") {
-        list.forEach(({ node, raw }) => {
-          write(book, node, raw);
-          reveal(node);
-        });
-        return missing;
-      }
-      list.forEach(({ node, raw, text }) => {
-        const own = say(lang, text);
-        const hit = isSavedWording(text) || isSavedWording(own) ? (own || text) : own && own !== text ? own : mem.get(`${lang}\n${text}`) || "";
-        if (!hit) {
-          conceal(node);
-          if (node.nodeValue !== HOLD) write(book, node, HOLD);
-          missing.push(text);
-          return;
-        }
-        const lead = raw.match(/^\s*/)[0];
-        const tail = raw.match(/\s*$/)[0];
-        write(book, node, `${lead}${hit}${tail}`);
-        reveal(node);
-      });
-    } finally {
-      queueMicrotask(() => {
-        lock = false;
-      });
-    }
-    return [...new Set(missing)];
-  }
-
-  async function fetchMissing(texts) {
-    if (!texts.length || !lang || lang === "en") return;
-    lock = true;
-    try {
-      await fill(texts, lang);
-    } catch {
-      /* keep the app as it is */
-    } finally {
-      lock = false;
-    }
-    applyApp();
-  }
-
   const obs = new MutationObserver(() => {
-    if (lock) return;
-    const missing = applyApp();
-    if (!missing.length) return;
+    if (book.lock) return;
     window.clearTimeout(timer);
-    timer = window.setTimeout(() => fetchMissing(missing), 30);
+    timer = window.setTimeout(() => {
+      if (dead) return;
+      const left = paint(book, lang, false);
+      if (left.length && lang && lang !== "en") {
+        fill(left, lang).then(() => {
+          if (!dead) paint(book, lang, false);
+        }).catch(() => {});
+      }
+    }, 40);
   });
   obs.observe(document.body, { subtree: true, childList: true, characterData: true });
-  const missing = applyApp();
-  if (missing.length) timer = window.setTimeout(() => fetchMissing(missing), 30);
   return () => {
+    dead = true;
     window.clearTimeout(timer);
     obs.disconnect();
   };
