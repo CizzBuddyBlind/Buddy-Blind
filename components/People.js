@@ -68,15 +68,7 @@ export function PeopleProvider({ children }) {
   const [guest, setGuest] = useState("");
   const [group, setGroup] = useState(null);
   const [review, setReview] = useState(null);
-  const [nudge, setNudge] = useState(false);
   const eligible = bb.session ? peopleYouCanRate(bb.content, bb.session.handle) : [];
-  const fresh = eligible.filter((person) => !person.reviewed);
-
-  useEffect(() => {
-    if (!fresh.length || typeof sessionStorage === "undefined") return;
-    if (sessionStorage.getItem("bb-review-nudge") === "1") return;
-    setNudge(true);
-  }, [fresh.length, bb.session?.handle]);
 
   function openProfile(handle) {
     const name = String(handle || "").trim();
@@ -105,18 +97,11 @@ export function PeopleProvider({ children }) {
     const list = all.filter((item) => !item.reviewed);
     if (person) {
       setReview({ people: all, picked: all.find((item) => item.handle === person.handle) || person });
-      setNudge(false);
       return;
     }
     if (!list.length) return;
     if (list.length === 1) setReview({ people: list, picked: list[0] });
     else setReview({ people: list, picked: null });
-    setNudge(false);
-  }
-
-  function dismissNudge() {
-    setNudge(false);
-    try { sessionStorage.setItem("bb-review-nudge", "1"); } catch { /* keep it closed for this view */ }
   }
 
   useEffect(() => {
@@ -148,14 +133,6 @@ export function PeopleProvider({ children }) {
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-      )}
-      {nudge && !review && (
-        <div className="fixed inset-0 z-[80] bg-black/50" onClick={dismissNudge}>
-          <div className="absolute bottom-24 left-1/2 w-[min(22rem,90vw)] -translate-x-1/2 rounded-3xl bg-[#141414] px-5 py-6 text-center text-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <p className="font-serif text-2xl">Review the buddies you met!</p>
-            <button type="button" onClick={() => openReview()} className="mt-4 rounded-full bg-white px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-black">Review</button>
           </div>
         </div>
       )}

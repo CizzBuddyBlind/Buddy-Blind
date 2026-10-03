@@ -94,9 +94,11 @@ export function StoreApp() {
   const light = tab === "quick" || tab === "private";
   const mark = initials(bb.session);
   const paint = bb.session ? badgePaint(bb.session.points, bb.content?.pointThresholds, "dark") : null;
-  const unread = (bb.social?.notes || []).filter((n) => !n.read).length;
-
   const people = usePeople();
+  const unreadNotes = (bb.social?.notes || []).filter((n) => !n.read).length;
+  const reviewDue = (people?.eligible || []).some((person) => !person.reviewed) ? 1 : 0;
+  const unread = unreadNotes + reviewDue;
+
   const scroller = useRef(null);
 
   useEffect(() => {
@@ -179,7 +181,13 @@ export function StoreApp() {
       )}
       {notes && (
         <div className="absolute left-[4vw] right-[4vw] z-40 max-h-[46dvh] overflow-y-auto rounded-2xl border border-black/10 bg-white p-3 text-char shadow-2xl" style={{ top: "calc(env(safe-area-inset-top) + 3.6rem)" }}>
-          {(bb.social?.notes || []).length === 0 && <p className="px-2 py-3 text-sm text-neutral-500">No notes yet.</p>}
+          {(bb.social?.notes || []).length === 0 && !reviewDue && <p className="px-2 py-3 text-sm text-neutral-500">No notes yet.</p>}
+          {reviewDue > 0 && (
+            <div className="rounded-xl px-2 py-2">
+              <p className="text-sm">Review the buddies you met!</p>
+              <button type="button" className="mt-2 rounded-full bg-black px-3 py-1 text-xs font-semibold text-white" onClick={() => { setNotes(false); people.openReview(); }}>REVIEW</button>
+            </div>
+          )}
           {(bb.social?.notes || []).slice(0, 12).map((note) => (
             <button key={note.id} type="button" className="block w-full rounded-xl px-2 py-2 text-left" onClick={() => { bb.markNotesRead?.(); setNotes(false); }}>
               <p className="text-sm">{note.title}</p>

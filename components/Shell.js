@@ -9,6 +9,7 @@ import { JoinWizard, OpenTableWizard, PrivateWizard, TodayPopup, TrialGate } fro
 import { RestaurantAdmin } from "./RestaurantAdmin";
 import { PageLang } from "./PageLang";
 import { MeTimeMark } from "./MeTimeMark";
+import { usePeople } from "./People";
 import { iso, badgePaint } from "@/lib/bible";
 
 const TOP = [
@@ -77,6 +78,9 @@ export function Shell({ children }) {
   const path = usePathname() || "/";
   const light = path === "/quick" || path.startsWith("/private");
   const bb = useBB();
+  const people = usePeople();
+  const reviewDue = (people?.eligible || []).some((person) => !person.reviewed) ? 1 : 0;
+  const noteCount = (bb.social?.notes || []).filter((note) => !note.read).length + reviewDue;
   const t = (key) => translate(bb.lang, key);
   const [menu, setMenu] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -231,7 +235,7 @@ export function Shell({ children }) {
                   }}
                   className="relative z-40 grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-white text-sm font-medium text-black"
                 >
-                  {(bb.social?.notes || []).filter((note) => !note.read).length}
+                  {noteCount}
                 </button>
                 <button
                   type="button"
@@ -250,7 +254,22 @@ export function Shell({ children }) {
                   <div className="absolute right-0 top-12 z-50 w-72 overflow-hidden rounded-2xl border border-black/10 bg-[#141414] text-fg shadow-2xl">
                     <p className="border-b border-white/10 px-4 py-3 text-xs uppercase tracking-[0.14em] text-mute">Notifications</p>
                     <div className="max-h-80 overflow-y-auto">
-                      {(bb.social?.notes || []).length === 0 && <p className="px-4 py-6 text-sm text-mute">Nothing yet.</p>}
+                      {reviewDue > 0 && (
+                        <div className="border-b border-white/5 px-4 py-3">
+                          <p className="text-sm">Review the buddies you met!</p>
+                          <button
+                            type="button"
+                            className="mt-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-black"
+                            onClick={() => {
+                              setNotesOpen(false);
+                              people.openReview();
+                            }}
+                          >
+                            REVIEW
+                          </button>
+                        </div>
+                      )}
+                      {(bb.social?.notes || []).length === 0 && !reviewDue && <p className="px-4 py-6 text-sm text-mute">Nothing yet.</p>}
                       {(bb.social?.notes || []).slice(0, 12).map((note) => (
                         <div key={note.id} className="border-b border-white/5 px-4 py-3">
                           <p className="text-sm">{note.title}</p>
