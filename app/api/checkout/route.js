@@ -1,5 +1,6 @@
 import { priceFor, annualDiscount } from "@/lib/market";
 import { loadSharedContent } from "@/lib/supabase";
+import { cancelAtPeriodEnd } from "@/lib/stripeBilling";
 
 function marketCode(request, body) {
   const asked = String(body?.market || "").toUpperCase();
@@ -142,11 +143,16 @@ async function switchPlan(secret, body, request) {
   const sub = await liveSub(secret, body);
   if (!sub) return Response.json({ ok: true, needsCheckout: kind !== "free", kind });
   if (kind === "free") {
-    const cancelled = await stripe(secret, `/v1/subscriptions/${sub.id}`, { method: "DELETE" });
-    if (!cancelled.ok) {
-      return Response.json({ ok: false, reason: cancelled.data.error?.message || "Could not stop the plan." });
-    }
-    return Response.json({ ok: true, kind: "free", subscriptionId: "", customerId: idOf(sub.customer) });
+    const cancelled = await cancelAtPeriodEnd(secret, sub);
+    if (!cancelled.ok) return Response.json({ ok: false, reason: cancelled.reason });
+    return Response.json({
+      ok: true,
+      scheduledCancel: true,
+      kind: sub.metadata?.kind === "lite" ? "lite" : "premium",
+      periodEnd: cancelled.periodEnd,
+      subscriptionId: sub.id,
+      customerId: idOf(sub.customer),
+    });
   }
   const item = sub.items?.data?.[0];
   if (!item) return Response.json({ ok: false, reason: "No subscription to change." });
@@ -209,6 +215,12 @@ export async function POST(request) {
 
   const kind = body.kind === "lite" || body.kind === "premium" || body.kind === "fee" ? body.kind : "fee";
   const cycle = cycleOf(body, kind);
+  if (kind !== "fee") {
+    const existing = await liveSub(secret, body);
+    if (existing && ["trialing", "active", "past_due"].includes(existing.status)) {
+      return Response.json({ ok: false, reason: "This subscription is already open. Use billing to change or continue it." });
+    }
+  }
   let price = priceFor(marketCode(request, body), kind);
   if (cycle === "year") {
     const yearly = await yearlyPriceId(secret, price);

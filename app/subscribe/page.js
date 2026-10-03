@@ -63,6 +63,7 @@ export default function SubscribePage() {
       if (stop) return;
       if (data?.ok) {
         bb.setPlan(data.kind, { subscriptionId: data.subscriptionId, customerId: data.customerId });
+        bb.refreshBilling?.();
         bb.notify(planNote(data.kind, market));
       }
       window.history.replaceState({}, "", "/subscribe");
@@ -89,6 +90,7 @@ export default function SubscribePage() {
               return;
             }
             bb.setPlan(data.kind, { subscriptionId: data.subscriptionId, customerId: data.customerId });
+            bb.refreshBilling?.();
             bb.notify(planNote(data.kind, market));
             setSheet(null);
           });
@@ -118,7 +120,7 @@ export default function SubscribePage() {
   }, [bb.ready, bb.session, plan]);
 
   async function pay(kind) {
-    if (kind === plan || busy) return;
+    if ((kind === plan && kind !== "premium") || busy) return;
     if (!bb.session) {
       try { sessionStorage.setItem("bb_next", "/subscribe"); } catch { /* ignore */ }
       window.location.href = "/login";
@@ -134,8 +136,55 @@ export default function SubscribePage() {
   async function charge(kind, cycle) {
     setBusy(kind);
     try {
+      if (kind === "free" && bb.planMeta?.subscriptionId) {
+        const res = await fetch("/api/billing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "cancel",
+            email: bb.session.email || "",
+            role: bb.session.role || "",
+            subscriptionId: bb.planMeta.subscriptionId,
+          }),
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          bb.notify(data.reason || "Could not stop the next renewal.");
+          return;
+        }
+        await bb.refreshBilling?.();
+        const when = data.entitlement?.periodEnd ? new Date(data.entitlement.periodEnd).toLocaleDateString() : "this period ends";
+        bb.notify(`The next renewal is stopped. Access stays until ${when}.`);
+        setAsk(null);
+        return;
+      }
+      if (kind === "premium" && bb.planMeta?.subscriptionId) {
+        const res = await fetch("/api/billing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "schedule-cycle",
+            cycle,
+            market: market.id,
+            email: bb.session.email || "",
+            role: bb.session.role || "",
+            subscriptionId: bb.planMeta.subscriptionId,
+          }),
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          bb.notify(data.reason || "Could not update billing.");
+          return;
+        }
+        await bb.refreshBilling?.();
+        if (data.scheduled) bb.notify(cycle === "year" ? "This paid period stays as it is. Yearly billing starts at the next renewal." : "This paid period stays as it is. Monthly billing starts at the next renewal.");
+        else if (data.resumed) bb.notify("Cancellation removed. This subscription continues.");
+        else bb.notify("Already on this billing.");
+        setAsk(null);
+        return;
+      }
       const switching = RANK[kind] < RANK[plan] || bb.planMeta?.subscriptionId;
-      if (switching) {
+      if (switching && kind !== "premium") {
         const res = await fetch("/api/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -149,6 +198,13 @@ export default function SubscribePage() {
           }),
         });
         const data = await res.json();
+        if (data.scheduledCancel) {
+          await bb.refreshBilling?.();
+          const when = data.periodEnd ? new Date(data.periodEnd).toLocaleDateString() : "this period ends";
+          bb.notify(`The next renewal is stopped. Access stays until ${when}.`);
+          setAsk(null);
+          return;
+        }
         if (data.ok && !data.needsCheckout) {
           bb.setPlan(data.kind, { subscriptionId: data.subscriptionId, customerId: data.customerId });
           bb.notify(planNote(data.kind, market));
@@ -157,12 +213,6 @@ export default function SubscribePage() {
         }
         if (!data.ok) {
           bb.notify(data.reason || "Could not change the plan.");
-          return;
-        }
-        if (kind === "free") {
-          bb.setPlan("free");
-          bb.notify(planNote("free", market));
-          setAsk(null);
           return;
         }
       }
@@ -249,9 +299,10 @@ export default function SubscribePage() {
 
 function PlanCard({ card, plan, busy, onPay, light, split, fee = "HK$5" }) {
   const current = plan === card.id;
+  const locked = current && card.id !== "premium";
   const up = RANK[card.id] > RANK[plan];
   const label = current
-    ? "Current"
+    ? card.id === "premium" ? "Billing" : "Current"
     : card.id === "free"
       ? "Move to Free"
       : up
@@ -274,7 +325,7 @@ function PlanCard({ card, plan, busy, onPay, light, split, fee = "HK$5" }) {
       <div className="mt-auto pt-8">
         <button
           type="button"
-          disabled={!!busy || current}
+          disabled={!!busy || locked}
           onClick={() => onPay(card.id)}
           className={`w-full rounded-full px-4 py-3.5 text-[12px] font-semibold uppercase tracking-[0.14em] disabled:opacity-70 ${
             light ? "bg-ink text-[#f6f3ee]" : "bg-[#f6f3ee] text-ink"

@@ -9,6 +9,7 @@ import { notifyRestaurant } from "@/lib/notify";
 import { putMedia } from "@/lib/media";
 import { pageFromPath, setWording, setWordingPage } from "@/lib/say";
 import { marketFromCode, marketFromTimezone } from "@/lib/market";
+import { effectiveAccess, isInternalRole } from "@/lib/entitlement";
 
 const Ctx = createContext(null);
 export function useBB() {
@@ -33,6 +34,7 @@ const SOCIAL = "bb_social_v1";
 const PROFILES = "bb_profile_v1";
 const LANG = "bb_lang_v1";
 const WORDING = "bb_wording_v1";
+const ENT = "bb_entitlement_v1";
 
 function emptySocial() {
   return { buddies: [], reviews: [], notes: [], notesOn: true };
@@ -178,6 +180,8 @@ export function BuddyProvider({ children }) {
   const [trial, setTrial] = useState(null);
   const [plan, setPlanState] = useState("free");
   const [planMeta, setPlanMeta] = useState({ subscriptionId: "", customerId: "" });
+  const [entitlement, setEntitlement] = useState(null);
+  const [billingSynced, setBillingSynced] = useState(false);
   const [social, setSocial] = useState(emptySocial);
   const [flow, setFlow] = useState(null);
 
@@ -245,6 +249,7 @@ export function BuddyProvider({ children }) {
         subscriptionId: savedPlan?.subscriptionId || "",
         customerId: savedPlan?.customerId || "",
       });
+      setEntitlement(read(ENT, null));
       const stored = { ...emptySocial(), ...read(SOCIAL, {}) };
       if (!stored.buddies?.length) {
         stored.buddies = [
@@ -809,7 +814,51 @@ export function BuddyProvider({ children }) {
   }, []);
 
   const trialOk = !!(trial?.at && !trial.cancelled && Date.now() - trial.at < (trial.days || TRIAL_DAYS) * 86400000);
-  const premium = plan === "premium" || trialOk || staff;
+  const accessNow = billingSynced && entitlement ? effectiveAccess(entitlement, session?.role) : null;
+  const premium = isInternalRole(session?.role) || (accessNow ? accessNow.plan === "premium" : plan === "premium" || trialOk);
+
+  const applyAccess = useCallback((access, record) => {
+    if (record) {
+      write(ENT, record);
+      setEntitlement(record);
+    }
+    setBillingSynced(true);
+    if (isInternalRole(session?.role)) return;
+    if (!access) return;
+    const next = access.plan === "lite" || access.plan === "premium" ? access.plan : "free";
+    const meta = {
+      id: next,
+      at: Date.now(),
+      subscriptionId: access.subscriptionId || record?.subscriptionId || "",
+      customerId: access.customerId || record?.customerId || "",
+    };
+    write(PLAN, meta);
+    setPlanState(next);
+    setPlanMeta({ subscriptionId: meta.subscriptionId, customerId: meta.customerId });
+  }, [session?.role]);
+
+  const refreshBilling = useCallback(async () => {
+    const email = session?.email || "";
+    if (!email) return null;
+    try {
+      const res = await fetch(`/api/billing?email=${encodeURIComponent(email)}&role=${encodeURIComponent(session?.role || "")}`);
+      const data = await res.json();
+      if (!data?.ok || !data.entitlement) {
+        setBillingSynced(true);
+        return data;
+      }
+      applyAccess(data.access, data.entitlement);
+      return data;
+    } catch {
+      return null;
+    }
+  }, [applyAccess, session?.email, session?.role]);
+
+  useEffect(() => {
+    if (!session?.email) return undefined;
+    refreshBilling();
+    return undefined;
+  }, [session?.email, refreshBilling]);
 
   const setPlan = useCallback((id, extra = {}) => {
     const next = id === "lite" || id === "premium" ? id : "free";
@@ -845,13 +894,27 @@ export function BuddyProvider({ children }) {
   }, [notify, market.premium]);
 
   const cancelTrial = useCallback(async () => {
-    const ok = await confirm("Cancel the Premium trial?", "You will not be charged. Private event hosting closes until you start again.");
+    const ok = await confirm("Cancel the Premium trial?", "You keep Premium until the trial ends. You will not be charged.");
     if (!ok) return;
-    const next = { ...(trial || {}), at: trial?.at || Date.now(), days: TRIAL_DAYS, cancelled: true };
-    write(TRIAL, next);
-    setTrial(next);
-    notify("Trial cancelled. No charge.");
-  }, [confirm, notify, trial]);
+    const res = await fetch("/api/billing", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "cancel",
+        email: session?.email || "",
+        role: session?.role || "",
+        subscriptionId: planMeta.subscriptionId || "",
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!data?.ok) {
+      notify(data?.reason || "Could not stop the renewal.");
+      return;
+    }
+    applyAccess(data.access, data.entitlement);
+    const when = data.entitlement?.periodEnd ? new Date(data.entitlement.periodEnd).toLocaleDateString() : "the trial ends";
+    notify(`Premium stays until ${when}. No charge.`);
+  }, [applyAccess, confirm, notify, planMeta.subscriptionId, session?.email, session?.role]);
 
   const updateProfile = useCallback((partial) => {
     if (!session) return;
@@ -1489,6 +1552,8 @@ export function BuddyProvider({ children }) {
       plan,
       planMeta,
       premium,
+      entitlement,
+      refreshBilling,
       setPlan,
       acceptTrial,
       cancelTrial,
@@ -1515,7 +1580,7 @@ export function BuddyProvider({ children }) {
       selectedId, canUndo, canRedo, undo, redo, update, saveDraft, publish, login, logout,
       register, createInvite, activate, revokeAdmin, invites, revoked, users, activity,
       versions, restoreVersion, act, insertEvent, removeBlock, duplicateBlock, addBlock, toggleLock,
-      toggleHide, resetDraft, confirm, lang, setLang, market, trial, plan, planMeta, premium, setPlan, acceptTrial, cancelTrial,
+      toggleHide, resetDraft, confirm, lang, setLang, market, trial, plan, planMeta, premium, entitlement, refreshBilling, setPlan, acceptTrial, cancelTrial,
       updateProfile, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
       addReview, flow, openTable, joinTable, createPrivate, updatePrivate, joinPrivate, sendPing, replyPing,
     ],

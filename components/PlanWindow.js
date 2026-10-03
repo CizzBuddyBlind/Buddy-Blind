@@ -54,6 +54,7 @@ export function PlanWindow({ onClose }) {
               return;
             }
             bb.setPlan(data.kind, { subscriptionId: data.subscriptionId, customerId: data.customerId });
+            bb.refreshBilling?.();
             bb.notify(data.kind === "premium" ? "You're Premium." : "You're on Lite.");
             onClose();
           });
@@ -81,6 +82,29 @@ export function PlanWindow({ onClose }) {
     }
     setBusy(true);
     try {
+      if (kind === "premium" && bb.planMeta?.subscriptionId) {
+        const res = await fetch("/api/billing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "schedule-cycle",
+            cycle,
+            market: market.id,
+            email: bb.session.email || "",
+            role: bb.session.role || "",
+            subscriptionId: bb.planMeta.subscriptionId,
+          }),
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          bb.notify(data.reason || "Could not update billing.");
+          return;
+        }
+        await bb.refreshBilling?.();
+        bb.notify(data.scheduled ? "This paid period stays as it is. The new billing starts at the next renewal." : data.resumed ? "Cancellation removed. This subscription continues." : "Already on this billing.");
+        onClose();
+        return;
+      }
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
