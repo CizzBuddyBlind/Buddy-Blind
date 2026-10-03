@@ -2,13 +2,6 @@
 module.exports = {
   content: ["./app/**/*.{js,jsx}", "./components/**/*.{js,jsx}"],
   theme: {
-    screens: {
-      sm: "2px",
-      md: "3px",
-      lg: "4px",
-      xl: "1280px",
-      "2xl": "1536px",
-    },
     extend: {
       colors: {
         ink: "#0a0a0a",

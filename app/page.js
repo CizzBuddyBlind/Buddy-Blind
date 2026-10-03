@@ -149,7 +149,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="lg:flex lg:min-h-[calc(100dvh-4rem)] lg:flex-col lg:justify-center lg:py-8 bb-fit-screen">
+        <section className="lg:flex lg:min-h-[calc(100dvh-4rem)] lg:flex-col lg:justify-center lg:py-8">
           <p className="mb-3 flex items-center gap-2 text-[0.68rem] uppercase tracking-[0.16em] text-white/55">
             <span className="text-ember">●</span>
             {say(bb.lang, "Featured tonight · One blind box open")}

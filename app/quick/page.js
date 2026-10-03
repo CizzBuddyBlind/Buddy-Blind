@@ -96,8 +96,8 @@ export default function QuickPage() {
 
   return (
     <main className="bb-frame pb-28 pt-10 md:pb-16">
-      <div className="mx-auto grid w-full max-w-5xl items-start gap-10 md:grid-cols-2">
-        <section className="bb-fit-screen flex flex-col justify-center py-8 md:sticky md:top-16 md:h-[calc(100dvh-4rem)]">
+      <div className="mx-auto grid min-h-[calc(100dvh-6rem)] w-full max-w-5xl items-center gap-10 md:grid-cols-2">
+        <section className="py-8 md:sticky md:top-24">
           <p className="text-xs uppercase tracking-[0.22em] text-mute">Quick meet</p>
           <h1 className="mt-4 font-serif text-5xl leading-[0.95] text-char md:text-6xl">
             <Copy k="quick.title" legacy={copy.title} onEnglish={(d, next) => { d.copy.quick.title = next; }} />

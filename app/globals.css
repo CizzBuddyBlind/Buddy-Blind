@@ -21,37 +21,8 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
-html.bb-fit,
-html.bb-fit body {
-  overflow-x: hidden;
-  max-width: 100%;
-}
-html.bb-fit .bb-site {
-  width: 1440px;
-  zoom: var(--bb-fit);
-  min-height: var(--bb-dh);
-}
-html.bb-fit .bb-profile-main {
-  min-height: var(--bb-dh);
-}
-html.bb-fit .bb-profile-a,
-html.bb-fit .bb-profile-b {
-  position: fixed;
-  top: calc(var(--bb-dh) * 0.1844);
-  height: calc(var(--bb-dh) * 0.7175);
-  width: 442.944px;
-}
-html.bb-fit .bb-profile-a { left: 220.032px; }
-html.bb-fit .bb-profile-b { left: 780.912px; }
-html.bb-fit .bb-home-hero,
-html.bb-fit .bb-fit-screen {
-  height: calc(var(--bb-dh) - 4rem);
-  min-height: calc(var(--bb-dh) - 4rem);
-}
-@media (max-width: 700px) {
-  .bb-store .place-items-end {
-    place-items: end !important;
-  }
+html.bb-lang-wait .bb-site {
+  visibility: hidden;
 }
 html {
   scroll-behavior: auto;
