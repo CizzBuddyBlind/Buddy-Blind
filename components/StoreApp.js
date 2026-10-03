@@ -8,17 +8,8 @@ import { useBB, peopleYouCanRate } from "./Providers";
 import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso, soonestTable, tableStart } from "@/lib/bible";
 import { resolveCopy, translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
-
-const HOW = [
-  ["01", "See the place", "The photo is the filter. A restaurant, or a private night. Like the room, you’ll like the night."],
-  ["02", "See enough", "Neighbourhood, time, seats left. Soho tonight or Central tomorrow. No faces. Enough to want it."],
-  ["03", "Take a seat", "Join, or open the table. HK$5 only when you confirm. That’s for trust, not the meal."],
-  ["04", "Show up", "No names before. No photos before. The restaurant is the scene. You bring the vibe."],
-  ["05", "After the meal", "Stars aren’t about looks. A short line is your reputation. Your voice matters."],
-  ["06", "Add a buddy", "Hey, you’re my vibe. One tap. If they say yes too, you’re buddies."],
-  ["07", "Host the reason", "Premium. A private night, up to 20. Wine, social, a hike. You make the reason."],
-  ["08", "Points change the circle", "Not the price. Join adds 1. Invite adds 2. Host adds 5. Enjoy the discount."],
-];
+import { MeTimeMark } from "./MeTimeMark";
+import { mySeats } from "./PhoneApp";
 
 function initials(session) {
   const name = String(session?.handle || session?.username || "").trim();
@@ -208,7 +199,7 @@ export function StoreApp() {
         {!venueId && !eventId && tab === "home" && <Home onVenues={() => go("venues")} onOpenVenue={setVenueId} onOpenEvent={setEventId} />}
         {!venueId && !eventId && tab === "venues" && <Venues onOpen={setVenueId} />}
         {!venueId && !eventId && tab === "quick" && <Quick onOpen={setVenueId} />}
-        {!venueId && !eventId && tab === "how" && <How />}
+        {!venueId && !eventId && tab === "how" && <MeTime onOpenVenue={setVenueId} onOpenEvent={setEventId} />}
         {!venueId && !eventId && tab === "private" && <Private onOpen={setEventId} />}
         {!venueId && !eventId && tab === "profile" && <Profile onLogin={() => setAuth(true)} onOpenVenue={setVenueId} onOpenEvent={setEventId} />}
       </div>
@@ -227,8 +218,10 @@ export function StoreApp() {
           const on = navOn === idName;
           if (idName === "how") {
             return (
-              <button key={idName} type="button" onClick={() => go("how")} className="flex items-center justify-center">
-                <span className={`grid h-14 w-14 -translate-y-3 place-items-center rounded-full font-serif text-3xl shadow-lg ${on ? "bg-ember text-[#1a1408]" : light && !venueId && !eventId ? "bg-black text-white" : "bg-white text-black"}`}>?</span>
+              <button key={idName} type="button" onClick={() => go("how")} className="flex items-center justify-center" aria-label="Me Time">
+                <span className={`grid h-14 w-14 -translate-y-3 place-items-center overflow-hidden rounded-full shadow-lg ${on ? "ring-2 ring-ember" : ""}`}>
+                  <MeTimeMark className="h-14 w-14" />
+                </span>
               </button>
             );
           }
@@ -532,49 +525,52 @@ function Quick({ onOpen }) {
   );
 }
 
-function How() {
+function MeTime({ onOpenVenue, onOpenEvent }) {
   const bb = useBB();
-  const line = (key, fallback) => resolveCopy(bb.content, bb.lang, key, fallback);
-  return (
-    <section className="px-[6vw] pb-8 pt-6">
-      <p className="text-center text-[0.68rem] uppercase tracking-[0.16em] text-white/45">{translate(bb.lang, "nav.how")}</p>
-      <h1 className="mt-5 text-center font-serif text-[clamp(2.2rem,9vw,2.8rem)] leading-none">
-        {line("app.how.1", "See venue, see vibe")}
-        <br />
-        <span className="italic text-ember">{line("app.how.2", "Take a seat.")}</span>
-      </h1>
-      <p className="mx-auto mt-4 max-w-xs text-center text-sm leading-relaxed text-white/55">No bios. No swiping. Just a place, a time, and curiosity.</p>
-      <ol className="relative mt-8 space-y-0">
-        {HOW.map(([n, title, body], index) => (
-          <li key={n} className="grid grid-cols-[1.6rem_1fr] gap-3">
-            <div className="relative flex justify-center">
-              {index < HOW.length - 1 && <span className="absolute bottom-0 top-4 w-px bg-white/15" />}
-              <span className="relative z-10 mt-1 grid h-3.5 w-3.5 place-items-center rounded-full border border-white/30 bg-ink">
-                <span className="h-1.5 w-1.5 rounded-full bg-ember" />
-              </span>
+  if (!bb.session) {
+    return (
+      <section className="px-[6vw] py-16 text-center">
+        <h1 className="font-serif text-[clamp(2.2rem,9vw,2.8rem)]">Me Time</h1>
+        <p className="mt-3 text-sm text-white/55">Log in to see the seats you joined.</p>
+      </section>
+    );
+  }
+  const today = iso(0);
+  const seats = mySeats(bb);
+  const now = seats.filter((item) => item.date === today);
+  const later = seats.filter((item) => item.date > today);
+  const open = (item) => {
+    if (item.eventId && item.href?.startsWith("/private")) onOpenEvent(item.eventId);
+    else if (item.venueId) onOpenVenue(item.venueId);
+  };
+  const row = (title, items) => (
+    <section>
+      <h2 className="mb-3 text-[0.68rem] uppercase tracking-[0.14em] text-white/45">{say(bb.lang, title)}</h2>
+      {!items.length && <p className="text-sm text-white/45">{say(bb.lang, "None yet.")}</p>}
+      <div className="flex gap-3 overflow-x-auto pb-1">
+        {items.map((item) => (
+          <button key={`${item.name}-${item.date}-${item.time}`} type="button" onClick={() => open(item)} className="w-[42%] shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#141414] text-left">
+            <div className="relative aspect-square bg-black/40">
+              <Photo src={item.image} fallback={item.fallback} alt="" />
             </div>
-            <div className={`pb-6 ${index ? "border-t border-white/10 pt-5" : ""}`}>
-              <h2 className="font-serif text-base leading-tight text-white"><span className="mr-2 text-sm not-italic text-ember">{n}</span>{say(bb.lang, line(`app.step.${n}`, title))}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-white/55">{say(bb.lang, body)}</p>
-              {n === "08" && (
-                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                  {[
-                    ["B", "100", "5%", "bb-metal-bronze"],
-                    ["S", "300", "10%", "bb-metal-silver"],
-                    ["G", "500", "20%", "bb-metal-gold"],
-                  ].map(([letter, points, note, circle]) => (
-                    <div key={letter} className="flex flex-col items-center">
-                      <span className={`grid h-9 w-9 place-items-center rounded-full font-serif text-sm font-semibold ring-1 ring-black/15 ${circle}`}>{letter}</span>
-                      <span className="mt-1.5 text-[11px] text-white/70">{points}</span>
-                      <span className="text-[11px] text-ember">{note}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div className="p-2.5">
+              <p className="truncate text-sm">{say(bb.lang, item.name, false)}</p>
+              <p className="mt-1 truncate text-[11px] text-white/45">{item.date} · {item.time}</p>
+              {item.place ? <p className="truncate text-[11px] text-white/45">{say(bb.lang, item.place, false)}</p> : null}
             </div>
-          </li>
+          </button>
         ))}
-      </ol>
+      </div>
+    </section>
+  );
+  return (
+    <section className="px-[5vw] pb-8 pt-6">
+      <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/45">Me Time</p>
+      <h1 className="mt-3 font-serif text-[clamp(2rem,8vw,2.6rem)] leading-none">Today, and what’s next.</h1>
+      <div className="mt-8 space-y-8">
+        {row("Today", now)}
+        {row("Upcoming", later)}
+      </div>
     </section>
   );
 }
@@ -673,7 +669,7 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
     return (
       <section className="px-[6vw] py-16 text-center">
         <h1 className="font-serif text-3xl">Your seat.</h1>
-        <p className="mt-2 text-sm text-white/55">Log in to see today, upcoming, and your buddies.</p>
+        <p className="mt-2 text-sm text-white/55">Log in to see your buddies.</p>
         <button type="button" onClick={onLogin} className="mt-6 inline-block rounded-full bg-white px-6 py-3 text-sm font-semibold text-black">Log in</button>
       </section>
     );
@@ -687,8 +683,6 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   const showWhere = session.showPlace !== false && where;
   const off = discountPercent(session.points, bb.content?.pointThresholds);
   const reviews = (bb.content.peerReviews || []).filter((review) => review.to === session.handle);
-  const today = iso(0);
-  const seats = (session.bookings || []).filter((seat) => !seat.dateISO || seat.dateISO >= today);
 
   return (
     <section className="px-[5vw] pb-8 pt-6 text-center">
@@ -724,21 +718,6 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
           {peopleYouCanRate(bb.content, session.handle).length > 0 && <p className="text-center text-xs text-white/40">{say(bb.lang, "Rate someone after you have shared a table.")}</p>}
         </div>
       )}
-      <div className="mt-8 text-left">
-        <p className="text-[0.68rem] uppercase tracking-[0.14em] text-white/45">{say(bb.lang, "Today and upcoming")}</p>
-        {!seats.length && <p className="mt-3 text-sm text-white/45">{say(bb.lang, "None yet.")}</p>}
-        <div className="mt-3 flex gap-3 overflow-x-auto">
-          {seats.map((seat) => (
-            <button key={`${seat.id}-${seat.dateISO}`} type="button" onClick={() => (seat.kind === "private" ? onOpenEvent(seat.id) : seat.venueId && onOpenVenue(seat.venueId))} className="w-[42%] shrink-0 overflow-hidden rounded-2xl border border-white/10 text-left">
-              <div className="aspect-square bg-black/40" />
-              <div className="p-2">
-                <p className="truncate text-sm">{say(bb.lang, seat.name, false)}</p>
-                <p className="text-[11px] text-white/45">{seat.dateISO} · {seat.time}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
     </section>
   );
 }

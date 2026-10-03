@@ -242,7 +242,7 @@ function EventsTab() {
   );
 }
 
-function mySeats(bb) {
+export function mySeats(bb) {
   const today = iso(0);
   const seats = [];
   const seen = new Set();

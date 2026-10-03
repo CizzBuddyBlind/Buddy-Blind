@@ -8,13 +8,14 @@ import { translate } from "@/lib/i18n";
 import { JoinWizard, OpenTableWizard, PrivateWizard, TodayPopup, TrialGate } from "./Flows";
 import { RestaurantAdmin } from "./RestaurantAdmin";
 import { PageLang } from "./PageLang";
+import { MeTimeMark } from "./MeTimeMark";
 import { iso, badgePaint } from "@/lib/bible";
 
 const TOP = [
   { href: "/venues", label: "Venues" },
   { href: "/quick", label: "Quick" },
   { href: "/private", label: "Private" },
-  { href: "/how", label: "How" },
+  { href: "/me-time", label: "Me Time" },
   { href: "/subscribe", label: "Plan" },
   { href: "/profile", label: "Profile" },
 ];
@@ -67,7 +68,7 @@ function ProfileIcon() {
 const BOTTOM = [
   { href: "/venues", key: "nav.venues", Icon: VenuesIcon },
   { href: "/quick", key: "nav.quick", Icon: QuickIcon },
-  { href: "/how", key: "nav.how", center: true },
+  { href: "/me-time", key: "nav.how", center: true },
   { href: "/private", key: "nav.private", Icon: PrivateIcon },
   { href: "/profile", key: "nav.profile", Icon: ProfileIcon },
 ];
@@ -327,7 +328,9 @@ export function Shell({ children }) {
                 if (item.center) {
                   return (
                     <Link key={item.href} href={item.href} className="flex items-center justify-center pb-1">
-                      <span className={`grid h-14 w-14 -translate-y-3 place-items-center rounded-full font-serif text-2xl shadow-lg ${active ? "bg-ember text-white" : light ? "bg-black text-white" : "bg-white text-black"}`}>?</span>
+                      <span className={`grid h-14 w-14 -translate-y-3 place-items-center overflow-hidden rounded-full shadow-lg ${active ? "ring-2 ring-ember" : ""}`}>
+                        <MeTimeMark className="h-14 w-14" />
+                      </span>
                     </Link>
                   );
                 }
