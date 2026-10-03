@@ -101,7 +101,7 @@ label,
 }
 .bb-feature {
   flex: none;
-  height: 300px;
+  height: auto;
 }
 @media (min-width: 768px) {
   .bb-feature {

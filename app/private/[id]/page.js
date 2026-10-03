@@ -154,7 +154,7 @@ export default function PrivateDetailPage() {
   }
 
   return (
-    <main className="bb-frame pb-28 pt-6 md:pb-16">
+    <main className="bb-frame pb-28 pt-10 md:pb-16">
       <Link href="/private" className="text-xs uppercase tracking-[0.16em] text-mute">Go back</Link>
       <div className="mt-4 grid items-start gap-8 md:grid-cols-2">
         <div>

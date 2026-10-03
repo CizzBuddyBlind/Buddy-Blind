@@ -72,7 +72,7 @@ function Home() {
 
   return (
     <main className="bb-frame pb-28 pt-10 md:pb-16">
-      <section className="mx-auto max-w-2xl py-8 text-center">
+      <section className="mx-auto max-w-2xl text-center">
         <div className="mb-7 flex justify-between gap-4 text-mute">
           <Copy k="hero.left" legacy={copy.kickerLeft} className="bb-kicker" onEnglish={(d, next) => { d.copy.venues.kickerLeft = next; }} />
           <Copy k="hero.right" legacy={copy.kickerRight} className="bb-kicker text-right" onEnglish={(d, next) => { d.copy.venues.kickerRight = next; }} />

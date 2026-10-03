@@ -116,7 +116,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="bb-frame pb-28 pt-6 md:pb-16 md:pt-8">
+    <main className="bb-frame pb-28 pt-10 md:pb-16">
       <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
         <section className="bb-home-hero lg:sticky lg:top-16 lg:flex lg:h-[calc(100dvh-4rem)] lg:flex-col lg:justify-center">
           <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/50">

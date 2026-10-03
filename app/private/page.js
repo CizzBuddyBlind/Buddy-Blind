@@ -64,11 +64,11 @@ export default function PrivatePage() {
       </section>
 
       {campaign && (
-        <Link href={`/private/${campaign.id}`} className="bb-feature mt-8 grid h-[300px] w-full shrink-0 grid-cols-1 overflow-hidden rounded-3xl bg-char text-paper md:h-[340px] md:grid-cols-2">
-          <div className="relative h-[140px] md:h-full">
+        <Link href={`/private/${campaign.id}`} className="bb-feature mt-8 grid w-full grid-cols-1 overflow-hidden rounded-3xl bg-char text-paper md:h-[340px] md:grid-cols-2">
+          <div className="relative h-[15.5rem] md:h-full">
             <Photo src={eventPhotos(campaign)[0] || ""} fallback={eventPoster(campaign)} alt={campaign.name} className="absolute inset-0" onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === campaign.id); if (item) item.imageUrl = imageUrl; })} />
           </div>
-          <div className="flex h-full flex-col justify-center overflow-hidden p-6 md:p-8">
+          <div className="flex flex-col justify-center px-5 pb-6 pt-4 md:h-full md:p-8">
             <p className="text-[10px] uppercase tracking-[0.16em] text-ember">{t("priv.campaign")}</p>
             <div className="bb-night-copy">
               <h2 className="bb-night-line mt-2 font-serif text-3xl">{campaign.name}</h2>

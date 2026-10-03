@@ -160,7 +160,7 @@ export default function ProfilePage() {
   const off = discountPercent(points, bb.content.pointThresholds);
 
   return (
-    <main className="bb-frame flex min-h-[calc(100dvh-4rem)] items-center bg-ink py-10">
+    <main className="bb-frame flex min-h-[calc(100dvh-4rem)] items-start bg-ink pb-28 pt-10">
       <div className={`grid w-full items-start gap-10 ${guest ? "mx-auto max-w-md" : "md:grid-cols-2"}`}>
         <section className="flex flex-col rounded-[28px] bg-[#141414] px-6 py-8 text-[#f5f5f5] ring-1 ring-white/10 md:px-8">
           <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-4xl ${paint.className}`} style={paint.style}>{initial}</div>

@@ -279,7 +279,7 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
   }
 
   return (
-    <section className="px-[4.5vw] pb-6 pt-5">
+    <section className="px-[4.5vw] pb-6 pt-3">
       <p className="text-center text-[0.68rem] uppercase tracking-[0.14em] text-white/55">
         Hong Kong · Tonight · {rows.length} blind boxes / {hosts} hosts / {scenes} scenes
       </p>
@@ -356,7 +356,7 @@ function Venues({ onOpen }) {
     return true;
   });
   return (
-    <section className="px-[4.5vw] pb-6 pt-4">
+    <section className="px-[4.5vw] pb-6 pt-3">
       <div className="flex justify-between gap-3 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">
         <span>{say(bb.lang, "Venues · Restaurants")}</span>
         <span className="text-right">{say(bb.lang, "A neighbourhood. A time. Seats left.")}</span>
@@ -418,7 +418,7 @@ function VenueDetail({ id, onBack }) {
   if (!venue) return <button type="button" className="px-5 py-4 text-sm" onClick={onBack}>Back</button>;
   const rows = soonestTable(venue);
   return (
-    <section className="px-[4.5vw] pb-8 pt-4">
+    <section className="px-[4.5vw] pb-8 pt-3">
       <button type="button" onClick={onBack} className="text-xs uppercase tracking-[0.14em] text-white/45">{say(bb.lang, "Back")}</button>
       <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-3xl">
         <Photo src={venue.gallery?.[0] || venue.imageUrl} alt="" />
@@ -457,7 +457,7 @@ function Quick({ onOpen }) {
     return true;
   });
   return (
-    <section className="px-[4.5vw] pb-4 pt-2">
+    <section className="px-[4.5vw] pb-4 pt-3">
       <h1 className="mt-4 text-center font-serif text-[clamp(2rem,8.5vw,2.7rem)] leading-[1.05]">
         {resolveCopy(bb.content, bb.lang, "quick.title", "I'm free now.")}
         <br />
@@ -564,7 +564,7 @@ function MeTime({ onOpenVenue, onOpenEvent }) {
     </section>
   );
   return (
-    <section className="px-[5vw] pb-8 pt-6">
+    <section className="px-[5vw] pb-8 pt-3">
       <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/45">Me Time</p>
       <h1 className="mt-3 font-serif text-[clamp(2rem,8vw,2.6rem)] leading-none">Today, and what’s next.</h1>
       <div className="mt-8 space-y-8">
@@ -640,7 +640,7 @@ function PrivateDetail({ id, onBack }) {
   const trialOn = !!(bb.trial?.at && !bb.trial.cancelled && Date.now() - bb.trial.at < 90 * 86400000);
   const premium = bb.plan === "premium" || trialOn;
   return (
-    <section className="bg-paper px-[4.5vw] pb-8 pt-4 text-char">
+    <section className="bg-paper px-[4.5vw] pb-8 pt-3 text-char">
       <button type="button" onClick={onBack} className="text-xs uppercase tracking-[0.14em] text-black/45">Back</button>
       <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-3xl bg-neutral-200">
         <Photo src={eventPhotos(event)[0] || ""} fallback={eventPoster(event)} alt="" />
@@ -710,7 +710,7 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   );
 
   return (
-    <section className="px-[5vw] pb-8 pt-6 text-center">
+    <section className="px-[5vw] pb-8 pt-3 text-center">
       <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-3xl ${paint.className}`} style={paint.style}>{initials(session)}</div>
       <h1 className="mt-4 font-serif text-[clamp(1.6rem,7vw,2rem)]">{session.handle}</h1>
       {showWho && <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-white/55">{say(bb.lang, showWho)}</p>}
