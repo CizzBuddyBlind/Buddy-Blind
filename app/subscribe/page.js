@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useBB } from "@/components/Providers";
+import { say } from "@/lib/say";
 
 const RANK = { free: 0, lite: 1, premium: 2 };
 
@@ -182,12 +183,10 @@ export default function SubscribePage() {
     <main className="bb-frame mx-auto flex min-h-[calc(100dvh-4rem)] flex-col pb-28 pt-10 md:pb-0">
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
         <p className="bb-kicker text-white/55">Subscription</p>
-        <h1 className="mt-5 font-serif text-4xl leading-[1.05] text-ember sm:text-5xl md:text-6xl">
-          Your reason. <span className="italic">New people.</span>
+        <h1 className="mt-5 font-serif text-4xl leading-[1.15] sm:text-5xl md:text-6xl">
+          <span className="block text-ember">{say(bb.lang, "【真】O傾")}</span>
+          <span className="mt-3 block text-white">{say(bb.lang, "由O開始")}</span>
         </h1>
-        <p className="mt-6 max-w-xl text-sm leading-relaxed text-mute">
-          Host the vibe you care about — or join one. Guests stay blind.
-        </p>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-mute">
           Wine, work, a hike. Or whatever you care about.
         </p>

@@ -157,6 +157,8 @@ function siteLines(content) {
   ].forEach((line) => addLine(rows, seen, "How", line));
   [
     "Subscription",
+    "【真】O傾",
+    "由O開始",
     "Your reason.",
     "New people.",
     "Host the vibe you care about — or join one. Guests stay blind.",
@@ -218,7 +220,7 @@ function siteLines(content) {
   ].forEach((line) => addLine(rows, seen, "About", line));
   ["Email", "Username", "Gender", "Age range", "Orientation", "Password", "Code"].forEach((line) => addLine(rows, seen, "Account", line));
   ["reg.name", "reg.send", "reg.sent", "reg.otp", "reg.bad", "reg.card", "reg.optional", "reg.login", "trial.kicker", "trial.title", "trial.body", "trial.check", "trial.start", "nav.login", "nav.logout"].forEach((key) => fromKey(rows, seen, "Account", key));
-  ["Venues", "Quick", "Private", "How", "Plan", "Profile", "Upgrade plan", "About us", "Login", "Log out"].forEach((line) => addLine(rows, seen, "Shared", line));
+  ["Venues", "Quick", "Private", "Me Time", "Plan", "Profile", "Upgrade plan", "About us", "Login", "Log out"].forEach((line) => addLine(rows, seen, "Shared", line));
   ["pay.admin", "pay.total", "pay.why", "pay.check", "pay.freeCheck", "pay.confirm", "pay.confirmFree", "pay.free", "pay.fixed", "empty.inviteTitle", "empty.inviteBody", "empty.inviteCta", "leave.title", "leave.body", "step.location", "step.date", "step.time", "step.type", "step.people", "step.prefs", "step.summary", "step.pay", "btn.next", "btn.close", "btn.back", "adult.note", "ping.seeYou", "ping.areYou", "ping.needJoin", "ping.wait"].forEach((key) => fromKey(rows, seen, "Shared", key));
   return rows;
 }

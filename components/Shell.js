@@ -11,6 +11,7 @@ import { PageLang } from "./PageLang";
 import { MeTimeMark } from "./MeTimeMark";
 import { usePeople } from "./People";
 import { iso, badgePaint } from "@/lib/bible";
+import { say } from "@/lib/say";
 
 const TOP = [
   { href: "/venues", label: "Venues" },
@@ -202,8 +203,8 @@ export function Shell({ children }) {
                 {TOP.map((item) => {
                   const active = path === item.href || (item.href !== "/" && path.startsWith(`${item.href}/`));
                   return (
-                    <Link key={item.href} href={item.href} className={`text-[0.72rem] font-medium uppercase tracking-[0.16em] ${active ? "text-white" : "text-white/45"}`}>
-                      {item.label}
+                    <Link key={item.href} href={item.href} data-keep className={`text-[0.72rem] font-medium uppercase tracking-[0.16em] ${active ? "text-white" : "text-white/45"}`}>
+                      {say(bb.lang, item.label)}
                     </Link>
                   );
                 })}
@@ -355,7 +356,7 @@ export function Shell({ children }) {
                 }
                 const Glyph = item.Icon;
                 return (
-                  <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-1 pb-1 text-[0.62rem] font-medium uppercase tracking-[0.12em] ${active ? "text-ember" : light ? "text-black/45" : "text-white/55"}`}>
+                  <Link key={item.href} href={item.href} data-keep className={`flex flex-col items-center gap-1 pb-1 text-[0.62rem] font-medium uppercase tracking-[0.12em] ${active ? "text-ember" : light ? "text-black/45" : "text-white/55"}`}>
                     <Glyph />
                     {t(item.key)}
                   </Link>
