@@ -804,8 +804,8 @@ export function BuddyProvider({ children }) {
     const next = { at: Date.now(), days: TRIAL_DAYS, cancelled: false };
     write(TRIAL, next);
     setTrial(next);
-    notify("Premium trial started. HK$50/month after 90 days unless you cancel.");
-  }, [notify]);
+    notify(`Premium trial started. ${market.premium}/month after 90 days unless you cancel.`);
+  }, [notify, market.premium]);
 
   const cancelTrial = useCallback(async () => {
     const ok = await confirm("Cancel the Premium trial?", "You will not be charged. Private event hosting closes until you start again.");

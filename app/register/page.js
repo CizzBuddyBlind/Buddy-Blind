@@ -11,6 +11,8 @@ import { LangSwitch } from "@/components/Flows";
 export default function RegisterPage() {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
+  const price = bb.market?.premium || "HK$50";
+  const local = (key) => t(key).replaceAll("HK$50", price);
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -97,7 +99,7 @@ export default function RegisterPage() {
           <LangSwitch />
         </div>
         <p className="bb-kicker text-ember">{t("trial.kicker")}</p>
-        <h1 className="mt-3 font-serif text-3xl">{t("trial.title")}</h1>
+        <h1 className="mt-3 font-serif text-3xl">{local("trial.title")}</h1>
         <p className="mt-2 text-sm leading-relaxed text-mute">{t("trial.body")}</p>
         <div className="mt-6 space-y-3">
           <input required value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder={say(bb.lang, "Email")} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg outline-none" />
@@ -122,7 +124,7 @@ export default function RegisterPage() {
           <input value={otp} onChange={(e) => setOtp(e.target.value)} inputMode="numeric" placeholder={say(bb.lang, "Code")} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg outline-none" />
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-            <span>{t("trial.check")}</span>
+            <span>{local("trial.check")}</span>
           </label>
           <p className="text-xs text-mute">{t("reg.card")}</p>
           <p className="text-xs text-mute">{t("reg.optional")}</p>

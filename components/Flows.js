@@ -490,6 +490,8 @@ export function LangSwitch({ light = false }) {
 export function TrialGate() {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
+  const price = bb.market?.premium || "HK$50";
+  const local = (key) => t(key).replaceAll("HK$50", price);
   const [checked, setChecked] = useState(false);
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 p-4">
@@ -498,11 +500,11 @@ export function TrialGate() {
       </div>
       <div className="bb-sheet w-full max-w-lg rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl">
         <p className="bb-kicker text-ember">{t("trial.kicker")}</p>
-        <h2 className="mt-2 font-serif text-3xl">{t("trial.title")}</h2>
+        <h2 className="mt-2 font-serif text-3xl">{local("trial.title")}</h2>
         <p className="mt-3 text-sm leading-relaxed text-mute">{t("trial.body")}</p>
         <label className="mt-4 flex items-start gap-2 text-sm">
           <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
-          <span>{t("trial.check")}</span>
+          <span>{local("trial.check")}</span>
         </label>
         <button type="button" disabled={!checked} onClick={bb.acceptTrial} className="mt-5 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink disabled:opacity-40">
           {t("trial.start")}
