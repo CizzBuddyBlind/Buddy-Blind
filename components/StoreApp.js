@@ -9,7 +9,7 @@ import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso
 import { resolveCopy, translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
 import { MeTimeMark } from "./MeTimeMark";
-import { mySeats } from "./PhoneApp";
+import { mySeats, pastStats } from "./PhoneApp";
 
 function initials(session) {
   const name = String(session?.handle || session?.username || "").trim();
@@ -757,30 +757,9 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
 }
 
 function Info({ session, content }) {
-  const handle = session.handle;
-  const books = session.bookings || [];
-  let joined = 0;
-  let invited = 0;
-  let quick = 0;
-  let privJoin = 0;
-  let privHost = 0;
-  books.forEach((booking) => {
-    if (booking.kind === "private" && (booking.mode === "create" || booking.mode === "host")) privHost += 1;
-    else if (booking.kind === "private") privJoin += 1;
-    else if (booking.kind === "quick") quick += 1;
-    else if (booking.mode === "invite" || booking.mode === "create") invited += 1;
-    else joined += 1;
-  });
-  (content.events || []).forEach((event) => {
-    if (books.some((booking) => booking.id === event.id)) return;
-    const onIt = event.hostName === handle || (event.participants || []).some((p) => p.handle === handle);
-    if (!onIt) return;
-    if (event.kind === "private" && event.hostName === handle) privHost += 1;
-    else if (event.kind === "private") privJoin += 1;
-    else if (event.kind === "quick") quick += 1;
-  });
-  const rows = [["Joined", joined], ["Invited", invited], ["Quick meet", quick], ["Private joined", privJoin], ["Private hosted", privHost]];
   const bb = useBB();
+  const stats = pastStats({ session, content });
+  const rows = [["Joined", stats.joined], ["Invited", stats.invited], ["Quick meet", stats.quick], ["Private joined", stats.privJoin], ["Private hosted", stats.privHost]];
   return (
     <div className="mx-auto mt-5 max-w-sm rounded-3xl bg-[#1c1c1c] px-5 py-4 text-left text-sm">
       {rows.map(([label, n]) => <p key={label} className="mt-2 flex justify-between text-white/70 first:mt-0"><span>{say(bb.lang, label)}</span><span>{n}</span></p>)}

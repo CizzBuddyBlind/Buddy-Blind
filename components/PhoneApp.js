@@ -242,23 +242,30 @@ function EventsTab() {
   );
 }
 
+function endedSeat(seat) {
+  if (!seat.date) return true;
+  const start = tableStart({ dateISO: seat.date, time: seat.time || "" });
+  const ms = start instanceof Date ? start.getTime() : NaN;
+  if (!Number.isFinite(ms)) return seat.date < iso(0);
+  return ms <= Date.now();
+}
+
+function seatSide({ kind, mode, host, handle }) {
+  if (kind === "quick") return "joined";
+  if (kind === "private") return host || mode === "create" || mode === "host" ? "created" : "joined";
+  return host || mode === "invite" || mode === "create" ? "created" : "joined";
+}
+
 export function mySeats(bb, which = "upcoming") {
   const seats = [];
   const seen = new Set();
-  const past = (seat) => {
-    if (!seat.date) return false;
-    const start = tableStart({ dateISO: seat.date, time: seat.time || "" });
-    const ms = start instanceof Date ? start.getTime() : NaN;
-    if (!Number.isFinite(ms)) return seat.date < iso(0);
-    return ms <= Date.now();
-  };
   const add = (seat) => {
-    if (!seat.date) return;
-    if (which === "finished" ? !past(seat) : past(seat)) return;
-    const key = `${seat.venueId || ""}-${seat.tableId || seat.eventId || seat.name}-${seat.date}`;
+    const done = endedSeat(seat);
+    if (which !== "finished" && (done || !seat.date)) return;
+    const key = `${seat.venueId || ""}-${seat.tableId || seat.eventId || seat.name}-${seat.date || seat.name}`;
     if (seen.has(key)) {
       if (seat.created) {
-        const hit = seats.find((item) => `${item.venueId || ""}-${item.tableId || item.eventId || item.name}-${item.date}` === key);
+        const hit = seats.find((item) => `${item.venueId || ""}-${item.tableId || item.eventId || item.name}-${item.date || item.name}` === key);
         if (hit) hit.created = true;
       }
       return;
@@ -270,7 +277,7 @@ export function mySeats(bb, which = "upcoming") {
   (bb.session?.bookings || []).forEach((booking) => {
     if (booking.kind === "private") {
       const event = (bb.content.events || []).find((item) => item.id === booking.id);
-      const created = event?.hostName === handle || booking.mode === "create" || booking.mode === "invite" || booking.mode === "host";
+      const host = event?.hostName === handle;
       add({
         name: event?.name || booking.name,
         date: event?.dateISO || booking.dateISO,
@@ -283,13 +290,15 @@ export function mySeats(bb, which = "upcoming") {
         people: (event?.participants || []).map((p) => p.handle).filter(Boolean),
         venueId: "",
         eventId: booking.id,
-        created,
+        kind: "private",
+        created: seatSide({ kind: "private", mode: booking.mode, host, handle }) === "created",
       });
       return;
     }
     const venue = (bb.content.venues || []).find((item) => item.id === booking.venueId);
     const table = venue?.tables?.find((item) => item.id === booking.id);
-    const created = table?.hostHandle === handle || booking.mode === "invite" || booking.mode === "create";
+    const kind = booking.kind === "quick" ? "quick" : "table";
+    const host = table?.hostHandle === handle;
     add({
       name: venue?.name || booking.name,
       date: table?.dateISO || booking.dateISO,
@@ -302,7 +311,8 @@ export function mySeats(bb, which = "upcoming") {
       people: (table?.participants || []).map((p) => p.handle).filter(Boolean),
       venueId: booking.venueId || venue?.id || "",
       tableId: booking.id,
-      created,
+      kind,
+      created: seatSide({ kind, mode: booking.mode, host, handle }) === "created",
     });
   });
   if (handle) {
@@ -310,6 +320,7 @@ export function mySeats(bb, which = "upcoming") {
       (venue.tables || []).forEach((table) => {
         const onIt = table.hostHandle === handle || (table.participants || []).some((p) => p.handle === handle);
         if (!onIt) return;
+        const kind = table.kind === "quick" ? "quick" : "table";
         add({
           name: venue.name,
           date: table.dateISO,
@@ -322,7 +333,8 @@ export function mySeats(bb, which = "upcoming") {
           people: (table.participants || []).map((p) => p.handle).filter(Boolean),
           venueId: venue.id,
           tableId: table.id,
-          created: table.hostHandle === handle,
+          kind,
+          created: seatSide({ kind, mode: table.hostHandle === handle ? "invite" : "join", host: table.hostHandle === handle, handle }) === "created",
         });
       });
     });
@@ -331,6 +343,7 @@ export function mySeats(bb, which = "upcoming") {
       const onIt = event.hostName === handle || (event.participants || []).some((p) => p.handle === handle);
       if (!onIt) return;
       const venue = (bb.content.venues || []).find((item) => item.id === event.venueId);
+      const host = event.hostName === handle;
       add({
         name: event.name,
         date: event.dateISO,
@@ -343,14 +356,29 @@ export function mySeats(bb, which = "upcoming") {
         people: (event.participants || []).map((p) => p.handle).filter(Boolean),
         venueId: event.venueId || "",
         eventId: event.id,
-        created: event.hostName === handle,
+        kind: event.kind,
+        created: seatSide({ kind: event.kind, mode: host ? "host" : "join", host, handle }) === "created",
       });
     });
   }
   return seats.sort((a, b) => {
-    const order = `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`);
+    const order = `${a.date || ""}${a.time || ""}`.localeCompare(`${b.date || ""}${b.time || ""}`);
     return which === "finished" ? -order : order;
   });
+}
+
+export function pastStats(bb) {
+  const seats = mySeats(bb, "finished");
+  const stats = { joined: 0, invited: 0, quick: 0, privJoin: 0, privHost: 0 };
+  seats.forEach((seat) => {
+    if (seat.kind === "private") {
+      if (seat.created) stats.privHost += 1;
+      else stats.privJoin += 1;
+    } else if (seat.kind === "quick") stats.quick += 1;
+    else if (seat.created) stats.invited += 1;
+    else stats.joined += 1;
+  });
+  return stats;
 }
 
 function phaseOf(date, time) {
