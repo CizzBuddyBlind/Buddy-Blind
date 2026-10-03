@@ -62,7 +62,7 @@ function hasHan(text) {
 
 function localLine(lang, text) {
   const own = wordingFor(lang, text);
-  if (own) return own;
+  if (own != null) return own;
   const line = say(lang, text);
   return line && line !== text ? line : "";
 }
@@ -95,18 +95,12 @@ function paint(book, lang, leaveApp) {
         let value = raw;
         if (!lang || lang === "en") {
           const hit = wordingFor("en", text);
-          if (hit) {
-            const lead = raw.match(/^\s*/)[0];
-            const tail = raw.match(/\s*$/)[0];
-            value = `${lead}${hit}${tail}`;
-          }
+          if (hit != null) value = hit;
         } else {
-          const hit = localLine(lang, text) || (!isSavedWording(text) ? mem.get(`${lang}\n${text}`) || "" : "");
-          if (hit) {
-            const lead = raw.match(/^\s*/)[0];
-            const tail = raw.match(/\s*$/)[0];
-            value = `${lead}${hit}${tail}`;
-          } else if (!hasHan(text)) missing.push(text);
+          const own = wordingFor(lang, text);
+          const hit = own != null ? own : (localLine(lang, text) || (!isSavedWording(text) ? mem.get(`${lang}\n${text}`) || "" : ""));
+          if (own != null || hit) value = hit;
+          else if (!hasHan(text)) missing.push(text);
         }
         if (node.nodeValue !== value) node.nodeValue = value;
       }

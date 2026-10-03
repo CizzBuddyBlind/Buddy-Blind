@@ -223,19 +223,19 @@ function siteLines(content) {
   return rows;
 }
 
-function shownValue(bag, row) {
+function savedLine(bag, row) {
   const collapsed = row.english.replace(/\s+/g, " ").trim();
   const pageBag = bag?.[row.page];
-  if (pageBag && typeof pageBag === "object") {
-    if (typeof pageBag[row.english] === "string") return pageBag[row.english];
-    if (typeof pageBag[collapsed] === "string") return pageBag[collapsed];
-    const nested = Object.entries(pageBag).find(([key, value]) => typeof value === "string" && key.replace(/\s+/g, " ").trim() === collapsed);
-    if (nested) return nested[1];
-  }
-  if (typeof bag?.[row.english] === "string") return bag[row.english];
-  if (typeof bag?.[collapsed] === "string") return bag[collapsed];
-  const flat = Object.entries(bag || {}).find(([key, value]) => typeof value === "string" && key.replace(/\s+/g, " ").trim() === collapsed);
-  return flat ? flat[1] : "";
+  const pick = (source) => {
+    if (!source || typeof source !== "object") return null;
+    if (typeof source[row.english] === "string") return source[row.english];
+    if (typeof source[collapsed] === "string") return source[collapsed];
+    const nested = Object.entries(source).find(([key, value]) => typeof value === "string" && key.replace(/\s+/g, " ").trim() === collapsed);
+    return nested ? nested[1] : null;
+  };
+  const nested = pick(pageBag);
+  if (nested != null) return nested;
+  return pick(bag);
 }
 
 function WordingEditor({ bb }) {
@@ -251,15 +251,16 @@ function WordingEditor({ bb }) {
     const q = query.trim().toLowerCase();
     return live
       .filter((row) => row.page === page)
-      .filter((row) => !q || row.english.toLowerCase().includes(q) || String(shownValue(bag, row)).toLowerCase().includes(q));
+      .filter((row) => !q || row.english.toLowerCase().includes(q) || String(savedLine(bag, row) || "").toLowerCase().includes(q));
   }, [query, lang, page, bag, live]);
 
   function shown(row) {
     const id = `${row.page}\u0000${row.english}`;
     if (Object.prototype.hasOwnProperty.call(edits, id)) return edits[id];
-    const saved = shownValue(bag, row);
-    if (lang === "en") return saved || row.english;
-    return saved;
+    const saved = savedLine(bag, row);
+    if (saved != null) return saved;
+    if (lang === "en") return row.english;
+    return "";
   }
 
   async function save() {
@@ -275,8 +276,7 @@ function WordingEditor({ bb }) {
         const current = draft.wording[lang][editPage];
         if (!current || typeof current !== "object") draft.wording[lang][editPage] = {};
         const clean = String(value ?? "");
-        if (!clean.trim()) delete draft.wording[lang][editPage][english];
-        else draft.wording[lang][editPage][english] = clean;
+        draft.wording[lang][editPage][english] = clean;
       });
     });
     const saved = await bb.publish();
@@ -287,7 +287,7 @@ function WordingEditor({ bb }) {
   return (
     <section data-keep>
       <h1 className="font-serif text-5xl">Wording</h1>
-      <p className="mt-2 max-w-xl text-sm text-mute">One page at a time. English, Traditional, and Simplified stay separate. An empty Chinese line keeps the current wording. Clearing English puts the original line back.</p>
+      <p className="mt-2 max-w-xl text-sm text-mute">One page at a time. English, Traditional, and Simplified stay separate. Leave a box empty and save it. That line stays blank.</p>
       <div className="mt-4 flex flex-wrap gap-2">
         {[
           ["en", "EN English"],
