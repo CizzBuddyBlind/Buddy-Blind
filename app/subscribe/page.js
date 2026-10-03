@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useBB } from "@/components/Providers";
+import { localPrice } from "@/lib/market";
 import { say } from "@/lib/say";
 
 const RANK = { free: 0, lite: 1, premium: 2 };
@@ -43,7 +44,7 @@ export default function SubscribePage() {
         "Create private up to 20",
         "Industry / wine / 50+ social / hike",
         "Host badge gold",
-        `${market.fee} admin fee per event`,
+        localPrice(say(bb.lang, "HK$5 admin fee per event"), market),
       ],
     },
   ];
