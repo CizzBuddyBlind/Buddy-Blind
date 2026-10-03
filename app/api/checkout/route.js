@@ -1,4 +1,5 @@
-import { priceFor } from "@/lib/market";
+import { priceFor, annualDiscount } from "@/lib/market";
+import { loadSharedContent } from "@/lib/supabase";
 
 function marketCode(request, body) {
   const asked = String(body?.market || "").toUpperCase();
@@ -44,6 +45,45 @@ async function findCustomer(secret, { email, customerId }) {
   if (!email || !email.includes("@")) return null;
   const found = await stripe(secret, `/v1/customers?email=${encodeURIComponent(email)}&limit=1`);
   return found.data?.data?.[0] || null;
+}
+
+async function savedDiscount() {
+  try {
+    const loaded = await loadSharedContent();
+    return annualDiscount(loaded?.content?.billing?.annualDiscount);
+  } catch {
+    return 10;
+  }
+}
+
+async function yearlyPriceId(secret, monthlyPriceId) {
+  const price = await stripe(secret, `/v1/prices/${encodeURIComponent(monthlyPriceId)}`);
+  if (!price.ok || !price.data?.unit_amount) {
+    return { ok: false, reason: price.data?.error?.message || "The Premium price is not set in Stripe." };
+  }
+  const discount = await savedDiscount();
+  const amount = Math.round(price.data.unit_amount * 12 * (100 - discount) / 100);
+  const product = idOf(price.data.product);
+  const currency = price.data.currency || "hkd";
+  const listed = await stripe(secret, `/v1/prices?product=${encodeURIComponent(product)}&active=true&limit=100`);
+  const found = (listed.data?.data || []).find((item) => item.currency === currency && item.unit_amount === amount && item.recurring?.interval === "year");
+  if (found?.id) return { ok: true, id: found.id };
+  const params = new URLSearchParams({
+    product,
+    currency,
+    unit_amount: String(amount),
+    "recurring[interval]": "year",
+    nickname: `Premium yearly ${discount}% off`,
+  });
+  const created = await stripe(secret, "/v1/prices", { method: "POST", params });
+  if (!created.ok || !created.data?.id) {
+    return { ok: false, reason: created.data?.error?.message || "Could not open the yearly payment." };
+  }
+  return { ok: true, id: created.data.id };
+}
+
+function cycleOf(body, kind) {
+  return kind === "premium" && body?.cycle === "year" ? "year" : "month";
 }
 
 async function savedCard(secret, customer) {
@@ -110,11 +150,18 @@ async function switchPlan(secret, body, request) {
   }
   const item = sub.items?.data?.[0];
   if (!item) return Response.json({ ok: false, reason: "No subscription to change." });
+  let priceId = priceFor(marketCode(request, body), kind);
+  if (cycleOf(body, kind) === "year") {
+    const yearly = await yearlyPriceId(secret, priceId);
+    if (!yearly.ok) return Response.json({ ok: false, reason: yearly.reason });
+    priceId = yearly.id;
+  }
   const params = new URLSearchParams({
     "items[0][id]": item.id,
-    "items[0][price]": priceFor(marketCode(request, body), kind),
+    "items[0][price]": priceId,
     proration_behavior: "create_prorations",
     "metadata[kind]": kind,
+    "metadata[cycle]": cycleOf(body, kind),
   });
   const updated = await stripe(secret, `/v1/subscriptions/${sub.id}`, { method: "POST", params });
   if (!updated.ok) {
@@ -161,7 +208,13 @@ export async function POST(request) {
   if (body.action === "switch") return switchPlan(secret, body, request);
 
   const kind = body.kind === "lite" || body.kind === "premium" || body.kind === "fee" ? body.kind : "fee";
-  const price = priceFor(marketCode(request, body), kind);
+  const cycle = cycleOf(body, kind);
+  let price = priceFor(marketCode(request, body), kind);
+  if (cycle === "year") {
+    const yearly = await yearlyPriceId(secret, price);
+    if (!yearly.ok) return Response.json({ ok: false, reason: yearly.reason });
+    price = yearly.id;
+  }
   const base = baseUrl(request);
   if (!price) return Response.json({ ok: false, reason: "Card checkout is not ready yet." });
 
@@ -175,9 +228,11 @@ export async function POST(request) {
     "line_items[0][price]": price,
     "line_items[0][quantity]": "1",
     "metadata[kind]": kind,
+    "metadata[cycle]": cycle,
   });
   if (kind !== "fee") {
     params.set("subscription_data[metadata][kind]", kind);
+    params.set("subscription_data[metadata][cycle]", cycle);
     if (kind === "premium") params.set("subscription_data[trial_period_days]", "90");
   }
   if (typeof body.email === "string" && body.email.includes("@")) params.set("customer_email", body.email);

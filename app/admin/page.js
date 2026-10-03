@@ -7,6 +7,7 @@ import { fileToCover } from "@/components/Bits";
 import { CUISINES } from "@/lib/bible";
 import { DICT, EXTRA } from "@/lib/i18n";
 import { say } from "@/lib/say";
+import { MARKETS, annualDiscount, yearlyQuote } from "@/lib/market";
 
 const EMPTY = {
   name: "",
@@ -257,6 +258,7 @@ function siteLines(content) {
   ].forEach((line) => addLine(rows, seen, "BUTTONS", line));
   ["btn.invite", "btn.join", "btn.host", "btn.share", "btn.back", "btn.next", "btn.close", "btn.confirm"].forEach((key) => fromKey(rows, seen, "BUTTONS", key));
   ["pay.admin", "pay.total", "pay.why", "pay.check", "pay.freeCheck", "pay.confirm", "pay.confirmFree", "pay.free", "pay.card", "empty.inviteTitle", "empty.inviteBody", "empty.inviteCta", "leave.title", "leave.body", "step.location", "step.date", "step.time", "step.type", "step.people", "step.prefs", "step.summary", "step.pay", "adult.note", "trial.kicker", "trial.body", "trial.note", "trial.start", "trial.card", "ping.seeYou", "ping.areYou", "ping.needJoin", "ping.wait"].forEach((key) => fromKey(rows, seen, "POPUP WINDOWS", key));
+  ["MONTHLY", "YEARLY — SAVE {n}%", "SAVE {n}% WITH AN ANNUAL PAYMENT", "/month", "/year"].forEach((line) => addLine(rows, seen, "POPUP WINDOWS", line));
   return rows;
 }
 
@@ -277,6 +279,39 @@ function savedLine(bag, row) {
     if (hit != null) return hit;
   }
   return null;
+}
+
+function PremiumBilling({ bb }) {
+  const saved = annualDiscount(bb.content?.billing?.annualDiscount);
+  const [value, setValue] = useState(String(saved));
+  const [busy, setBusy] = useState(false);
+  const discount = annualDiscount(value);
+  async function save() {
+    setBusy(true);
+    const next = bb.update((draft) => {
+      draft.billing = { ...(draft.billing || {}), annualDiscount: discount };
+    });
+    await bb.publish(next);
+    setBusy(false);
+  }
+  return (
+    <section data-keep className="max-w-xl">
+      <h1 className="font-serif text-5xl">Premium</h1>
+      <p className="mt-2 text-sm text-mute">One Premium plan. This only changes the yearly payment. Monthly stays the same. Lite is not affected.</p>
+      <label className="mt-6 block text-sm">
+        Annual discount %
+        <input value={value} onChange={(e) => setValue(e.target.value.replace(/[^\d]/g, "").slice(0, 2))} inputMode="numeric" className="mt-2 block w-28 rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg" />
+      </label>
+      <div className="mt-4 grid gap-2 text-sm text-white/70">
+        {["HK", "NZ", "AU"].map((id) => {
+          const quote = yearlyQuote(MARKETS[id].premium, discount);
+          return <p key={id}>{id}: {quote.monthly}/month or {quote.yearly}/year. Save {quote.saved}.</p>;
+        })}
+      </div>
+      <p className="mt-3 text-xs text-white/40">The yearly charge is one payment for 12 months, not a cheaper monthly charge. {"{n}"} in the popup wording is this percentage.</p>
+      <button type="button" onClick={save} disabled={busy} className="mt-5 rounded-full bg-white px-5 py-3 text-sm font-semibold text-black disabled:opacity-50">{busy ? "Saving…" : "Save"}</button>
+    </section>
+  );
 }
 
 function WordingEditor({ bb }) {
@@ -460,8 +495,9 @@ export default function AdminPage() {
       <div className="mt-4 flex gap-2">
         <button type="button" onClick={() => setMode("restaurants")} className={`rounded-full px-4 py-2 text-sm ${mode === "restaurants" ? "bg-white font-semibold text-black" : "border border-white/20 text-white/70"}`}>Restaurants</button>
         <button type="button" onClick={() => setMode("wording")} className={`rounded-full px-4 py-2 text-sm ${mode === "wording" ? "bg-white font-semibold text-black" : "border border-white/20 text-white/70"}`}>All pages</button>
+        <button type="button" onClick={() => setMode("premium")} className={`rounded-full px-4 py-2 text-sm ${mode === "premium" ? "bg-white font-semibold text-black" : "border border-white/20 text-white/70"}`}>Premium</button>
       </div>
-      {mode === "wording" ? <div className="mt-8"><WordingEditor bb={bb} /></div> : (
+      {mode === "premium" ? <div className="mt-8"><PremiumBilling bb={bb} /></div> : mode === "wording" ? <div className="mt-8"><WordingEditor bb={bb} /></div> : (
       <>
       <h1 className="mt-8 font-serif text-5xl">{say(bb.lang, "Restaurants")}</h1>
       <form onSubmit={add} className="mt-8 grid max-w-xl gap-3">

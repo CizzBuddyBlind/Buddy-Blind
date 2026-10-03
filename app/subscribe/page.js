@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useBB } from "@/components/Providers";
+import { PremiumCycle } from "@/components/PremiumCycle";
+import { annualDiscount } from "@/lib/market";
 import { say } from "@/lib/say";
 
 const RANK = { free: 0, lite: 1, premium: 2 };
@@ -16,6 +18,7 @@ export default function SubscribePage() {
   const bb = useBB();
   const [busy, setBusy] = useState("");
   const [sheet, setSheet] = useState(null);
+  const [ask, setAsk] = useState(null);
   const market = bb.market || { id: "HK", fee: "HK$5", free: "HK$0", lite: "HK$10", premium: "HK$50" };
   const plan = bb.plan || "free";
   const cards = [
@@ -121,6 +124,14 @@ export default function SubscribePage() {
       window.location.href = "/login";
       return;
     }
+    if (kind === "premium") {
+      setAsk({ cycle: "month" });
+      return;
+    }
+    await charge(kind, "month");
+  }
+
+  async function charge(kind, cycle) {
     setBusy(kind);
     try {
       const switching = RANK[kind] < RANK[plan] || bb.planMeta?.subscriptionId;
@@ -131,6 +142,7 @@ export default function SubscribePage() {
           body: JSON.stringify({
             action: "switch",
             kind,
+            cycle,
             market: market.id,
             email: bb.session.email || "",
             subscriptionId: bb.planMeta?.subscriptionId || "",
@@ -140,6 +152,7 @@ export default function SubscribePage() {
         if (data.ok && !data.needsCheckout) {
           bb.setPlan(data.kind, { subscriptionId: data.subscriptionId, customerId: data.customerId });
           bb.notify(planNote(data.kind, market));
+          setAsk(null);
           return;
         }
         if (!data.ok) {
@@ -149,10 +162,12 @@ export default function SubscribePage() {
         if (kind === "free") {
           bb.setPlan("free");
           bb.notify(planNote("free", market));
+          setAsk(null);
           return;
         }
       }
-      await openCard(kind);
+      await openCard(kind, cycle);
+      setAsk(null);
     } catch {
       bb.notify("Could not change the plan.");
     } finally {
@@ -160,11 +175,11 @@ export default function SubscribePage() {
     }
   }
 
-  async function openCard(kind) {
+  async function openCard(kind, cycle = "month") {
     const res = await fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kind, market: market.id, email: bb.session.email || "" }),
+      body: JSON.stringify({ kind, cycle, market: market.id, email: bb.session.email || "" }),
     });
     const data = await res.json();
     if (!data.clientSecret || !data.publishableKey) {
@@ -211,6 +226,20 @@ export default function SubscribePage() {
               </button>
             </div>
             <div id="bb-pay" className="min-h-[420px] overflow-hidden rounded-2xl bg-white" />
+          </div>
+        </div>
+      )}
+      {ask && !sheet && (
+        <div className="fixed inset-0 z-[80] grid place-items-end bg-black/75 p-3 md:place-items-center md:p-6">
+          <div className="max-h-[92dvh] w-full max-w-lg overflow-auto rounded-[28px] bg-[#141414] p-4 text-fg shadow-2xl md:p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <p className="font-serif text-2xl">Go Premium</p>
+              <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute" onClick={() => setAsk(null)}>Close</button>
+            </div>
+            <PremiumCycle lang={bb.lang} market={market} discount={annualDiscount(bb.content?.billing?.annualDiscount)} value={ask.cycle} onChange={(cycle) => setAsk({ cycle })} />
+            <button type="button" disabled={!!busy} onClick={() => charge("premium", ask.cycle)} className="mt-5 w-full rounded-full bg-ember py-3 text-sm font-semibold text-white disabled:opacity-40">
+              {busy ? "One moment…" : "Continue"}
+            </button>
           </div>
         </div>
       )}

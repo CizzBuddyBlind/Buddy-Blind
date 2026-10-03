@@ -2,13 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useBB } from "@/components/Providers";
+import { PremiumCycle } from "@/components/PremiumCycle";
+import { annualDiscount, yearlyQuote } from "@/lib/market";
 
 const CHOICES = [
   { id: "lite", name: "Lite", note: "A month. Cancel any time." },
   { id: "premium", name: "Premium", note: "90 days free, then a month." },
 ];
 
-function line(kind, market) {
+function line(kind, market, cycle, discount) {
+  if (kind === "premium" && cycle === "year") {
+    const quote = yearlyQuote(market.premium, discount);
+    return `I understand the first 90 days are free. Then Premium is ${quote.yearly} a year unless I cancel first.`;
+  }
   if (kind === "premium") return `I understand the first 90 days are free. Then Premium is ${market.premium} a month unless I cancel first.`;
   return `I understand Lite is ${market.lite} a month until I cancel.`;
 }
@@ -26,6 +32,7 @@ export function PlanWindow({ onClose }) {
   const bb = useBB();
   const market = bb.market || { id: "HK", lite: "HK$10", premium: "HK$50" };
   const [kind, setKind] = useState("");
+  const [cycle, setCycle] = useState("month");
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [sheet, setSheet] = useState(null);
@@ -79,6 +86,7 @@ export function PlanWindow({ onClose }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           kind,
+          cycle: kind === "premium" ? cycle : "month",
           market: market.id,
           email: bb.session.email || "",
           next: "/profile",
@@ -117,7 +125,7 @@ export function PlanWindow({ onClose }) {
               <button
                 key={card.id}
                 type="button"
-                onClick={() => { setKind(card.id); setChecked(false); }}
+                onClick={() => { setKind(card.id); setCycle("month"); setChecked(false); }}
                 className={`rounded-2xl px-4 py-4 text-left ${kind === card.id ? "bg-white text-ink" : "bg-[#1c1c1c] text-white"}`}
               >
                 <span className="flex items-baseline justify-between gap-3">
@@ -130,11 +138,17 @@ export function PlanWindow({ onClose }) {
           </div>
         )}
 
+        {kind === "premium" && !sheet && (
+          <div className="mt-5">
+            <PremiumCycle lang={bb.lang} market={market} discount={annualDiscount(bb.content?.billing?.annualDiscount)} value={cycle} onChange={(next) => { setCycle(next); setChecked(false); }} />
+          </div>
+        )}
+
         {kind && !sheet && (
           <div className="mt-5">
             <label className="flex items-start gap-2 text-sm leading-relaxed text-white/80">
               <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
-              <span>{line(kind, market)}</span>
+              <span>{line(kind, market, cycle, annualDiscount(bb.content?.billing?.annualDiscount))}</span>
             </label>
             <button type="button" disabled={!checked || busy} onClick={pay} className="mt-4 w-full rounded-full bg-ember py-3 text-sm font-semibold text-white disabled:opacity-40">
               {busy ? "One moment" : "Pay"}
