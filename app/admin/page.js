@@ -118,7 +118,8 @@ function siteLines(content) {
   ["priv.campaign", "priv.search", "priv.full", "btn.host"].forEach((key) => fromKey(rows, seen, "Private", key));
   [
     "Me Time",
-    "Today, and what’s next.",
+    "Today, and",
+    "what’s next.",
     "Log in to see the seats you joined.",
     "Log in",
     "Seats you joined",

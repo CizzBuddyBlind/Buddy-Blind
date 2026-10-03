@@ -566,7 +566,11 @@ function MeTime({ onOpenVenue, onOpenEvent }) {
   return (
     <section className="px-[5vw] pb-8 pt-3">
       <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/45">Me Time</p>
-      <h1 className="mt-3 font-serif text-[clamp(2rem,8vw,2.6rem)] leading-none">Today, and what’s next.</h1>
+      <h1 className="mt-3 font-serif text-[clamp(2rem,8vw,2.6rem)] leading-none">
+        {say(bb.lang, "Today, and")}
+        <br />
+        <span className="italic text-ember">{say(bb.lang, "what’s next.")}</span>
+      </h1>
       <div className="mt-8 space-y-8">
         {row("Today", now)}
         {row("Upcoming", later)}
