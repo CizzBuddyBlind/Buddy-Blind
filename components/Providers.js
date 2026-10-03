@@ -8,6 +8,7 @@ import { bookingHold, iso, logEntry, normalizeContent, privateEditOpen, tableSta
 import { notifyRestaurant } from "@/lib/notify";
 import { putMedia } from "@/lib/media";
 import { pageFromPath, setWording, setWordingPage } from "@/lib/say";
+import { marketFromCode } from "@/lib/market";
 
 const Ctx = createContext(null);
 export function useBB() {
@@ -151,6 +152,7 @@ export function BuddyProvider({ children }) {
   const [ready, setReady] = useState(false);
   const [remote, setRemote] = useState(supabaseReady ? "checking" : "off");
   const [lang, setLangState] = useState("en");
+  const [market, setMarket] = useState(() => marketFromCode("HK"));
   const [trial, setTrial] = useState(null);
   const [plan, setPlanState] = useState("free");
   const [planMeta, setPlanMeta] = useState({ subscriptionId: "", customerId: "" });
@@ -169,6 +171,24 @@ export function BuddyProvider({ children }) {
   useEffect(() => {
     draftRef.current = draft;
   }, [draft]);
+
+  useEffect(() => {
+    const saved = session?.market;
+    if (saved === "HK" || saved === "NZ" || saved === "AU") {
+      setMarket(marketFromCode(saved));
+      return undefined;
+    }
+    let cancel = false;
+    fetch("/api/market")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancel && data?.id) setMarket(marketFromCode(data.id));
+      })
+      .catch(() => {});
+    return () => {
+      cancel = true;
+    };
+  }, [session?.market]);
 
   useEffect(() => {
     let cancel = false;
@@ -431,6 +451,7 @@ export function BuddyProvider({ children }) {
         phone: extra.phone || found.phone || "",
         verified: extra.verified ?? !!found.verified,
         bookings: books[found.email] || [],
+        market: extra.market || found.market || market.id,
       };
       persistSession(ses);
       if (ses.role === "admin" || ses.role === "founder") {
@@ -440,7 +461,7 @@ export function BuddyProvider({ children }) {
       log(`Login · ${ses.role} · ${ses.email}`);
       return null;
     },
-    [log],
+    [log, market.id],
   );
 
   const logout = useCallback(() => {
@@ -476,12 +497,13 @@ export function BuddyProvider({ children }) {
       showIdentity: true,
       showPlace: true,
       verified: !!input.verified,
+      market: input.market || market.id,
     });
     const next = [...read(USERS, []), nextUser];
     write(USERS, next);
     setUsers(next);
     return login(email, password);
-  }, [login]);
+  }, [login, market.id]);
 
   const createInvite = useCallback(
     (email) => {
@@ -1421,6 +1443,7 @@ export function BuddyProvider({ children }) {
       confirm,
       lang,
       setLang,
+      market,
       trial,
       plan,
       planMeta,
@@ -1451,7 +1474,7 @@ export function BuddyProvider({ children }) {
       selectedId, canUndo, canRedo, undo, redo, update, saveDraft, publish, login, logout,
       register, createInvite, activate, revokeAdmin, invites, revoked, users, activity,
       versions, restoreVersion, act, insertEvent, removeBlock, duplicateBlock, addBlock, toggleLock,
-      toggleHide, resetDraft, confirm, lang, setLang, trial, plan, planMeta, premium, setPlan, acceptTrial, cancelTrial,
+      toggleHide, resetDraft, confirm, lang, setLang, market, trial, plan, planMeta, premium, setPlan, acceptTrial, cancelTrial,
       updateProfile, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
       addReview, flow, openTable, joinTable, createPrivate, updatePrivate, joinPrivate, sendPing, replyPing,
     ],

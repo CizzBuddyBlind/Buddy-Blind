@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { useBB } from "@/components/Providers";
 
 const CHOICES = [
-  { id: "lite", name: "Lite", price: "HK$10", note: "A month. Cancel any time." },
-  { id: "premium", name: "Premium", price: "HK$50", note: "90 days free, then a month." },
+  { id: "lite", name: "Lite", note: "A month. Cancel any time." },
+  { id: "premium", name: "Premium", note: "90 days free, then a month." },
 ];
 
-function line(kind) {
-  if (kind === "premium") return "I understand the first 90 days are free. Then Premium is HK$50 a month unless I cancel first.";
-  return "I understand Lite is HK$10 a month until I cancel.";
+function line(kind, market) {
+  if (kind === "premium") return `I understand the first 90 days are free. Then Premium is ${market.premium} a month unless I cancel first.`;
+  return `I understand Lite is ${market.lite} a month until I cancel.`;
 }
 
 async function confirmSession(sessionId) {
@@ -24,6 +24,7 @@ async function confirmSession(sessionId) {
 
 export function PlanWindow({ onClose }) {
   const bb = useBB();
+  const market = bb.market || { id: "HK", lite: "HK$10", premium: "HK$50" };
   const [kind, setKind] = useState("");
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -78,6 +79,7 @@ export function PlanWindow({ onClose }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           kind,
+          market: market.id,
           email: bb.session.email || "",
           next: "/profile",
         }),
@@ -120,7 +122,7 @@ export function PlanWindow({ onClose }) {
               >
                 <span className="flex items-baseline justify-between gap-3">
                   <span className="font-serif text-2xl">{card.name}</span>
-                  <span className="text-sm">{card.price}</span>
+                  <span className="text-sm">{card.id === "lite" ? market.lite : market.premium}</span>
                 </span>
                 <span className={`mt-1 block text-xs ${kind === card.id ? "text-ink/50" : "text-white/45"}`}>{card.note}</span>
               </button>
@@ -132,7 +134,7 @@ export function PlanWindow({ onClose }) {
           <div className="mt-5">
             <label className="flex items-start gap-2 text-sm leading-relaxed text-white/80">
               <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
-              <span>{line(kind)}</span>
+              <span>{line(kind, market)}</span>
             </label>
             <button type="button" disabled={!checked || busy} onClick={pay} className="mt-4 w-full rounded-full bg-ember py-3 text-sm font-semibold text-white disabled:opacity-40">
               {busy ? "One moment" : "Pay"}

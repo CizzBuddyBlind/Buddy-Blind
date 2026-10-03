@@ -107,7 +107,7 @@ export function RestaurantAdmin() {
       </button>
       <div className="border-t border-white/10 pt-3">
         <p className="bb-kicker text-mute">Point badges</p>
-        <p className="text-mute">Bronze 100 · 5%. Silver 300 · 10%. Gold 500 · 20%. The discount is on the HK$5 fee only.</p>
+        <p className="text-mute">Bronze 100 · 5%. Silver 300 · 10%. Gold 500 · 20%. Points do not change the admin fee.</p>
         <div className="mt-2 flex gap-2">
           <label>Bronze
             <input type="number" value={bb.content.pointThresholds?.bronze || 100} onChange={(e) => bb.update((d) => { d.pointThresholds.bronze = Number(e.target.value) || 100; })} className="mt-1 w-full rounded-lg border border-white/15 bg-black px-2 py-2" />

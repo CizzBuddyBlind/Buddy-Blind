@@ -85,9 +85,9 @@ function useFeeCheckout(onPaid) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "charge-fee",
+          market: bb.market?.id || "HK",
           email: bb.session.email || "",
           customerId: bb.planMeta?.customerId || "",
-          points: Number(bb.session.points) || 0,
         }),
       });
       const data = await res.json();
@@ -106,17 +106,17 @@ function useFeeCheckout(onPaid) {
   return { busy, error, sheet: null, start };
 }
 
-function PayStep({ fee, checked, setChecked, onConfirm, busy, error }) {
-  const { lang } = useBB();
-  const t = (key) => translate(lang, key);
-  const paid = fee.total > 0;
+function PayStep({ checked, setChecked, onConfirm, busy, error }) {
+  const bb = useBB();
+  const t = (key) => translate(bb.lang, key);
+  const label = bb.market?.fee || "HK$5";
+  const paid = true;
   return (
     <div className="space-y-3 text-sm">
       <div className="rounded-xl border border-white/10 p-3">
-        <div className="flex justify-between"><span>{t("pay.admin")}</span><span>HK${fee.base.toFixed(2)}</span></div>
-        {fee.percent > 0 && <div className="mt-2 flex justify-between text-mute"><span>{fee.percent}% off</span><span>−HK${fee.off.toFixed(2)}</span></div>}
-        <p className="mt-2 text-xs text-mute">{t("pay.fixed")}</p>
-        <div className="mt-2 flex justify-between font-semibold"><span>{t("pay.total")}</span><span>HK${fee.total.toFixed(2)}</span></div>
+        <div className="flex justify-between"><span>{t("pay.admin")}</span><span>{label}</span></div>
+        <p className="mt-2 text-xs text-mute">Points do not change this fee.</p>
+        <div className="mt-2 flex justify-between font-semibold"><span>{t("pay.total")}</span><span>{label}</span></div>
       </div>
       <p className="text-mute">{paid ? t("pay.why") : t("pay.free")}</p>
       <label className="flex items-start gap-2 text-sm">

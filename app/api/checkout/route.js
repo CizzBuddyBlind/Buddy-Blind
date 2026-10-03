@@ -1,8 +1,12 @@
-const PRICES = {
-  lite: process.env.STRIPE_LITE_PRICE_ID || "price_1UISXEPmyR3fIMKF3EMKbkND",
-  premium: process.env.STRIPE_PREMIUM_PRICE_ID || "price_1UISXdPmyR3fIMKFkyKCHbsB",
-  fee: process.env.STRIPE_ADMIN_FEE_PRICE_ID || "price_1UISZsPmyR3fIMKFcpj7cNdy",
-};
+import { priceFor } from "@/lib/market";
+
+function marketCode(request, body) {
+  const asked = String(body?.market || "").toUpperCase();
+  if (asked === "HK" || asked === "NZ" || asked === "AU") return asked;
+  const geo = String(request?.headers?.get?.("x-vercel-ip-country") || "").toUpperCase();
+  if (geo === "NZ" || geo === "AU") return geo;
+  return "HK";
+}
 
 function baseUrl(request) {
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
@@ -49,21 +53,19 @@ async function savedCard(secret, customer) {
   return idOf(listed.data?.data?.[0]);
 }
 
-async function chargeSavedCard(secret, body) {
+async function chargeSavedCard(secret, body, request) {
   const customer = await findCustomer(secret, body);
   if (!customer) return Response.json({ ok: false, reason: "No card yet. Start Premium and save one." });
   const method = await savedCard(secret, customer);
   if (!method) return Response.json({ ok: false, reason: "No card yet. Start Premium and save one." });
-  const price = await stripe(secret, `/v1/prices/${encodeURIComponent(PRICES.fee)}`);
+  const priceId = priceFor(marketCode(request, body), "fee");
+  const price = await stripe(secret, `/v1/prices/${encodeURIComponent(priceId)}`);
   if (!price.ok || !price.data?.unit_amount) {
-    return Response.json({ ok: false, reason: price.data?.error?.message || "The HK$5 price is not set in Stripe." });
+    return Response.json({ ok: false, reason: price.data?.error?.message || "The admin fee is not set in Stripe." });
   }
-  const points = Math.max(0, Math.min(100000, Number(body.points) || 0));
-  const amount = points >= 500 ? Math.round(price.data.unit_amount * 0.8) : points >= 300 ? Math.round(price.data.unit_amount * 0.9) : points >= 100 ? Math.round(price.data.unit_amount * 0.95) : price.data.unit_amount;
-  const currency = price.data?.currency || "hkd";
   const params = new URLSearchParams({
-    amount: String(amount),
-    currency,
+    amount: String(price.data.unit_amount),
+    currency: price.data.currency || "hkd",
     customer: customer.id,
     payment_method: method,
     off_session: "true",
@@ -76,7 +78,7 @@ async function chargeSavedCard(secret, body) {
     return Response.json({ ok: false, reason: charged.data.error?.message || "The card was not charged." });
   }
   if (charged.data.status !== "succeeded") {
-    return Response.json({ ok: false, reason: "The bank did not take the HK$5. Check the card on Premium." });
+    return Response.json({ ok: false, reason: "The bank did not take the admin fee. Check the card on Premium." });
   }
   return Response.json({ ok: true, id: charged.data.id });
 }
@@ -94,7 +96,7 @@ async function liveSub(secret, { email, subscriptionId }) {
   return (subs.data?.data || []).find((item) => ["active", "trialing", "past_due"].includes(item.status)) || null;
 }
 
-async function switchPlan(secret, body) {
+async function switchPlan(secret, body, request) {
   const kind = body.kind === "lite" || body.kind === "premium" || body.kind === "free" ? body.kind : "";
   if (!kind) return Response.json({ ok: false, reason: "Pick a plan." });
   const sub = await liveSub(secret, body);
@@ -110,7 +112,7 @@ async function switchPlan(secret, body) {
   if (!item) return Response.json({ ok: false, reason: "No subscription to change." });
   const params = new URLSearchParams({
     "items[0][id]": item.id,
-    "items[0][price]": PRICES[kind],
+    "items[0][price]": priceFor(marketCode(request, body), kind),
     proration_behavior: "create_prorations",
     "metadata[kind]": kind,
   });
@@ -155,11 +157,11 @@ export async function POST(request) {
   const body = await request.json().catch(() => ({}));
   const secret = process.env.STRIPE_SECRET_KEY;
   if (!secret) return Response.json({ ok: false, reason: "Card checkout is not ready yet." });
-  if (body.action === "charge-fee") return chargeSavedCard(secret, body);
-  if (body.action === "switch") return switchPlan(secret, body);
+  if (body.action === "charge-fee") return chargeSavedCard(secret, body, request);
+  if (body.action === "switch") return switchPlan(secret, body, request);
 
   const kind = body.kind === "lite" || body.kind === "premium" || body.kind === "fee" ? body.kind : "fee";
-  const price = PRICES[kind];
+  const price = priceFor(marketCode(request, body), kind);
   const base = baseUrl(request);
   if (!price) return Response.json({ ok: false, reason: "Card checkout is not ready yet." });
 

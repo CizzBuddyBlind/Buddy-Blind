@@ -45,7 +45,7 @@ function nearestArea(lat, lng) {
 
 export default function QuickPage() {
   const router = useRouter();
-  const { content, editing, update, act, notify, setSelectedId, selectedId, setFlow, lang } = useBB();
+  const { content, editing, update, act, notify, setSelectedId, selectedId, setFlow, lang, market } = useBB();
   const [sheet, setSheet] = useState(null);
   const [area, setArea] = useState("");
   const [free, setFree] = useState(false);
@@ -187,7 +187,7 @@ export default function QuickPage() {
       <PayDialog
         open={sheet?.mode === "join"}
         title={`Join · ${sheet?.name || ""}`}
-        lines={[sheet?.name, sheet?.detail, "HK$5 administration fee"]}
+        lines={[sheet?.name, sheet?.detail, `${market?.fee || "HK$5"} administration fee`]}
         onClose={() => setSheet(null)}
         onConfirm={confirmSheet}
       />

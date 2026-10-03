@@ -5,39 +5,9 @@ import { useBB } from "@/components/Providers";
 
 const RANK = { free: 0, lite: 1, premium: 2 };
 
-const CARDS = [
-  {
-    id: "free",
-    name: "Free",
-    cadence: "Try once",
-    price: "HK$0",
-    perks: ["1 blind box / month", "Venues only", "No private creation"],
-  },
-  {
-    id: "lite",
-    name: "Lite",
-    cadence: "Per month",
-    price: "HK$10",
-    perks: ["5 blind boxes / month", "Join private events", "Create quick meet"],
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    cadence: "Per month · 90 days trial",
-    price: "HK$50",
-    perks: [
-      "Unlimited blind boxes",
-      "Create private up to 20",
-      "Industry / wine / 50+ social / hike",
-      "Host badge gold",
-      "HK$5 admin fee per event",
-    ],
-  },
-];
-
-function planNote(kind) {
-  if (kind === "premium") return "You're Premium. 90 days on us, then HK$50 a month.";
-  if (kind === "lite") return "You're on Lite. HK$10 a month.";
+function planNote(kind, market) {
+  if (kind === "premium") return `You're Premium. 90 days on us, then ${market.premium} a month.`;
+  if (kind === "lite") return `You're on Lite. ${market.lite} a month.`;
   return "You're on Free. Billing has stopped.";
 }
 
@@ -45,7 +15,37 @@ export default function SubscribePage() {
   const bb = useBB();
   const [busy, setBusy] = useState("");
   const [sheet, setSheet] = useState(null);
+  const market = bb.market || { id: "HK", fee: "HK$5", lite: "HK$10", premium: "HK$50" };
   const plan = bb.plan || "free";
+  const cards = [
+    {
+      id: "free",
+      name: "Free",
+      cadence: "Try once",
+      price: market.id === "NZ" ? "NZ$0" : market.id === "AU" ? "A$0" : "HK$0",
+      perks: ["1 blind box / month", "Venues only", "No private creation"],
+    },
+    {
+      id: "lite",
+      name: "Lite",
+      cadence: "Per month",
+      price: market.lite,
+      perks: ["5 blind boxes / month", "Join private events", "Create quick meet"],
+    },
+    {
+      id: "premium",
+      name: "Premium",
+      cadence: "Per month · 90 days trial",
+      price: market.premium,
+      perks: [
+        "Unlimited blind boxes",
+        "Create private up to 20",
+        "Industry / wine / 50+ social / hike",
+        "Host badge gold",
+        `${market.fee} admin fee per event`,
+      ],
+    },
+  ];
   const trialOpened = useRef(false);
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function SubscribePage() {
       if (stop) return;
       if (data?.ok) {
         bb.setPlan(data.kind, { subscriptionId: data.subscriptionId, customerId: data.customerId });
-        bb.notify(planNote(data.kind));
+        bb.notify(planNote(data.kind, market));
       }
       window.history.replaceState({}, "", "/subscribe");
     })();
@@ -85,7 +85,7 @@ export default function SubscribePage() {
               return;
             }
             bb.setPlan(data.kind, { subscriptionId: data.subscriptionId, customerId: data.customerId });
-            bb.notify(planNote(data.kind));
+            bb.notify(planNote(data.kind, market));
             setSheet(null);
           });
         },
@@ -130,6 +130,7 @@ export default function SubscribePage() {
           body: JSON.stringify({
             action: "switch",
             kind,
+            market: market.id,
             email: bb.session.email || "",
             subscriptionId: bb.planMeta?.subscriptionId || "",
           }),
@@ -137,7 +138,7 @@ export default function SubscribePage() {
         const data = await res.json();
         if (data.ok && !data.needsCheckout) {
           bb.setPlan(data.kind, { subscriptionId: data.subscriptionId, customerId: data.customerId });
-          bb.notify(planNote(data.kind));
+          bb.notify(planNote(data.kind, market));
           return;
         }
         if (!data.ok) {
@@ -146,7 +147,7 @@ export default function SubscribePage() {
         }
         if (kind === "free") {
           bb.setPlan("free");
-          bb.notify(planNote("free"));
+          bb.notify(planNote("free", market));
           return;
         }
       }
@@ -162,7 +163,7 @@ export default function SubscribePage() {
     const res = await fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kind, email: bb.session.email || "" }),
+      body: JSON.stringify({ kind, market: market.id, email: bb.session.email || "" }),
     });
     const data = await res.json();
     if (!data.clientSecret || !data.publishableKey) {
@@ -193,11 +194,11 @@ export default function SubscribePage() {
 
         <div className="my-auto grid items-stretch gap-3 lg:grid-cols-3">
           <div className="grid h-full overflow-hidden rounded-[28px] bg-[#111] md:grid-cols-2 lg:col-span-2">
-            {CARDS.filter((card) => card.id !== "premium").map((card) => (
+            {cards.filter((card) => card.id !== "premium").map((card) => (
               <PlanCard key={card.id} card={card} plan={plan} busy={busy} onPay={pay} split />
             ))}
           </div>
-          <PlanCard card={CARDS[2]} plan={plan} busy={busy} onPay={pay} light />
+          <PlanCard card={cards[2]} plan={plan} busy={busy} onPay={pay} light fee={market.fee} />
         </div>
       </div>
 
@@ -218,7 +219,7 @@ export default function SubscribePage() {
   );
 }
 
-function PlanCard({ card, plan, busy, onPay, light, split }) {
+function PlanCard({ card, plan, busy, onPay, light, split, fee = "HK$5" }) {
   const current = plan === card.id;
   const up = RANK[card.id] > RANK[plan];
   const label = current
@@ -254,7 +255,7 @@ function PlanCard({ card, plan, busy, onPay, light, split }) {
           {busy === card.id ? "One moment…" : label}
         </button>
         <p className={`mt-4 min-h-[2.4rem] text-center text-[10px] font-medium uppercase leading-relaxed tracking-[0.12em] ${light ? "text-ink/40" : "invisible"}`}>
-          90 days trial · Cancel anytime · HK$5 admin fee per confirmed join
+          90 days trial · Cancel anytime · {fee} admin fee per confirmed join
         </p>
       </div>
     </article>

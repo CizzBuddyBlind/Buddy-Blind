@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useBB } from "@/components/Providers";
 
 const STEPS = [
   { n: "01", title: "See the place", body: "The photo is the filter. A restaurant, or a private night. Like the room, you’ll like the night." },
@@ -22,6 +23,8 @@ const BADGES = [
 
 function AboutBody() {
   const params = useSearchParams();
+  const bb = useBB();
+  const fee = bb.market?.fee || "HK$5";
   const [tab, setTab] = useState(params.get("tab") === "how" ? "how" : "about");
   return (
     <main className="bb-frame bg-ink pb-28 pt-10 text-fg md:pb-20">
@@ -68,7 +71,7 @@ function AboutBody() {
                 <span className="pt-2 text-xs tracking-[0.12em] text-white/40">{step.n}</span>
                 <div>
                   <h2 className="font-serif text-[1.65rem] leading-tight text-white md:text-[1.85rem]">{step.title}</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/55">{step.body}</p>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/55">{step.n === "03" ? `Join, or open the table. ${fee} only when you confirm. That’s for trust, not the meal.` : step.body}</p>
                   {step.n === "08" && (
                     <div className="mt-5 flex flex-wrap gap-6">
                       {BADGES.map((badge) => (
