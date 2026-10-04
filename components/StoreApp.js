@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Photo } from "./Bits";
@@ -118,6 +118,17 @@ export function StoreApp({ embedded = false }) {
   const unread = unreadNotes + reviewDue;
 
   const scroller = useRef(null);
+  const seenPlace = useRef("");
+
+  useLayoutEffect(() => {
+    if (!live) return;
+    const place = `${tab}|${venueId}|${eventId}|${people?.guest || ""}`;
+    if (seenPlace.current === place) return;
+    const first = seenPlace.current === "";
+    seenPlace.current = place;
+    if (first) return;
+    if (scroller.current) scroller.current.scrollTop = 0;
+  }, [live, tab, venueId, eventId, people?.guest]);
 
   useEffect(() => {
     const mapped = pathToApp(window.location.pathname, window.location.search) || { tab: "home", venueId: "", eventId: "", guest: "" };
