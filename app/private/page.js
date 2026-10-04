@@ -81,7 +81,7 @@ export default function PrivatePage() {
             <p className="mt-4 flex items-center justify-between gap-3 text-sm text-paper/70">
               <span className="flex min-w-0 items-center gap-2">
                 <HostBadge handle={campaign.hostName || ""} userId={campaign.hostUserId || ""} tier={campaign.hostTier || "bronze"} />
-                <span className="truncate">{personRecord(campaign.hostUserId || campaign.hostName, { session: bb.session, users: bb.users })?.handle || campaign.hostName || campaign.hostLabel}</span>
+                <span className="truncate">{personRecord(campaign.hostUserId, { session: bb.session, users: bb.users })?.handle || campaign.hostName || campaign.hostLabel}</span>
               </span>
               <span className="shrink-0 rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">{t("btn.join")}</span>
             </p>
@@ -130,7 +130,7 @@ export default function PrivatePage() {
               <div className="mt-3 flex items-center justify-between gap-2 px-4 pb-4 text-sm">
                   <span className="flex min-w-0 items-center gap-2">
                     <HostBadge handle={night.hostName || ""} userId={night.hostUserId || ""} tier={night.hostTier || "bronze"} />
-                    <span className="truncate">{personRecord(night.hostUserId || night.hostName, { session: bb.session, users: bb.users })?.handle || night.hostName || night.hostLabel}</span>
+                    <span className="truncate">{personRecord(night.hostUserId, { session: bb.session, users: bb.users })?.handle || night.hostName || night.hostLabel}</span>
                     <JoinerStack people={night.participants} host={night.hostName} cap={20} />
                   </span>
                   <span className="bb-night-copy shrink-0 font-medium">{(night.spots || 0) <= 0 ? t("priv.full") : `${night.spots} places`}</span>

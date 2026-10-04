@@ -136,7 +136,7 @@ export default function QuickPage() {
                 <div data-keep className="min-w-0 font-medium">
                   <Editable locked={row.locked} value={placeInfo.name} onChange={(name) => update((d) => { const item = d.events.find((x) => x.id === row.id); if (item) item.name = name; })} />
                 </div>
-                <HostBadge handle={row.hostName || ""} tier={row.hostTier || "gold"} />
+                <HostBadge handle={row.hostName || ""} userId={row.hostUserId || ""} tier={row.hostTier || "gold"} />
                 <JoinerStack people={row.participants} host={row.hostName} cap={6} />
               </div>
               <div className="text-xs text-mute">{say(lang, placeInfo.address)}</div>

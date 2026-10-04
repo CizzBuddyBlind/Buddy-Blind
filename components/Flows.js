@@ -23,7 +23,7 @@ import {
 
 export function HostBadge({ handle = "?", userId = "", size = "host", quiet = false }) {
   const bb = useBB();
-  const record = personRecord(userId || handle, { session: bb.session, users: bb.users });
+  const record = userId ? personRecord(userId, { session: bb.session, users: bb.users }) : null;
   const paint = badgePaint(record?.points || 0, bb.content?.pointThresholds, "dark");
   const letter = String(record?.handle || handle || "?").slice(0, 1).toUpperCase();
   const box = size === "joiner" ? "h-4 w-4 text-[8px]" : size === "person" ? "h-20 w-20 text-3xl" : size === "feature" ? "h-9 w-9 text-sm" : "h-5 w-5 text-[10px]";
@@ -42,13 +42,13 @@ export function HostBadge({ handle = "?", userId = "", size = "host", quiet = fa
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        peopleApi().openProfile(record.userId || userId || handle);
+        peopleApi().openProfile(record.userId);
       }}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault();
           e.stopPropagation();
-          peopleApi().openProfile(record.userId || userId || handle);
+          peopleApi().openProfile(record.userId);
         }
       }}
     >
@@ -404,7 +404,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
           {tables.map(({ table, hold }) => (
             <button key={table.id} type="button" onClick={() => setPicked(table.id)} className={`bb-choice block w-full rounded-2xl border p-3 text-left text-sm ${picked === table.id ? "border-ember" : "border-white/10"}`}>
               <div className="flex items-center gap-2">
-                <HostBadge handle={table.hostHandle} tier={table.hostTier} />
+                <HostBadge handle={table.hostHandle} userId={table.hostUserId || ""} tier={table.hostTier} />
                 <div>
                   <div>{prettyDate(table.dateISO, bb.lang)} · {table.time}</div>
                   <div className="text-mute">{hold.places} open · {tablePrefs(table) || "Meet friends"}</div>
@@ -475,7 +475,7 @@ export function TodayPopup({ onJoin, onBrowse, onDismiss }) {
           {rows.map(({ venue, table, hold }) => (
             <div key={table.id} className="rounded-xl border border-white/10 p-3">
               <div className="flex items-center gap-2">
-                <HostBadge handle={table.hostHandle} tier={table.hostTier} />
+                <HostBadge handle={table.hostHandle} userId={table.hostUserId || ""} tier={table.hostTier} />
                 <div>
                   <div data-keep className="font-medium">{venue.name}</div>
                   <div className="text-xs text-mute">{venue.locationLabel} · {table.time}</div>

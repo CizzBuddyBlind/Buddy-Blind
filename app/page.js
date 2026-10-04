@@ -34,6 +34,7 @@ function upcoming(content) {
         spots: hold.places,
         dateISO: table.dateISO,
         host: table.hostHandle,
+        hostId: table.hostUserId || "",
         tier: table.hostTier,
         seats: hold.original || table.capacity,
         reason: table.tableType === "blind-date" ? "blind date" : venue.cuisine || "dinner",
@@ -64,6 +65,7 @@ function upcoming(content) {
       spots: Number.isFinite(spots) ? spots : null,
       dateISO: event.dateISO || "",
       host: event.hostName || event.hostHandle || "",
+      hostId: event.hostUserId || "",
       tier: event.hostTier || "bronze",
       seats: event.capacity || event.spots,
       reason: event.typeLabel || event.forWhom || event.name,
@@ -84,7 +86,7 @@ export default function HomePage() {
   const scenes = rows.filter((row) => (row.kind === "table" ? row.table.dateISO : row.event.dateISO) === today).length;
   const stars = (bb.content.peerReviews || []).map((review) => Number(review.stars)).filter((n) => n > 0);
   const rating = stars.length ? (stars.reduce((sum, n) => sum + n, 0) / stars.length).toFixed(1) : "—";
-  const hosts = new Set(rows.map((row) => (row.kind === "table" ? row.table.hostHandle : row.event.hostName)).filter(Boolean)).size;
+  const hosts = new Set(rows.map((row) => row.hostId).filter(Boolean)).size;
   const [pay, setPay] = useState(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
@@ -169,7 +171,7 @@ export default function HomePage() {
                   <span className="rounded-full bg-ember px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#1a1408]">{say(bb.lang, featured.home?.spots || `${featured.spots ?? 0} spots left`)}</span>
                 </div>
                 <div className="absolute right-3 top-4">
-                  <HostBadge handle={featured.host || ""} tier={featured.tier || "bronze"} size="feature" />
+                  <HostBadge handle={featured.host || ""} userId={featured.hostId || ""} tier={featured.tier || "bronze"} size="feature" />
                 </div>
                 <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">{featured.home?.chip || featured.meta}</span>
               </div>

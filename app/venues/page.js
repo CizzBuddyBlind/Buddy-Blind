@@ -186,7 +186,7 @@ function Home() {
                   {venue.petFriendly && <p className="mt-1 text-[0.72rem] uppercase tracking-[0.12em] text-ember">{t("venue.pet")}</p>}
                   {preview ? (
                     <div className="mb-2 mt-3 flex items-start gap-2 text-[0.75rem]">
-                      <HostBadge handle={preview.table.hostHandle} tier={preview.table.hostTier} />
+                      <HostBadge handle={preview.table.hostHandle} userId={preview.table.hostUserId || ""} tier={preview.table.hostTier} />
                       <div className="min-w-0">
                         <p className="text-mute">{(() => {
                           const d = new Date(`${preview.table.dateISO}T12:00:00`);

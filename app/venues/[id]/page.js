@@ -151,7 +151,7 @@ export default function VenuePage() {
               <div className="mt-3 divide-y divide-white/10 border-y border-white/10">
                 {tables.map(({ table, hold }) => {
                   const people = table.participants || [];
-                  const joined = !!(session && (people.some((p) => p.userId === session.userId || p.handle === session.handle) || table.hostUserId === session.userId || table.hostHandle === session.handle));
+                  const joined = !!(session && (people.some((p) => p.userId === session.userId) || table.hostUserId === session.userId));
                   const lines = [
                     venue.name,
                     table.address || venue.locationLabel,
@@ -162,7 +162,7 @@ export default function VenuePage() {
                   return (
                     <article key={table.id} className="bb-row py-4">
                       <div className="flex items-center gap-3">
-                        <HostBadge handle={table.hostHandle} tier={table.hostTier} />
+                        <HostBadge handle={table.hostHandle} userId={table.hostUserId || ""} tier={table.hostTier} />
                         <div className="min-w-0 flex-1">
                           <p className="text-sm">{prettyDate(table.dateISO, lang)} · {table.time}</p>
                           <p className="mt-1 flex items-center gap-2 text-xs text-mute">

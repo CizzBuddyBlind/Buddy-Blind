@@ -8,7 +8,7 @@ import { bookingHold, iso, logEntry, normalizeContent, privateEditOpen, tableSta
 import { notifyRestaurant } from "@/lib/notify";
 import { putMedia } from "@/lib/media";
 import { pageFromPath, setWording, setWordingPage } from "@/lib/say";
-import { castForFounder, personRecord, sameIdentity, stampContent } from "@/lib/people";
+import { castForFounder, fixtureAccountId, personRecord, sameIdentity, stampContent } from "@/lib/people";
 import { marketFromCode, marketFromTimezone } from "@/lib/market";
 import { effectiveAccess, isInternalRole } from "@/lib/entitlement";
 
@@ -76,50 +76,47 @@ function stripHeavy(node, seen = new Set()) {
   }
 }
 
-export function peopleYouCanRate(content, handle, ctx = {}) {
-  if (!content || !handle) return [];
-  const me = personRecord(handle, ctx);
-  const meId = me?.userId || "";
-  const who = (ref) => personRecord(ref, ctx);
-  const same = (ref) => {
-    const record = who(ref);
-    if (meId && record?.userId) return record.userId === meId;
-    return String(ref || "").trim().toLowerCase() === String(handle || "").trim().toLowerCase();
+export function peopleYouCanRate(content, accountId, ctx = {}) {
+  const meId = String(accountId || "");
+  if (!content || !meId) return [];
+  const idOf = (ref) => {
+    if (ref && typeof ref === "object") return String(ref.userId || "");
+    const text = String(ref || "");
+    return personRecord(text, ctx)?.userId || "";
   };
   const now = Date.now();
   const found = new Map();
-  const take = (label, eventId, dateISO, time, names) => {
-    const people = [...new Set((names || []).filter(Boolean))];
-    if (!people.some(same)) return;
+  const take = (label, eventId, dateISO, time, refs) => {
+    const ids = [...new Set((refs || []).map(idOf).filter(Boolean))];
+    if (!ids.includes(meId)) return;
     const start = tableStart({ dateISO, time: time || "7:00 PM" }).getTime();
     if (!dateISO || Number.isNaN(start) || now < start) return;
-    people.forEach((name) => {
-      const record = who(name);
-      const id = record?.userId || name;
-      if (same(name) || found.has(id)) return;
-      const reviewed = (content.peerReviews || []).some((review) => same(review.fromUserId || review.from) && (who(review.toUserId || review.to)?.userId || review.to) === id);
-      found.set(id, { handle: record?.handle || name, userId: record?.userId || "", eventId, label, reviewed });
+    ids.forEach((id) => {
+      if (id === meId || found.has(id)) return;
+      const record = personRecord(id, ctx);
+      const reviewed = (content.peerReviews || []).some((review) => (review.fromUserId === meId) && (review.toUserId === id));
+      found.set(id, { handle: record?.handle || "", userId: id, eventId, label, reviewed });
     });
   };
   (content.venues || []).forEach((venue) => {
     (venue.tables || []).forEach((table) => {
       take(venue.name, table.id, table.dateISO, table.time, [
-        table.hostUserId || table.hostHandle,
-        ...(table.participants || []).map((p) => p.userId || p.handle),
+        table.hostUserId,
+        ...(table.participants || []).map((p) => p.userId),
       ]);
     });
   });
   (content.events || []).forEach((event) => {
     take(event.name, event.id, event.dateISO, event.timeLabel, [
-      event.hostUserId || event.hostName,
-      ...(event.participants || []).map((p) => p.userId || p.handle),
+      event.hostUserId,
+      ...(event.participants || []).map((p) => p.userId),
     ]);
   });
   const list = [...found.values()];
-  if (handle && !same("Alex") && !list.some((person) => person.userId === "acct_alex" || person.handle === "Alex")) {
-    const alex = who("Alex");
-    const reviewed = (content.peerReviews || []).some((review) => same(review.fromUserId || review.from) && (review.toUserId === "acct_alex" || review.to === "Alex"));
-    list.unshift({ handle: alex?.handle || "Alex", userId: alex?.userId || "acct_alex", eventId: "review-sample", label: "Last supper", reviewed });
+  if (!list.some((person) => person.userId === "acct_alex") && meId !== "acct_alex") {
+    const alex = personRecord("acct_alex", ctx);
+    const reviewed = (content.peerReviews || []).some((review) => review.fromUserId === meId && review.toUserId === "acct_alex");
+    list.unshift({ handle: alex?.handle || "Alex", userId: "acct_alex", eventId: "review-sample", label: "Last supper", reviewed });
   }
   return list;
 }
@@ -247,9 +244,6 @@ export function BuddyProvider({ children }) {
         ses.userId = ses.userId || seed?.userId || `acct_${ses.email.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
         const extra = profiles[ses.userId] || profiles[ses.email] || {};
         if (extra.handle) ses.handle = extra.handle;
-        const previous = new Set([...(extra.previousHandles || []), ...(ses.previousHandles || [])]);
-        if (seed?.handle && seed.handle !== ses.handle) previous.add(seed.handle);
-        ses.previousHandles = [...previous];
         const pointsMap = read(POINTS, {});
         const mapped = Number(pointsMap[ses.userId] ?? pointsMap[ses.email]);
         const seeded = seed?.points || 0;
@@ -273,13 +267,14 @@ export function BuddyProvider({ children }) {
       const stored = { ...emptySocial(), ...read(SOCIAL, {}) };
       if (!stored.buddies?.length) {
         stored.buddies = [
-          { id: "b-mina", name: "Mina", status: "accepted", area: "Central", note: "Knows wine" },
-          { id: "b-kenji", name: "Kenji", status: "accepted", area: "CWB", note: "On time" },
-          { id: "b-alex", name: "Alex", status: "accepted", area: "TST", note: "Easy to talk to" },
-          { id: "b-sora", name: "Sora", status: "accepted", area: "Sheung Wan", note: "Good listener" },
+          { id: "b-mina", userId: "demo-mina", name: "Mina", status: "accepted", area: "Central", note: "Knows wine" },
+          { id: "b-kenji", userId: "demo-kenji", name: "Kenji", status: "accepted", area: "CWB", note: "On time" },
+          { id: "b-alex", userId: "acct_alex", name: "Alex", status: "accepted", area: "TST", note: "Easy to talk to" },
+          { id: "b-sora", userId: "demo-sora", name: "Sora", status: "accepted", area: "Sheung Wan", note: "Good listener" },
         ];
         write(SOCIAL, stored);
       }
+      stored.buddies = (stored.buddies || []).map((buddy) => buddy.userId ? buddy : { ...buddy, userId: fixtureAccountId(buddy.name) || "" });
       setSocial(stored);
 
       let pub = local?.venues && local?.copy ? local : clone(SEED);
@@ -499,15 +494,12 @@ export function BuddyProvider({ children }) {
       const books = read(BOOKS, {});
       const extra = read(PROFILES, {})[found.userId] || read(PROFILES, {})[found.email] || {};
       const userId = found.userId || extra.userId || `acct_${found.email.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
-      const previous = new Set([...(extra.previousHandles || [])]);
-      if (found.handle && extra.handle && found.handle !== extra.handle) previous.add(found.handle);
       const ses = {
         userId,
         email: found.email,
         username: found.username,
         role: found.role,
         handle: extra.handle || found.handle,
-        previousHandles: [...previous],
         points: Math.max(Number(found.points) || 0, Number(pointsMap[userId]) || 0, Number(pointsMap[found.email]) || 0),
         neighborhood: extra.neighborhood || found.neighborhood,
         ageRange: extra.ageRange || found.ageRange,
@@ -546,10 +538,13 @@ export function BuddyProvider({ children }) {
       return "Use a real email, a username, and a password of at least 6 characters.";
     }
     const phone = String(input.phone || "").trim();
-    if (phone.replace(/\D/g, "").length < 8) return "Enter a phone number with at least 8 digits.";
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 8) return "Enter a phone number with at least 8 digits.";
+    if (!input.verified) return "Verify the phone number before creating the account.";
     if (!input.gender || !input.ageRange || !input.orientation) return "Add your gender, age range, and orientation.";
     const all = [...SEED_ACCOUNTS, ...read(USERS, [])];
     if (all.some((a) => a.email === email || a.username === username)) return "That email or username is already taken.";
+    if (all.some((a) => String(a.phone || "").replace(/\D/g, "") === digits)) return "That phone number already has an account.";
     const nextUser = blankProfile({
       userId: `acct_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
       email,
@@ -947,10 +942,11 @@ export function BuddyProvider({ children }) {
   const updateProfile = useCallback((partial) => {
     if (!session) return;
     const allowed = ["handle", "gender", "orientation", "occupation", "neighborhood", "ageRange", "phone", "verified", "showIdentity", "showPlace"];
-    const extra = { ...(read(PROFILES, {})[session.userId] || read(PROFILES, {})[session.email] || {}) };
-    if (partial.handle && partial.handle !== session.handle) {
-      const previous = new Set([...(extra.previousHandles || []), ...(session.previousHandles || []), session.handle].filter(Boolean));
-      extra.previousHandles = [...previous];
+    const extra = { ...(read(PROFILES, {})[session.userId] || {}) };
+    if (partial.phone) {
+      const digits = String(partial.phone).replace(/\D/g, "");
+      const taken = [...SEED_ACCOUNTS, ...read(USERS, [])].some((account) => account.userId !== session.userId && String(account.phone || "").replace(/\D/g, "") === digits);
+      if (taken) return;
     }
     allowed.forEach((key) => {
       if (partial[key] !== undefined) extra[key] = partial[key];
@@ -986,13 +982,14 @@ export function BuddyProvider({ children }) {
     saveSocial(next);
   }, [social]);
 
-  const requestBuddy = useCallback((name) => {
+  const requestBuddy = useCallback((accountId) => {
     if (!session) return { needLogin: true };
-    const record = personRecord(name, { session, users });
-    const buddy = { id: `b-${Date.now()}`, name: record?.handle || name, userId: record?.userId || "", status: "pending", at: Date.now() };
+    const record = personRecord(accountId, { session, users });
+    if (!record?.userId || record.userId === session.userId) return { error: "Pick a person." };
+    const buddy = { id: `b-${Date.now()}`, name: record.handle, userId: record.userId, status: "pending", at: Date.now() };
     const next = { ...social, buddies: [buddy, ...(social.buddies || [])] };
     saveSocial(next);
-    pushNote("Buddy request", `${name} — Hey! You are my vibe, let's be buddies!`);
+    pushNote("Buddy request", `${record.handle} — Hey! You are my vibe, let's be buddies!`);
     return { ok: true };
   }, [pushNote, session, social]);
 
@@ -1040,10 +1037,9 @@ export function BuddyProvider({ children }) {
     const staffReview = session.role === "founder" || session.role === "admin";
     if (!(plan === "lite" || plan === "premium" || trialOk || staffReview)) return { error: "Comments and stars are on Lite and Premium." };
     if (!score || !target) return { error: "Pick someone and a star." };
-    if (sameIdentity(target, session, { session, users })) return { error: "You can't rate yourself." };
-    const allowed = peopleYouCanRate(publishedRef.current, session.userId || session.handle, { session, users });
-    const targetRecord = personRecord(target, { session, users });
-    const match = allowed.find((person) => (person.userId && person.userId === targetRecord?.userId) || person.handle === target);
+    if (target === session.userId) return { error: "You can't rate yourself." };
+    const allowed = peopleYouCanRate(publishedRef.current, session.userId, { session, users });
+    const match = allowed.find((person) => person.userId === target);
     if (!match) return { error: "You can only rate someone who sat with you." };
     const review = {
       id: `r-${Date.now()}`,
@@ -1052,8 +1048,8 @@ export function BuddyProvider({ children }) {
       tags: picked,
       from: session.handle,
       fromUserId: session.userId || "",
-      to: match.handle || target,
-      toUserId: match.userId || targetRecord?.userId || "",
+      to: match.handle || "",
+      toUserId: match.userId,
       eventId: eventId || match.eventId || "",
       at: Date.now(),
     };

@@ -38,7 +38,7 @@ function ReviewForm({ person, onDone }) {
       className="mt-4 space-y-4 text-center"
       onSubmit={(e) => {
         e.preventDefault();
-        const res = bb.addReview(stars, note, person.handle, person.eventId, tags);
+        const res = bb.addReview(stars, note, person.userId, person.eventId, tags);
         if (res?.error) {
           bb.notify(res.error);
           return;
@@ -47,7 +47,7 @@ function ReviewForm({ person, onDone }) {
       }}
     >
       <HostBadge handle={person.handle} userId={person.userId || ""} tier={person.tier || "bronze"} size="feature" quiet />
-      <p className="text-sm">{personRecord(person.userId || person.handle, { session: bb.session, users: bb.users })?.handle || person.handle}</p>
+      <p className="text-sm">{personRecord(person.userId, { session: bb.session, users: bb.users })?.handle || person.handle}</p>
       <Stars value={stars} onChange={setStars} />
       <div className="flex flex-wrap justify-center gap-2">
         {QUICK.map((tag) => (
@@ -69,21 +69,20 @@ export function PeopleProvider({ children }) {
   const [guest, setGuest] = useState("");
   const [group, setGroup] = useState(null);
   const [review, setReview] = useState(null);
-  const eligible = bb.session ? peopleYouCanRate(bb.content, bb.session.userId || bb.session.handle, { session: bb.session, users: bb.users }) : [];
+  const eligible = bb.session ? peopleYouCanRate(bb.content, bb.session.userId, { session: bb.session, users: bb.users }) : [];
 
-  function openProfile(handle) {
-    const name = String(handle || "").trim();
-    if (!name || name === "?" || /^host$/i.test(name)) return;
-    const record = personRecord(name, { session: bb.session, users: bb.users });
-    const mine = !!(bb.session?.userId && record?.userId && record.userId === bb.session.userId);
+  function openProfile(id) {
+    const record = personRecord(id, { session: bb.session, users: bb.users });
+    if (!record?.userId) return;
+    const mine = record.userId === bb.session?.userId;
     setGroup(null);
     setReview(null);
     if (app) {
-      setGuest(mine ? "" : (record?.userId || name));
+      setGuest(mine ? "" : record.userId);
       go.current?.();
       return;
     }
-    router.push(mine ? "/profile" : `/profile?u=${encodeURIComponent(record?.userId || name)}`);
+    router.push(mine ? "/profile" : `/profile?u=${encodeURIComponent(record.userId)}`);
   }
 
   function openGroup(people, cap = 6) {
@@ -91,17 +90,17 @@ export function PeopleProvider({ children }) {
     if (!list.length) return;
     if (list.length === 1) {
       const person = presentedPerson(list[0], { session: bb.session, users: bb.users });
-      openProfile(person.userId || person.handle || list[0].handle);
+      openProfile(person.userId);
       return;
     }
     setGroup({ people: list, cap });
   }
 
   function openReview(person) {
-    const all = peopleYouCanRate(bb.content, bb.session?.userId || bb.session?.handle, { session: bb.session, users: bb.users });
+    const all = peopleYouCanRate(bb.content, bb.session?.userId, { session: bb.session, users: bb.users });
     const list = all.filter((item) => !item.reviewed);
-    if (person) {
-      setReview({ people: all, picked: all.find((item) => item.handle === person.handle) || person });
+    if (person?.userId) {
+      setReview({ people: all, picked: all.find((item) => item.userId === person.userId) || person });
       return;
     }
     if (!list.length) return;
@@ -135,7 +134,7 @@ export function PeopleProvider({ children }) {
                 const person = presentedPerson(raw, { session: bb.session, users: bb.users });
                 const label = person.handle || raw.handle;
                 return (
-                  <button key={person.userId || label} type="button" onClick={() => openProfile(person.userId || label)} className="grid justify-items-center gap-4 text-center">
+                  <button key={person.userId || label} type="button" onClick={() => person.userId && openProfile(person.userId)} className="grid justify-items-center gap-4 text-center">
                     <HostBadge handle={label} userId={person.userId || ""} size="person" quiet />
                     <span className="text-lg text-white">{label}</span>
                   </button>
@@ -153,7 +152,7 @@ export function PeopleProvider({ children }) {
                 <p className="text-center text-sm">Who do you want to review?</p>
                 <div className="mt-4 grid grid-cols-4 gap-3">
                   {review.people.map((person) => (
-                    <ReviewPick key={person.userId || person.handle} person={person} onPick={() => setReview({ ...review, picked: person })} onOpen={() => openProfile(person.userId || person.handle)} />
+                    <ReviewPick key={person.userId || person.handle} person={person} onPick={() => setReview({ ...review, picked: person })} onOpen={() => openProfile(person.userId)} />
                   ))}
                 </div>
               </>
@@ -162,7 +161,7 @@ export function PeopleProvider({ children }) {
               <ReviewForm
                 person={review.picked}
                 onDone={(handle) => {
-                  const rated = peopleYouCanRate(bb.content, bb.session?.userId || bb.session?.handle, { session: bb.session, users: bb.users });
+                  const rated = peopleYouCanRate(bb.content, bb.session?.userId, { session: bb.session, users: bb.users });
                   const rest = rated.filter((person) => person.handle !== handle && person.userId !== handle && !person.reviewed);
                   if (rest.length) setReview({ people: rated, picked: rest.length === 1 ? rest[0] : null });
                   else setReview(null);

@@ -49,24 +49,20 @@ function historyOf(session, content) {
   return { joined, invited, quick, privJoin, privHost };
 }
 
-function commentsAbout(who, content, ctx) {
-  const me = personRecord(who, ctx);
-  const meId = me?.userId || "";
-  const peer = (content?.peerReviews || []).filter((review) => {
-    const target = personRecord(review.toUserId || review.to, ctx);
-    if (meId && target?.userId) return target.userId === meId;
-    return review.to === who;
-  }).map((review) => {
-    const author = personRecord(review.fromUserId || review.from, ctx);
+function commentsAbout(accountId, content, ctx) {
+  const meId = String(accountId || "");
+  if (!meId) return [];
+  const peer = (content?.peerReviews || []).filter((review) => review.toUserId === meId).map((review) => {
+    const author = personRecord(review.fromUserId, ctx);
     return { ...review, from: author?.handle || review.from };
   });
   if (peer.length) return peer.sort((a, b) => (b.at || 0) - (a.at || 0));
   return (content?.reviews || [])
-    .filter((review) => review.handle === who || review.handle === me?.handle)
+    .filter((review) => review.userId === meId)
     .map((review, index) => ({
-      id: `note-${who}-${index}`,
+      id: `note-${meId}-${index}`,
       from: "Table",
-      to: who,
+      to: meId,
       stars: Number(review.stars) || (index % 2 ? 4 : 5),
       body: review.body,
       at: 0,
@@ -149,24 +145,24 @@ function ProfilePage() {
   const asked = search.get("u") || "";
   const record = asked ? personRecord(asked, { session, users: bb.users }) : null;
   const mine = !asked || !!(record?.userId && session?.userId && record.userId === session.userId);
-  const viewed = mine ? session : (record || { userId: asked, handle: asked, points: 0 });
+  const viewed = mine ? session : (record || { userId: "", handle: "Unknown", points: 0 });
   const other = !mine;
   const profileName = viewed.handle || session.handle;
   const ownBuddies = [
     ...(social.buddies || []).filter((b) => b.status === "accepted"),
     ...(session.role === "founder"
-      ? TEST_PEOPLE.filter((person) => person.handle.toLowerCase() !== String(session.handle || "").toLowerCase()).map((person) => ({ id: person.id, name: person.handle, status: "accepted" }))
+      ? TEST_PEOPLE.filter((person) => person.userId !== session.userId).map((person) => ({ id: person.userId, userId: person.userId, name: person.handle, status: "accepted" }))
       : []),
-  ].filter((buddy, index, list) => list.findIndex((item) => item.name === buddy.name) === index);
+  ].filter((buddy, index, list) => list.findIndex((item) => (item.userId || item.id) === (buddy.userId || buddy.id)) === index);
   const buddies = other
-    ? (viewed.test ? TEST_PEOPLE.filter((person) => person.handle !== viewed.handle).map((person) => ({ id: person.id, name: person.handle, status: "accepted" })) : [])
+    ? (viewed.test ? TEST_PEOPLE.filter((person) => person.userId !== viewed.userId).map((person) => ({ id: person.userId, userId: person.userId, name: person.handle, status: "accepted" })) : [])
     : ownBuddies;
   const pending = other ? [] : (social.buddies || []).filter((b) => b.status === "pending");
   const initial = String(profileName || "B").trim().slice(0, 1).toUpperCase();
-  const received = commentsAbout(viewed.userId || profileName, bb.content, { session, users: bb.users });
+  const received = commentsAbout(viewed.userId, bb.content, { session, users: bb.users });
   const shown = received.slice(page * 3, page * 3 + 3);
-  const canRate = peopleYouCanRate(bb.content, session.userId || session.handle, { session, users: bb.users });
-  const stats = other ? statsForHandle(bb.content, profileName) : pastStats(bb);
+  const canRate = peopleYouCanRate(bb.content, session.userId, { session, users: bb.users });
+  const stats = other ? statsForHandle(bb.content, viewed.userId) : pastStats(bb);
   const open = canSeeComments(bb);
   const locked = other && !open;
   const who = other
@@ -186,8 +182,8 @@ function ProfilePage() {
   const paint = badgePaint(points, bb.content.pointThresholds, "light");
   const off = discountPercent(points, bb.content.pointThresholds);
 
-  function buddyMark(name) {
-    const record = personRecord(name, { session, users: bb.users });
+  function buddyMark(id) {
+    const record = personRecord(id, { session, users: bb.users });
     const mark = badgePaint(record?.points || 0, bb.content?.pointThresholds, "dark");
     if (mark.tier === "plain") return { className: "border border-white/15 bg-[#1c1c1c]", style: undefined };
     return { className: mark.className, style: mark.style };
@@ -241,7 +237,7 @@ function ProfilePage() {
               {!buddies.length && !pending.length && <p className="text-sm text-white/45">No buddies yet.</p>}
               <div className="flex flex-wrap gap-2">
                 {pending.map((b) => {
-                  const mark = buddyMark(b.name);
+                  const mark = buddyMark(b.userId);
                   return (
                   <button key={b.id} type="button" title={`${b.name} · waiting`} onClick={() => setBuddy(b)} className={`grid h-11 w-11 place-items-center rounded-full border border-dashed text-sm ${mark.className}`} style={mark.style}>
                     {b.name.slice(0, 1).toUpperCase()}
@@ -249,11 +245,11 @@ function ProfilePage() {
                   );
                 })}
                 {buddies.map((b) => {
-                  const person = personRecord(b.userId || b.name, { session, users: bb.users });
+                  const person = personRecord(b.userId, { session, users: bb.users });
                   const label = person?.handle || b.name;
-                  const mark = buddyMark(b.userId || b.name);
+                  const mark = buddyMark(b.userId);
                   return (
-                  <button key={b.id} type="button" title={label} onClick={() => people.openProfile(person?.userId || b.name)} className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg ${mark.className}`} style={mark.style}>
+                  <button key={b.userId || b.id} type="button" title={label} onClick={() => person?.userId && people.openProfile(person.userId)} className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg ${mark.className}`} style={mark.style}>
                     {label.slice(0, 1).toUpperCase()}
                   </button>
                   );
@@ -264,8 +260,8 @@ function ProfilePage() {
           {panel === "buddies" && buddy && !other && (
             <div className="mt-3 rounded-3xl bg-[#1c1c1c] p-4 text-left shadow-sm">
               <button type="button" className="text-xs text-white/45" onClick={() => setBuddy(null)}>Back</button>
-              <div className={`mt-3 grid h-14 w-14 place-items-center rounded-full font-serif text-2xl ${buddyMark(buddy.name).className}`} style={buddyMark(buddy.name).style}>{buddy.name.slice(0, 1).toUpperCase()}</div>
-              <h2 className="mt-3 text-2xl font-bold">{buddy.name}</h2>
+              <div className={`mt-3 grid h-14 w-14 place-items-center rounded-full font-serif text-2xl ${buddyMark(buddy.userId).className}`} style={buddyMark(buddy.userId).style}>{(personRecord(buddy.userId, { session, users: bb.users })?.handle || buddy.name).slice(0, 1).toUpperCase()}</div>
+              <h2 className="mt-3 text-2xl font-bold">{personRecord(buddy.userId, { session, users: bb.users })?.handle || buddy.name}</h2>
               <p className="mt-1 text-sm text-white/45">{buddy.status === "pending" ? "Waiting" : "Your buddy"}</p>
               {buddy.area && <p className="mt-2 text-sm">{buddy.area}</p>}
               {buddy.note && <p className="text-sm text-mute">{buddy.note}</p>}
@@ -281,7 +277,7 @@ function ProfilePage() {
           {panel === "review" && (
             <div className="mt-3">
               {(() => {
-                const them = other && canRate.find((person) => person.userId === viewed.userId || person.handle === profileName);
+                const them = other && canRate.find((person) => person.userId === viewed.userId);
                 if (other && !them) return null;
                 return (
                   <div className="mb-3 flex justify-end">
@@ -369,7 +365,7 @@ function ProfilePage() {
           )}
         </section>
         <div className="bb-profile-side">
-            <FinishedEvents who={other ? profileName : ""} />
+            <FinishedEvents who={other ? viewed.userId : ""} />
             <div className="mt-6">
               <HelpMark section="07" />
             </div>

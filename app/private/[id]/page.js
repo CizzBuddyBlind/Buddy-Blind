@@ -53,7 +53,7 @@ export default function PrivateDetailPage() {
   ];
   const slide = slides[shot] || slides[0];
   const host = event.hostProfile || { handle: event.hostName || "Host" };
-  const hostRecord = personRecord(event.hostUserId || event.hostName || host.handle, { session: bb.session, users: bb.users });
+  const hostRecord = personRecord(event.hostUserId, { session: bb.session, users: bb.users });
   const hostName = hostRecord?.handle || event.hostName || host.handle;
   const buddyLabel = Number(host.buddies) >= 15 ? "15+" : host.buddies != null ? String(host.buddies) : "";
   const full = (event.spots || 0) <= 0;
@@ -311,7 +311,7 @@ export default function PrivateDetailPage() {
       <ShareSheet
         open={share}
         onClose={() => setShare(false)}
-        joined={!!(bb.session && (event.participants || []).some((p) => p.handle === bb.session.handle))}
+        joined={!!(bb.session && ((event.participants || []).some((p) => p.userId === bb.session.userId) || event.hostUserId === bb.session.userId))}
         path={`/share/private/${event.id}`}
         lines={[event.name, event.location || "Hong Kong", `${event.dateISO || ""} · ${event.timeLabel || ""}`, event.forWhom || event.typeLabel, `${event.spots} seats left`]}
       />

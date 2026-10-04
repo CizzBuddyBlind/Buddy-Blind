@@ -38,7 +38,7 @@ function upcoming(content) {
       if (!table?.dateISO || table.dateISO < today) return;
       const hold = bookingHold(table);
       if (hold.status === "walk-in" || hold.closed) return;
-      rows.push({ kind: "table", id: table.id, venue, table, joined: hold.joined, when: tableStart(table).getTime(), name: venue.name, image: venue.imageUrl, host: table.hostHandle, tier: table.hostTier });
+      rows.push({ kind: "table", id: table.id, venue, table, joined: hold.joined, when: tableStart(table).getTime(), name: venue.name, image: venue.imageUrl, host: table.hostHandle, hostId: table.hostUserId || "", tier: table.hostTier });
     });
   });
   (content.events || []).forEach((event) => {
@@ -54,6 +54,7 @@ function upcoming(content) {
       name: event.name,
       image: eventPhotos(event)[0] || event.imageUrl,
       host: event.hostName,
+      hostId: event.hostUserId || "",
       tier: event.hostTier,
     });
   });
@@ -307,13 +308,13 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
               {featured.kind === "table" ? `${featured.table.time || ""}` : featured.event.timeLabel}
             </span>
             <span className="absolute right-3 top-3">
-              <HostBadge handle={featured.host || ""} tier={featured.tier || "bronze"} size="feature" />
+              <HostBadge handle={featured.host || ""} userId={featured.hostId || ""} tier={featured.tier || "bronze"} size="feature" />
             </span>
           </button>
           <div className="px-4 py-4">
             <h2 className="font-serif text-[clamp(1.6rem,7vw,2rem)] leading-none" {...(featured.kind === "table" ? { "data-keep": "1" } : {})}>{featured.name}</h2>
             <div className="mt-3 flex items-center gap-2">
-              <HostBadge handle={featured.host || ""} tier={featured.tier || "bronze"} />
+              <HostBadge handle={featured.host || ""} userId={featured.hostId || ""} tier={featured.tier || "bronze"} />
               <Joiners people={featured.kind === "table" ? featured.table.participants : featured.event.participants} host={featured.host} cap={featured.kind === "private" ? 20 : 6} />
             </div>
             <p className="mt-3 text-sm leading-relaxed text-white/70">
@@ -405,7 +406,7 @@ function Venues({ onOpen }) {
               <span className="mt-2 flex h-6 items-center gap-1.5">
                 {next && (
                   <>
-                    <HostBadge handle={next.table.hostHandle || ""} tier={next.table.hostTier || "bronze"} />
+                    <HostBadge handle={next.table.hostHandle || ""} userId={next.table.hostUserId || ""} tier={next.table.hostTier || "bronze"} />
                     <Joiners people={next.table.participants} host={next.table.hostHandle} />
                   </>
                 )}
@@ -513,7 +514,7 @@ function Quick({ onOpen }) {
               <span className="block text-[10px] uppercase tracking-[0.12em] text-black/45">{say(bb.lang, row.timeLabel)}</span>
               <span className="mt-0.5 flex items-center gap-2">
                 <span data-keep className="truncate font-serif text-lg">{say(bb.lang, row.name, false)}</span>
-                <HostBadge handle={row.hostName || ""} tier={row.hostTier || "gold"} />
+                <HostBadge handle={row.hostName || ""} userId={row.hostUserId || ""} tier={row.hostTier || "gold"} />
               </span>
               <span className="block text-xs text-black/45">{say(bb.lang, row.detail)}</span>
             </span>
@@ -685,7 +686,7 @@ function Private({ onOpen }) {
               <p className="mt-1 text-xs text-black/55">{say(bb.lang, night.upcomingLabel || `${night.spots} places`)}</p>
               <span className="mt-2 flex items-center justify-between gap-2">
                 <span className="flex min-w-0 items-center gap-1.5">
-                  <HostBadge handle={night.hostName || ""} tier={night.hostTier || "bronze"} />
+                  <HostBadge handle={night.hostName || ""} userId={night.hostUserId || ""} tier={night.hostTier || "bronze"} />
                   <Joiners people={night.participants} host={night.hostName} cap={20} />
                 </span>
                 <span className="shrink-0 rounded-full bg-black px-3 py-1.5 text-[10px] font-semibold text-white">{translate(bb.lang, "btn.join")}</span>
@@ -715,7 +716,7 @@ function PrivateDetail({ id, onBack }) {
       <h1 className="mt-4 font-serif text-[clamp(1.8rem,8vw,2.4rem)]">{say(bb.lang, event.name, false)}</h1>
       <p className="mt-2 text-sm">{say(bb.lang, event.location)} · {event.dateISO} · {say(bb.lang, event.timeLabel)}</p>
       <p className="mt-3 text-sm leading-relaxed text-black/70">{say(bb.lang, event.description || event.forWhom)}</p>
-      <p className="mt-4 flex items-center gap-2 text-sm"><HostBadge handle={event.hostName || ""} userId={event.hostUserId || ""} tier={event.hostTier || "bronze"} /> {personRecord(event.hostUserId || event.hostName, { session: bb.session, users: bb.users })?.handle || event.hostName}</p>
+      <p className="mt-4 flex items-center gap-2 text-sm"><HostBadge handle={event.hostName || ""} userId={event.hostUserId || ""} tier={event.hostTier || "bronze"} /> {personRecord(event.hostUserId, { session: bb.session, users: bb.users })?.handle || event.hostName}</p>
       <button type="button" className="mt-5 w-full rounded-full bg-black py-3 text-sm font-semibold text-white" onClick={() => { if (!bb.session) { bb.notify("Log in first."); return; } setPay(true); }}>{translate(bb.lang, "btn.join")}</button>
       {premium && <button type="button" className="mt-2 w-full rounded-full border border-black/15 py-3 text-sm" onClick={() => bb.setFlow({ type: "private-create", venueId: event.venueId || "" })}>{translate(bb.lang, "btn.host")}</button>}
       <Dock>
@@ -750,16 +751,16 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   const record = asked ? personRecord(asked, { session, users: bb.users }) : null;
   const mine = !asked || !!(record?.userId && session?.userId && record.userId === session.userId);
   const other = !mine;
-  const viewed = mine ? session : (record || { userId: asked, handle: asked, points: 0 });
+  const viewed = mine ? session : (record || { userId: "", handle: "Unknown", points: 0 });
   const paint = badgePaint(viewed?.points || 0, bb.content?.pointThresholds, "light");
   const buddies = other
-    ? (viewed.test ? TEST_PEOPLE.filter((person) => person.handle !== viewed.handle).map((person) => ({ id: person.id, name: person.handle, status: "accepted" })) : [])
+    ? (viewed.test ? TEST_PEOPLE.filter((person) => person.userId !== viewed.userId).map((person) => ({ id: person.userId, userId: person.userId, name: person.handle, status: "accepted" })) : [])
     : [
       ...(bb.social?.buddies || []).filter((b) => b.status === "accepted"),
       ...(session.role === "founder"
-        ? TEST_PEOPLE.filter((person) => person.handle.toLowerCase() !== String(session.handle || "").toLowerCase()).map((person) => ({ id: person.id, name: person.handle, status: "accepted" }))
+        ? TEST_PEOPLE.filter((person) => person.userId !== session.userId).map((person) => ({ id: person.userId, userId: person.userId, name: person.handle, status: "accepted" }))
         : []),
-    ].filter((buddy, index, list) => list.findIndex((item) => item.name === buddy.name) === index);
+    ].filter((buddy, index, list) => list.findIndex((item) => (item.userId || item.id) === (buddy.userId || buddy.id)) === index);
   const who = other
     ? (viewed.showIdentity !== false ? [viewed.gender, viewed.ageRange, viewed.orientation].filter(Boolean).join(" · ") : "")
     : (session.showIdentity !== false ? [session.gender, session.ageRange, session.orientation].filter(Boolean).join(" · ") : "");
@@ -771,7 +772,7 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
     const target = personRecord(review.toUserId || review.to, { session, users: bb.users });
     return target?.userId && target.userId === viewed.userId;
   });
-  const done = other ? seatsForHandle(bb.content, viewed.handle) : mySeats(bb, "finished");
+  const done = other ? seatsForHandle(bb.content, viewed.userId) : mySeats(bb, "finished");
   const joined = done.filter((seat) => !seat.created);
   const created = done.filter((seat) => seat.created);
   const row = (title, items) => (
@@ -814,10 +815,11 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
       {panel === "buddies" && (
         <div className="mt-6 grid grid-cols-5 gap-3">
           {buddies.map((buddy) => {
-            const record = personRecord(buddy.name, { session, users: bb.users });
+            const record = personRecord(buddy.userId, { session, users: bb.users });
             const mark = badgePaint(record?.points || 0, bb.content?.pointThresholds, "dark");
+            const label = record?.handle || buddy.name;
             return (
-              <button key={buddy.id} type="button" onClick={() => people.openProfile(buddy.name)} className={`grid aspect-square place-items-center rounded-full font-serif text-lg ${mark.className}`} style={mark.style}>{buddy.name.slice(0, 1).toUpperCase()}</button>
+              <button key={buddy.userId || buddy.id} type="button" onClick={() => record?.userId && people.openProfile(record.userId)} className={`grid aspect-square place-items-center rounded-full font-serif text-lg ${mark.className}`} style={mark.style}>{label.slice(0, 1).toUpperCase()}</button>
             );
           })}
           {!buddies.length && <p className="col-span-5 text-sm text-white/45">{say(bb.lang, "No buddies yet.")}</p>}
@@ -826,13 +828,13 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
       {panel === "review" && (
         <div className="mt-5 space-y-3 text-left">
           <div className="flex justify-end">
-            <button type="button" onClick={() => people?.openReview(other ? { handle: viewed.handle } : null)} className="rounded-full bg-[#1c1c1c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">{other ? "Rate them" : "Rate someone"}</button>
+            <button type="button" onClick={() => viewed.userId && people?.openReview(other ? { userId: viewed.userId, handle: viewed.handle } : null)} className="rounded-full bg-[#1c1c1c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">{other ? "Rate them" : "Rate someone"}</button>
           </div>
           {reviews.slice(0, 3).map((review) => (
             <p key={review.id || review.at} className="rounded-2xl bg-[#161616] px-4 py-3 text-sm text-white/75">{say(bb.lang, review.body || review.note, false)}</p>
           ))}
           {!reviews.length && <p className="text-center text-sm text-white/45">{say(bb.lang, "No reviews yet.")}</p>}
-          {peopleYouCanRate(bb.content, session.userId || session.handle, { session, users: bb.users }).length > 0 && <p className="text-center text-xs text-white/40">{say(bb.lang, "Rate someone after you have shared a table.")}</p>}
+          {peopleYouCanRate(bb.content, session.userId, { session, users: bb.users }).length > 0 && <p className="text-center text-xs text-white/40">{say(bb.lang, "Rate someone after you have shared a table.")}</p>}
         </div>
       )}
       <div className="mt-8 space-y-6 text-left">
@@ -849,7 +851,7 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
 
 function Info({ person, content, mine }) {
   const bb = useBB();
-  const stats = mine ? pastStats({ session: person, content }) : statsForHandle(content, person.handle);
+  const stats = mine ? pastStats({ session: person, content }) : statsForHandle(content, person.userId);
   const rows = [["Joined", stats.joined], ["Invited", stats.invited], ["Quick meet", stats.quick], ["Private joined", stats.privJoin], ["Private hosted", stats.privHost]];
   return (
     <div className="mx-auto mt-5 max-w-sm rounded-3xl bg-[#1c1c1c] px-5 py-4 text-left text-sm">
