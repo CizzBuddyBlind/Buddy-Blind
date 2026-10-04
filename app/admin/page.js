@@ -138,7 +138,7 @@ function siteLines(content) {
     "Nothing there. Try another area.",
   ].forEach((line) => addLine(rows, seen, "QUICK MEET", line));
   ["kickerLeft", "kickerRight", "title", "accent", "sub"].forEach((key) => addLine(rows, seen, "PRIVATE", night[key]));
-  ["priv.campaign", "priv.search", "priv.full", "priv.premium"].forEach((key) => fromKey(rows, seen, "PRIVATE", key));
+  ["priv.campaign", "priv.search", "priv.full"].forEach((key) => fromKey(rows, seen, "PRIVATE", key));
   [
     "Today, and",
     "what’s next.",
@@ -160,20 +160,20 @@ function siteLines(content) {
     "Private hosted",
     "No buddies yet.",
     "No comments yet.",
-    "No one to rate yet. It opens an hour after you sit down together.",
     "points",
     "Lives in",
     "Work",
     "Show gender, age, and orientation",
     "Show where I live and work",
+    "Past",
+    "Created",
+    "Rate someone",
+    "Rate them",
   ].forEach((line) => addLine(rows, seen, "PROFILE", line));
   [
     "Subscription",
     "【真】O傾",
     "由O開始",
-    "Your reason.",
-    "New people.",
-    "Host the vibe you care about — or join one. Guests stay blind.",
     "Wine, work, a hike. Or whatever you care about.",
     "Free",
     "Try once",
@@ -202,7 +202,6 @@ function siteLines(content) {
     "Buddy Blind is not a dating app. It’s a way to get more real interaction back into everyday life: dinner, lunch near work, a drink after — planned in the app, lived at the table.",
   ].forEach((line) => addLine(rows, seen, "ABOUT US", line));
   [
-    "How it works",
     "See venue, see vibe",
     "Take a seat.",
     "See the place",
@@ -226,9 +225,13 @@ function siteLines(content) {
     "100 points",
     "300 points",
     "500 points",
+    "How",
+    "5%",
+    "10%",
+    "20%",
   ].forEach((line) => addLine(rows, seen, "HOW", line));
   ["Email", "Username", "Gender", "Age range", "Orientation", "Password", "Code"].forEach((line) => addLine(rows, seen, "REGISTER", line));
-  ["reg.name", "reg.sent", "reg.otp", "reg.bad", "reg.card", "reg.optional", "reg.login"].forEach((key) => fromKey(rows, seen, "REGISTER", key));
+  ["reg.name", "reg.sent", "reg.otp", "reg.bad", "reg.card", "reg.optional", "reg.login", "reg.send", "trial.start"].forEach((key) => fromKey(rows, seen, "REGISTER", key));
   [
     "INVITE",
     "JOIN",
@@ -238,8 +241,6 @@ function siteLines(content) {
     "Continue",
     "Close",
     "Confirm",
-    "Confirm & Pay",
-    "Confirm seat",
     "Save",
     "Edit details",
     "I'm free now",
@@ -250,14 +251,10 @@ function siteLines(content) {
     "Go Premium",
     "Upgrade to Lite",
     "Upgrade plan",
-    "I'll invite",
-    "Create a private event",
-    "Create account",
-    "Send code",
     "Log in",
   ].forEach((line) => addLine(rows, seen, "BUTTONS", line));
-  ["btn.invite", "btn.join", "btn.host", "btn.share", "btn.back", "btn.next", "btn.close", "btn.confirm"].forEach((key) => fromKey(rows, seen, "BUTTONS", key));
-  ["pay.admin", "pay.total", "pay.why", "pay.check", "pay.freeCheck", "pay.confirm", "pay.confirmFree", "pay.free", "pay.card", "empty.inviteTitle", "empty.inviteBody", "empty.inviteCta", "leave.title", "leave.body", "step.location", "step.date", "step.time", "step.type", "step.people", "step.prefs", "step.summary", "step.pay", "adult.note", "trial.kicker", "trial.body", "trial.note", "trial.start", "trial.card", "ping.seeYou", "ping.areYou", "ping.needJoin", "ping.wait"].forEach((key) => fromKey(rows, seen, "POPUP WINDOWS", key));
+  ["btn.invite", "btn.join", "btn.host", "btn.share", "btn.back", "btn.next", "btn.close"].forEach((key) => fromKey(rows, seen, "BUTTONS", key));
+  ["pay.admin", "pay.total", "pay.why", "pay.check", "pay.freeCheck", "pay.confirm", "pay.confirmFree", "pay.free", "empty.inviteTitle", "empty.inviteBody", "empty.inviteCta", "leave.title", "leave.body", "step.location", "step.date", "step.time", "step.type", "step.people", "step.prefs", "step.summary", "step.pay", "adult.note", "trial.kicker", "trial.body", "trial.note", "ping.seeYou", "ping.areYou", "ping.needJoin", "ping.wait"].forEach((key) => fromKey(rows, seen, "POPUP WINDOWS", key));
   ["MONTHLY", "YEARLY — SAVE {n}%", "SAVE {n}% WITH AN ANNUAL PAYMENT", "/month", "/year"].forEach((line) => addLine(rows, seen, "POPUP WINDOWS", line));
   return rows;
 }
