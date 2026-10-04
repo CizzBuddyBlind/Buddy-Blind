@@ -92,7 +92,7 @@ function AboutBody() {
         </>
       ) : (
         <div className="mx-auto w-full max-w-5xl" {...(hk ? { "data-keep": "1" } : {})}>
-          <h1 className="mt-8 max-w-4xl font-serif text-[3.4rem] font-semibold leading-[0.95] text-white sm:text-6xl md:text-7xl">
+          <h1 className={`mt-8 max-w-4xl font-serif text-[3.4rem] leading-[0.95] text-white sm:text-6xl md:text-7xl ${hk ? "font-normal" : "font-semibold"}`}>
             {hk ? "齋睇場，齋睇 Feel" : "See venue, see vibe"}
             <br />
             <span className="italic text-ember">{hk ? "唔諗 LU，坐低先算" : "Take a seat."}</span>
