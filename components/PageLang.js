@@ -77,7 +77,11 @@ function paint(book, lang) {
             if (hit) value = hit;
           }
         }
-        if (node.nodeValue !== value) node.nodeValue = value;
+        const original = node.nodeValue || "";
+        const lead = original.match(/^\s*/)[0];
+        const tail = original.match(/\s*$/)[0];
+        const next = `${lead}${String(value).replace(/^\s+|\s+$/g, "")}${tail}`;
+        if (original !== next) node.nodeValue = next;
       }
     }
     node = next;
