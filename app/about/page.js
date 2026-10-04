@@ -111,7 +111,18 @@ function AboutBody() {
                   {step.body.map((line) => (
                     <p key={line} className="mt-2 max-w-2xl text-sm leading-relaxed text-white/55"><Rich text={line} /></p>
                   ))}
-                  {step.n === "09" && (
+                  {step.n === "09" && (narrow ? (
+                    <div className="mt-5 grid grid-cols-3 gap-2">
+                      {BADGES.map((badge) => (
+                        <div key={badge.letter} className="flex flex-col items-center text-center">
+                          <span className={`grid h-9 w-9 place-items-center rounded-full font-serif text-base font-normal ring-1 ring-black/15 ${badge.circle}`}>{badge.letter}</span>
+                          <span className="mt-2 block text-xs text-white">{badge.name}</span>
+                          <span className="block text-[10px] leading-tight text-white/45">{hk ? badge.pointsHk : badge.points}</span>
+                          <span className="block text-[10px] text-white/45">{badge.note}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
                     <div className="mt-5 flex flex-wrap gap-6">
                       {BADGES.map((badge) => (
                         <div key={badge.letter} className="flex items-center gap-3">
@@ -123,7 +134,7 @@ function AboutBody() {
                         </div>
                       ))}
                     </div>
-                  )}
+                  ))}
                 </div>
               </li>
             ))}
