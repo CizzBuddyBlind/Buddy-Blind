@@ -7,10 +7,8 @@ import { useBB } from "@/components/Providers";
 function Rich({ text }) {
   const parts = String(text).split(/(\*[^*]+\*)/g);
   return parts.map((part, index) => {
-    if (part.startsWith("*") && part.endsWith("*") && part.length > 2) {
-      return <strong key={index} className="font-semibold text-white">{part.slice(1, -1)}</strong>;
-    }
-    return <span key={index}>{part}</span>;
+    const value = part.startsWith("*") && part.endsWith("*") && part.length > 2 ? part.slice(1, -1) : part;
+    return <span key={index}>{value}</span>;
   });
 }
 
@@ -92,7 +90,7 @@ function AboutBody() {
         </>
       ) : (
         <div className="mx-auto w-full max-w-5xl" {...(hk ? { "data-keep": "1" } : {})}>
-          <h1 className={`mt-8 max-w-4xl font-serif text-[3.4rem] leading-[0.95] text-white sm:text-6xl md:text-7xl ${hk ? "font-normal" : "font-semibold"}`}>
+          <h1 className="mt-8 max-w-4xl font-serif text-[3.4rem] font-normal leading-[0.95] text-white sm:text-6xl md:text-7xl">
             {hk ? "齋睇場，齋睇 Feel" : "See venue, see vibe"}
             <br />
             <span className="italic text-ember">{hk ? "唔諗 LU，坐低先算" : "Take a seat."}</span>
@@ -105,7 +103,7 @@ function AboutBody() {
               <li id={`help-${step.n}`} key={step.n} className="grid scroll-mt-24 grid-cols-[3.2rem_1fr] gap-2 border-t border-white/10 px-6 py-7 first:border-t-0 sm:px-10">
                 <span className="pt-2 text-xs tracking-[0.12em] text-white/40">{step.n}</span>
                 <div>
-                  <h2 className="font-serif text-[1.65rem] font-semibold leading-tight text-white md:text-[1.85rem]">{step.title}</h2>
+                  <h2 className="font-serif text-[1.65rem] font-normal leading-tight text-white md:text-[1.85rem]">{step.title}</h2>
                   {step.body.map((line) => (
                     <p key={line} className="mt-2 max-w-2xl text-sm leading-relaxed text-white/55"><Rich text={line} /></p>
                   ))}
@@ -113,10 +111,10 @@ function AboutBody() {
                     <div className="mt-5 flex flex-wrap gap-6">
                       {BADGES.map((badge) => (
                         <div key={badge.letter} className="flex items-center gap-3">
-                          <span className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg font-semibold ring-1 ring-black/15 ${badge.circle}`}>{badge.letter}</span>
+                          <span className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg font-normal ring-1 ring-black/15 ${badge.circle}`}>{badge.letter}</span>
                           <span>
                             <span className="block text-sm text-white">{badge.name}</span>
-                            <span className="block text-xs text-white/45"><strong className="font-semibold">{hk ? badge.pointsHk : badge.points}</strong> · <strong className="font-semibold">{badge.note}</strong></span>
+                            <span className="block text-xs text-white/45">{hk ? badge.pointsHk : badge.points} · {badge.note}</span>
                           </span>
                         </div>
                       ))}
