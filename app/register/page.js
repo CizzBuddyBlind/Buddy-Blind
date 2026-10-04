@@ -100,7 +100,7 @@ export default function RegisterPage() {
         </div>
         <p className="bb-kicker text-ember">{t("trial.kicker")}</p>
         <h1 data-bb-live className="mt-3 font-serif text-3xl">{local("trial.title")}</h1>
-        <p className="mt-2 text-sm leading-relaxed text-mute">{t("trial.body")}</p>
+        <p className="bb-lead-gap text-sm leading-relaxed text-mute">{t("trial.body")}</p>
         <div className="mt-6 space-y-3">
           <input required value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder={say(bb.lang, "Email")} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg outline-none" />
           <input required value={username} onChange={(e) => setUsername(e.target.value)} placeholder={say(bb.lang, "Username")} className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm text-fg outline-none" />

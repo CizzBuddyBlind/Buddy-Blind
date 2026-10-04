@@ -57,6 +57,12 @@ label,
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
+:root {
+  --bb-lead-gap: 2rem;
+}
+.bb-lead-gap {
+  margin-top: var(--bb-lead-gap);
+}
 .bb-card {
   background: #141414;
   border: 1px solid rgb(255 255 255 / 0.08);

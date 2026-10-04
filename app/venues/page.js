@@ -89,11 +89,11 @@ function Home() {
         {(() => {
           const story = String(copy.sub || "").trim() || "No faces, just places.\nEnough to WANT, enough uncertainty to be WORTH having.";
           const line = say(bb.lang, story);
-          return <p {...(line !== story ? { "data-keep": "said" } : {})} className="mx-auto mt-6 max-w-lg whitespace-pre-line text-sm leading-relaxed text-mute">{line}</p>;
+          return <p {...(line !== story ? { "data-keep": "said" } : {})} className="bb-lead-gap mx-auto max-w-lg whitespace-pre-line text-sm leading-relaxed text-mute">{line}</p>;
         })()}
       </section>
 
-      <div className="mb-4">
+      <div className="bb-lead-gap mb-4">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}

@@ -127,7 +127,7 @@ export default function HomePage() {
             <span>{say(bb.lang, "who you'll meet.")}</span>
             <span className="italic text-ember">{say(bb.lang, "That's the point.")}</span>
           </h1>
-          <p className="mt-10 max-w-md text-sm leading-relaxed text-white/70">
+          <p className="bb-lead-gap max-w-md text-sm leading-relaxed text-white/70">
             {say(bb.lang, "Restaurants provide the scene. Private events create the reason. You bring curiosity.")}
           </p>
           <Link href="/quick" className="mt-8 inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-ink">

@@ -125,7 +125,7 @@ function ProfilePage() {
         <div>
           <p className="bb-kicker text-mute">Profile</p>
           <h1 className="mt-3 font-serif text-3xl">Log in to see your seat.</h1>
-          <Link href="/login" className="mt-6 inline-block rounded-full bg-fg px-6 py-3 text-sm font-semibold text-ink">Login</Link>
+          <Link href="/login" className="bb-lead-gap inline-block rounded-full bg-fg px-6 py-3 text-sm font-semibold text-ink">Login</Link>
         </div>
       </main>
     );

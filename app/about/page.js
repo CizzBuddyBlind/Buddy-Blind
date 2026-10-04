@@ -51,7 +51,7 @@ function AboutBody() {
             <span className="mt-2 block text-3xl text-white sm:text-4xl md:text-5xl">The people are the experience.</span>
             <span className="mt-3 block text-5xl text-ember sm:text-6xl md:text-7xl">The conversation is the point.</span>
           </h1>
-          <div className="mt-12 max-w-2xl space-y-5 text-base leading-relaxed text-white/70">
+          <div className="bb-lead-gap max-w-2xl space-y-5 text-base leading-relaxed text-white/70">
             <p>Buddy Blind is built on one simple idea: meet people without knowing exactly who you’re going to meet.</p>
             <p>You choose the time, the place, and how many seats. You know enough to decide you want to go — but you don’t get to pre-select who sits with you. That uncertainty isn’t a bug. It’s the product. We call it the Blind Box.</p>
             <p>Show up. Talk. Discover who they are through a real meal — not a profile, not a swipe, and not endless scrolling beforehand.</p>
@@ -65,7 +65,7 @@ function AboutBody() {
             <br />
             <span className="italic text-ember">Take a seat.</span>
           </h1>
-          <ol className="mt-14 overflow-hidden rounded-[1.7rem] border border-white/15">
+          <ol className="bb-lead-gap overflow-hidden rounded-[1.7rem] border border-white/15">
             {STEPS.map((step) => (
               <li key={step.n} className="grid grid-cols-[3.2rem_1fr] gap-2 border-t border-white/10 px-6 py-7 first:border-t-0 sm:px-10">
                 <span className="pt-2 text-xs tracking-[0.12em] text-white/40">{step.n}</span>

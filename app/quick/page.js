@@ -105,7 +105,7 @@ export default function QuickPage() {
             <br />
             <Copy k="quick.accent" legacy={copy.accent} className="italic text-ember" onEnglish={(d, next) => { d.copy.quick.accent = next; }} />
           </h1>
-          <p className="mt-5 max-w-sm text-sm leading-relaxed text-mute">{say(lang, "A seat nearby. A time. No bio, no swipe. If you're free, sit down.")}</p>
+          <p className="bb-lead-gap max-w-sm text-sm leading-relaxed text-mute">{say(lang, "A seat nearby. A time. No bio, no swipe. If you're free, sit down.")}</p>
           <ul className="mt-6 space-y-2 text-sm text-mute">
             <li>{say(lang, "Nearby, today")}</li>
             <li>{say(lang, "Coffee, lunch, or a drink")}</li>

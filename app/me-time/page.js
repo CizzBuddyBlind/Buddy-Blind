@@ -15,15 +15,15 @@ export default function MeTimePage() {
         <br />
         <span className="italic text-ember">{say(bb.lang, "what’s next.")}</span>
       </h1>
-      {!bb.ready ? <p className="mt-10 text-white/45">Loading…</p> : null}
+      {!bb.ready ? <p className="bb-lead-gap text-white/45">Loading…</p> : null}
       {bb.ready && !bb.session ? (
-        <div className="mt-10">
+        <div className="bb-lead-gap">
           <p className="text-white/55">Log in to see the seats you joined.</p>
           <Link href="/login" className="mt-5 inline-block rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black">Log in</Link>
         </div>
       ) : null}
       {bb.session ? (
-        <div className="mt-10 max-w-xl">
+        <div className="bb-lead-gap max-w-xl">
           <JoinedEvents />
         </div>
       ) : null}

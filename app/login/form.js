@@ -57,7 +57,7 @@ export default function LoginForm() {
         <h1 className="mt-3 font-serif text-3xl">
           {mode === "in" ? "Welcome back" : mode === "up" ? "Create your seat" : "Activate admin"}
         </h1>
-        <p className="mt-2 text-sm text-mute">
+        <p className="bb-lead-gap text-sm text-mute">
           One Login for everyone. The account decides if you browse, edit, or assign admins.
         </p>
         {mode === "activate" && <p className="mt-3 text-xs text-ember">Activation code loaded. Choose the username and password you will use next time.</p>}

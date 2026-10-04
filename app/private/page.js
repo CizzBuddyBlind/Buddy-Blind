@@ -61,7 +61,7 @@ export default function PrivatePage() {
           <br />
           <Copy k="private.accent" legacy={copy.accent} className="italic text-ember" onEnglish={(d, next) => { d.copy.private.accent = next; }} />
         </h1>
-        <Copy as="p" k="private.sub" legacy={copy.sub} className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-mute" onEnglish={(d, next) => { d.copy.private.sub = next; }} />
+        <Copy as="p" k="private.sub" legacy={copy.sub} className="bb-lead-gap mx-auto max-w-md text-sm leading-relaxed text-mute" onEnglish={(d, next) => { d.copy.private.sub = next; }} />
       </section>
 
       {campaign && (

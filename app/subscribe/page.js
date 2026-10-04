@@ -252,7 +252,7 @@ export default function SubscribePage() {
           <span className="block text-ember">{say(bb.lang, "【真】O傾")}</span>
           <span className="mt-3 block text-white">{say(bb.lang, "由O開始")}</span>
         </h1>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-mute">
+        <p className="bb-lead-gap max-w-xl text-sm leading-relaxed text-mute">
           Wine, work, a hike. Or whatever you care about.
         </p>
 
