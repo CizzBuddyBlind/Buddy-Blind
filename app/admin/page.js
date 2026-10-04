@@ -255,7 +255,7 @@ function siteLines(content) {
     "Log in",
   ].forEach((line) => addLine(rows, seen, "BUTTONS", line));
   ["btn.invite", "btn.join", "btn.host", "btn.share", "btn.back", "btn.next", "btn.close"].forEach((key) => fromKey(rows, seen, "BUTTONS", key));
-  ["pay.admin", "pay.total", "pay.why", "pay.check", "pay.freeCheck", "pay.confirm", "pay.confirmFree", "pay.free", "empty.inviteTitle", "empty.inviteBody", "empty.inviteCta", "leave.title", "leave.body", "step.location", "step.date", "step.time", "step.type", "step.people", "step.prefs", "step.summary", "step.pay", "adult.note", "trial.kicker", "trial.body", "trial.note", "ping.seeYou", "ping.areYou", "ping.needJoin", "ping.wait"].forEach((key) => fromKey(rows, seen, "POPUP WINDOWS", key));
+  ["pay.admin", "pay.total", "pay.why", "pay.check", "pay.freeCheck", "pay.confirm", "pay.confirmFree", "pay.free", "empty.inviteTitle", "empty.inviteBody", "empty.inviteCta", "leave.title", "leave.body", "step.location", "step.date", "step.time", "step.type", "step.people", "step.prefs", "step.summary", "step.pay", "trial.kicker", "trial.body", "trial.note", "ping.seeYou", "ping.areYou", "ping.needJoin", "ping.wait"].forEach((key) => fromKey(rows, seen, "POPUP WINDOWS", key));
   ["MONTHLY", "YEARLY — SAVE {n}%", "SAVE {n}% WITH AN ANNUAL PAYMENT", "/month", "/year"].forEach((line) => addLine(rows, seen, "POPUP WINDOWS", line));
   return rows;
 }

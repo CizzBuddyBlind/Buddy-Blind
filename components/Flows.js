@@ -232,7 +232,6 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
 
   return (
     <Frame title={<><span>{title}</span>{" · "}<span data-keep>{venue.name}</span></>} step={shown} total={todayOnly ? 7 : 8} onBack={step === 0 ? close : () => setStep(todayOnly && step === 2 ? 0 : step - 1)} onClose={close}>
-      <p className="mb-3 text-xs text-mute">{t("adult.note")}</p>
       {step === 0 && (
         <div className="space-y-2">
           {(venue.branches || []).map((b) => (
