@@ -16,6 +16,7 @@ import { JoinerStack, usePeople } from "./People";
 import { mySeats, pastStats } from "./PhoneApp";
 import { usePhoneEdit } from "./EditPhone";
 import { appToPath, pathToApp } from "@/lib/layoutMode";
+import { navigateAppPage } from "@/lib/appScroll";
 
 const APP_HEAD = "font-serif font-normal text-[clamp(2rem,8vw,2.4rem)] leading-[1.05]";
 
@@ -118,17 +119,15 @@ export function StoreApp({ embedded = false }) {
   const unread = unreadNotes + reviewDue;
 
   const scroller = useRef(null);
-  const seenPlace = useRef("");
+  const seenRoute = useRef("");
+  const route = appToPath({ tab, venueId, eventId, guest: people?.guest || "" });
 
   useLayoutEffect(() => {
     if (!live) return;
-    const place = `${tab}|${venueId}|${eventId}|${people?.guest || ""}`;
-    if (seenPlace.current === place) return;
-    const first = seenPlace.current === "";
-    seenPlace.current = place;
-    if (first) return;
-    if (scroller.current) scroller.current.scrollTop = 0;
-  }, [live, tab, venueId, eventId, people?.guest]);
+    const previous = seenRoute.current;
+    seenRoute.current = route;
+    navigateAppPage(scroller.current, previous, route);
+  }, [live, route]);
 
   useEffect(() => {
     const mapped = pathToApp(window.location.pathname, window.location.search) || { tab: "home", venueId: "", eventId: "", guest: "" };
@@ -163,6 +162,9 @@ export function StoreApp({ embedded = false }) {
   }, [bb.session?.role, embedded]);
 
   function go(next) {
+    const from = appToPath({ tab, venueId, eventId, guest: people?.guest || "" });
+    const to = appToPath({ tab: next, venueId: "", eventId: "", guest: "" });
+    navigateAppPage(scroller.current, from, to);
     people?.clearGuest();
     setTab(next);
     setVenueId("");
