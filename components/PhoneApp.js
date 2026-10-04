@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useBB } from "./Providers";
 import { Photo as Cover } from "./Bits";
 import { eventPoster, iso, prettyDate, queryHits, soonestTable, tableStart } from "@/lib/bible";
+import { seatsForHandle } from "@/lib/people";
 
 function hourOf(time) {
   const match = String(time || "").toUpperCase().match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/);
@@ -602,10 +603,10 @@ function ProfileTab() {
   );
 }
 
-export function FinishedEvents() {
+export function FinishedEvents({ who = "" }) {
   const bb = useBB();
   if (!bb.session) return null;
-  const seats = mySeats(bb, "finished");
+  const seats = who ? seatsForHandle(bb.content, who) : mySeats(bb, "finished");
   const joined = seats.filter((item) => !item.created);
   const created = seats.filter((item) => item.created);
   const block = (title, items) => (

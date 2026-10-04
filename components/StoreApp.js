@@ -9,7 +9,7 @@ import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso
 import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
 import { HelpMark } from "./HelpMark";
-import { personRecord, TEST_PEOPLE } from "@/lib/people";
+import { personRecord, seatsForHandle, statsForHandle, TEST_PEOPLE } from "@/lib/people";
 import { MeTimeMark } from "./MeTimeMark";
 import { JoinerStack, usePeople } from "./People";
 import { mySeats, pastStats } from "./PhoneApp";
@@ -747,43 +747,27 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   }
   const session = bb.session;
   const guestName = people?.guest && people.guest !== session.handle ? people.guest : "";
-  if (guestName) {
-    const person = personRecord(guestName, { session, users: bb.users });
-    const theirs = (bb.content.peerReviews || []).filter((review) => review.to === guestName);
-    const them = peopleYouCanRate(bb.content, session.handle).find((item) => item.handle === guestName);
-    const paintGuest = badgePaint(person?.points || 0, bb.content?.pointThresholds, "light");
-    const about = [person?.neighborhood && `Lives in ${person.neighborhood}`, person?.occupation].filter(Boolean).join(" · ");
-    return (
-      <section className="px-[5vw] pb-8 pt-3 text-center">
-        <button type="button" onClick={() => people.clearGuest()} className="text-xs uppercase tracking-[0.14em] text-white/45">Back</button>
-        <div className={`mx-auto mt-4 grid h-20 w-20 place-items-center rounded-full font-serif text-3xl ${paintGuest.className}`} style={paintGuest.style}>{guestName.slice(0, 1).toUpperCase()}</div>
-        <h1 className="mt-3 text-2xl font-bold">{person?.handle || guestName}</h1>
-        <p className="mt-1 text-sm text-white/70">{person?.points || 0} points</p>
-        {about && <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/55">{about}</p>}
-        {them && <button type="button" onClick={() => people.openReview(them)} className="mt-4 rounded-full bg-[#1c1c1c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/80">Rate them</button>}
-        <div className="mt-5 space-y-3 text-left">
-          {theirs.slice(0, 3).map((review) => (
-            <p key={review.id || review.at} className="rounded-2xl bg-[#161616] px-4 py-3 text-sm text-white/75">{review.body || `${review.stars || 0} stars`}</p>
-          ))}
-          {!theirs.length && <p className="text-center text-sm text-white/45">No reviews yet.</p>}
-        </div>
-      </section>
-    );
-  }
-  const paint = badgePaint(session.points, bb.content?.pointThresholds, "light");
-  const buddies = [
-    ...(bb.social?.buddies || []).filter((b) => b.status === "accepted"),
-    ...(session.role === "founder"
-      ? TEST_PEOPLE.filter((person) => person.handle.toLowerCase() !== String(session.handle || "").toLowerCase()).map((person) => ({ id: person.id, name: person.handle, status: "accepted" }))
-      : []),
-  ].filter((buddy, index, list) => list.findIndex((item) => item.name === buddy.name) === index);
-  const who = [session.gender, session.ageRange, session.orientation].filter(Boolean).join(" · ");
-  const where = [session.neighborhood && `Lives in ${session.neighborhood}`, session.occupation && `Works in ${session.occupation}`].filter(Boolean).join(" · ");
-  const showWho = session.showIdentity !== false && who;
-  const showWhere = session.showPlace !== false && where;
-  const off = discountPercent(session.points, bb.content?.pointThresholds);
-  const reviews = (bb.content.peerReviews || []).filter((review) => review.to === session.handle);
-  const done = mySeats(bb, "finished");
+  const record = guestName ? personRecord(guestName, { session, users: bb.users }) : null;
+  const other = !!(record && record.handle !== session.handle && record.email !== session.email);
+  const viewed = other ? record : session;
+  const paint = badgePaint(viewed?.points || 0, bb.content?.pointThresholds, "light");
+  const buddies = other
+    ? (viewed.test ? TEST_PEOPLE.filter((person) => person.handle !== viewed.handle).map((person) => ({ id: person.id, name: person.handle, status: "accepted" })) : [])
+    : [
+      ...(bb.social?.buddies || []).filter((b) => b.status === "accepted"),
+      ...(session.role === "founder"
+        ? TEST_PEOPLE.filter((person) => person.handle.toLowerCase() !== String(session.handle || "").toLowerCase()).map((person) => ({ id: person.id, name: person.handle, status: "accepted" }))
+        : []),
+    ].filter((buddy, index, list) => list.findIndex((item) => item.name === buddy.name) === index);
+  const who = other
+    ? (viewed.showIdentity !== false ? [viewed.gender, viewed.ageRange, viewed.orientation].filter(Boolean).join(" · ") : "")
+    : (session.showIdentity !== false ? [session.gender, session.ageRange, session.orientation].filter(Boolean).join(" · ") : "");
+  const where = other
+    ? (viewed.showPlace !== false ? [viewed.neighborhood && `Lives in ${viewed.neighborhood}`, viewed.occupation && `Works in ${viewed.occupation}`].filter(Boolean).join(" · ") : "")
+    : (session.showPlace !== false ? [session.neighborhood && `Lives in ${session.neighborhood}`, session.occupation && `Works in ${session.occupation}`].filter(Boolean).join(" · ") : "");
+  const off = discountPercent(viewed?.points || 0, bb.content?.pointThresholds);
+  const reviews = (bb.content.peerReviews || []).filter((review) => review.to === viewed.handle);
+  const done = other ? seatsForHandle(bb.content, viewed.handle) : mySeats(bb, "finished");
   const joined = done.filter((seat) => !seat.created);
   const created = done.filter((seat) => seat.created);
   const row = (title, items) => (
@@ -808,11 +792,11 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
 
   return (
     <section className="px-[5vw] pb-8 pt-3 text-center">
-      <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-3xl ${paint.className}`} style={paint.style}>{initials(session)}</div>
-      <h1 className={`mt-4 ${APP_HEAD}`}>{session.handle}</h1>
-      {showWho && <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-white/55">{say(bb.lang, showWho)}</p>}
-      {showWhere && <p className="text-[11px] uppercase tracking-[0.14em] text-white/55">{say(bb.lang, where)}</p>}
-      <p className="mt-1 text-sm text-white/70">{session.points || 0} {say(bb.lang, "points")}{off ? ` · ${off}% ${say(bb.lang, "off")}` : ""}</p>
+      <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-3xl ${paint.className}`} style={paint.style}>{String(viewed.handle || "B").slice(0, 1).toUpperCase()}</div>
+      <h1 className={`mt-4 ${APP_HEAD}`}>{viewed.handle}</h1>
+      {who && <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-white/55">{say(bb.lang, who)}</p>}
+      {where && <p className="text-[11px] uppercase tracking-[0.14em] text-white/55">{say(bb.lang, where)}</p>}
+      <p className="mt-1 text-sm text-white/70">{viewed.points || 0} {say(bb.lang, "points")}{off ? ` · ${off}% ${say(bb.lang, "off")}` : ""}</p>
       <div className="mx-auto mt-6 flex max-w-sm rounded-full bg-[#1c1c1c] p-1">
         {[
           ["info", "Info"],
@@ -822,7 +806,7 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
           <button key={idName} type="button" onClick={() => setPanel(idName)} className={`flex-1 rounded-full py-2 text-xs uppercase tracking-[0.12em] ${panel === idName ? "bg-white text-black" : "text-white/55"}`}>{say(bb.lang, label)}</button>
         ))}
       </div>
-      {panel === "info" && <Info session={session} content={bb.content} />}
+      {panel === "info" && <Info person={viewed} content={bb.content} mine={!other} />}
       {panel === "buddies" && (
         <div className="mt-6 grid grid-cols-5 gap-3">
           {buddies.map((buddy) => {
@@ -838,7 +822,7 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
       {panel === "review" && (
         <div className="mt-5 space-y-3 text-left">
           <div className="flex justify-end">
-            <button type="button" onClick={() => people?.openReview()} className="rounded-full bg-[#1c1c1c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">Rate someone</button>
+            <button type="button" onClick={() => people?.openReview(other ? { handle: viewed.handle } : null)} className="rounded-full bg-[#1c1c1c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">{other ? "Rate them" : "Rate someone"}</button>
           </div>
           {reviews.slice(0, 3).map((review) => (
             <p key={review.id || review.at} className="rounded-2xl bg-[#161616] px-4 py-3 text-sm text-white/75">{say(bb.lang, review.body || review.note, false)}</p>
@@ -859,9 +843,9 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   );
 }
 
-function Info({ session, content }) {
+function Info({ person, content, mine }) {
   const bb = useBB();
-  const stats = pastStats({ session, content });
+  const stats = mine ? pastStats({ session: person, content }) : statsForHandle(content, person.handle);
   const rows = [["Joined", stats.joined], ["Invited", stats.invited], ["Quick meet", stats.quick], ["Private joined", stats.privJoin], ["Private hosted", stats.privHost]];
   return (
     <div className="mx-auto mt-5 max-w-sm rounded-3xl bg-[#1c1c1c] px-5 py-4 text-left text-sm">

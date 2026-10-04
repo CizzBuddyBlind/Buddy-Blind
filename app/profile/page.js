@@ -7,7 +7,7 @@ import { useBB, peopleYouCanRate } from "@/components/Providers";
 import { usePeople } from "@/components/People";
 import { PlanWindow } from "@/components/PlanWindow";
 import { AGE_RANGES, badgePaint, discountPercent } from "@/lib/bible";
-import { personRecord, TEST_PEOPLE } from "@/lib/people";
+import { personRecord, statsForHandle, TEST_PEOPLE } from "@/lib/people";
 import { FinishedEvents, pastStats } from "@/components/PhoneApp";
 import { HelpMark } from "@/components/HelpMark";
 
@@ -142,31 +142,40 @@ function ProfilePage() {
     showIdentity: session.showIdentity !== false,
     showPlace: session.showPlace !== false,
   };
-  const buddies = [
+  const record = guest ? personRecord(guest, { session, users: bb.users }) : null;
+  const other = !!(record && record.handle !== session.handle && record.email !== session.email);
+  const viewed = other ? record : session;
+  const profileName = viewed.handle || session.handle;
+  const ownBuddies = [
     ...(social.buddies || []).filter((b) => b.status === "accepted"),
     ...(session.role === "founder"
       ? TEST_PEOPLE.filter((person) => person.handle.toLowerCase() !== String(session.handle || "").toLowerCase()).map((person) => ({ id: person.id, name: person.handle, status: "accepted" }))
       : []),
   ].filter((buddy, index, list) => list.findIndex((item) => item.name === buddy.name) === index);
-  const pending = (social.buddies || []).filter((b) => b.status === "pending");
-  const initial = String((guest || session.handle) || "B").trim().slice(0, 1).toUpperCase();
-  const received = commentsAbout(guest || session.handle, bb.content);
+  const buddies = other
+    ? (viewed.test ? TEST_PEOPLE.filter((person) => person.handle !== viewed.handle).map((person) => ({ id: person.id, name: person.handle, status: "accepted" })) : [])
+    : ownBuddies;
+  const pending = other ? [] : (social.buddies || []).filter((b) => b.status === "pending");
+  const initial = String(profileName || "B").trim().slice(0, 1).toUpperCase();
+  const received = commentsAbout(profileName, bb.content);
   const shown = received.slice(page * 3, page * 3 + 3);
   const canRate = peopleYouCanRate(bb.content, session.handle);
-  const stats = pastStats(bb);
+  const stats = other ? statsForHandle(bb.content, profileName) : pastStats(bb);
   const open = canSeeComments(bb);
-  const locked = !!guest && !open;
-  const who = [form.gender, form.ageRange, form.orientation].filter(Boolean).join(" · ");
-  const where = [form.neighborhood && `Lives in ${form.neighborhood}`, form.occupation && `Works in ${form.occupation}`].filter(Boolean).join(" · ");
+  const locked = other && !open;
+  const who = other
+    ? (viewed.showIdentity !== false ? [viewed.gender, viewed.ageRange, viewed.orientation].filter(Boolean).join(" · ") : "")
+    : (form.showIdentity ? [form.gender, form.ageRange, form.orientation].filter(Boolean).join(" · ") : "");
+  const where = other
+    ? (viewed.showPlace !== false ? [viewed.neighborhood && `Lives in ${viewed.neighborhood}`, viewed.occupation && `Works in ${viewed.occupation}`].filter(Boolean).join(" · ") : "")
+    : (form.showPlace ? [form.neighborhood && `Lives in ${form.neighborhood}`, form.occupation && `Works in ${form.occupation}`].filter(Boolean).join(" · ") : "");
 
   function openPanel(next) {
     setPanel(next);
     setBuddy(null);
-    setGuest(null);
     setPage(0);
   }
 
-  const viewed = guest ? personRecord(guest, { session, users: bb.users }) : session;
   const points = Number(viewed?.points) || 0;
   const paint = badgePaint(points, bb.content.pointThresholds, "light");
   const off = discountPercent(points, bb.content.pointThresholds);
@@ -180,22 +189,19 @@ function ProfilePage() {
 
   return (
     <main className="bb-profile-page bb-frame bg-ink">
-      <div className={guest ? "mx-auto w-full max-w-md" : "bb-profile-split"}>
+      <div className="bb-profile-split">
         <section className="bb-profile-card flex flex-col rounded-[28px] bg-[#141414] px-6 py-8 text-[#f5f5f5] ring-1 ring-white/10 md:px-8">
           <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-4xl ${paint.className}`} style={paint.style}>{initial}</div>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">{guest || session.handle}</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{profileName}</h1>
             <StarMark score={starScore(received)} />
           </div>
-          {!guest && form.showIdentity && who && <p className="mt-2 text-center text-sm text-white/45">{who}</p>}
-          {!guest && form.showPlace && where && <p className="text-center text-sm text-white/45">{where}</p>}
-          {!guest && <p className="mt-1 text-center text-sm text-white/70">{points} points{off ? ` · ${off}% off` : ""}</p>}
-          {guest && <p className="mt-1 text-center text-sm text-white/70">{points} points{off ? ` · ${off}% off` : ""}</p>}
-          {guest && <p className="mt-1 text-center text-sm text-white/45">{[viewed?.neighborhood && `Lives in ${viewed.neighborhood}`, viewed?.occupation].filter(Boolean).join(" · ")}</p>}
-          {guest && (
+          {who && <p className="mt-2 text-center text-sm text-white/45">{who}</p>}
+          {where && <p className="text-center text-sm text-white/45">{where}</p>}
+          <p className="mt-1 text-center text-sm text-white/70">{points} points{off ? ` · ${off}% off` : ""}</p>
+          {other && (
             <button type="button" className="mt-3 text-xs text-white/45" onClick={() => { router.push("/profile"); setGuest(null); setPage(0); }}>Back</button>
           )}
-          {!guest && (
           <div className="bb-profile-actions mt-6">
             {[
               ["info", String(stats.joined + stats.invited + stats.quick + stats.privJoin + stats.privHost).padStart(2, "0"), "Info"],
@@ -213,9 +219,8 @@ function ProfilePage() {
               </button>
             ))}
           </div>
-          )}
 
-          {panel === "info" && !guest && (
+          {panel === "info" && (
             <div className="mt-4 rounded-3xl bg-[#1c1c1c] px-5 py-4 text-left text-sm shadow-sm">
               <p className="flex items-start justify-between gap-3 text-white/70"><span className="min-w-0">Joined</span><span className="shrink-0">{stats.joined}</span></p>
               <p className="mt-2 flex items-start justify-between gap-3 text-white/70"><span className="min-w-0">Invited</span><span className="shrink-0">{stats.invited}</span></p>
@@ -225,7 +230,7 @@ function ProfilePage() {
             </div>
           )}
 
-          {panel === "buddies" && !buddy && !guest && (
+          {panel === "buddies" && !buddy && (
             <div className="mt-3">
               {!buddies.length && !pending.length && <p className="text-sm text-white/45">No buddies yet.</p>}
               <div className="flex flex-wrap gap-2">
@@ -248,7 +253,7 @@ function ProfilePage() {
               </div>
             </div>
           )}
-          {panel === "buddies" && buddy && !guest && (
+          {panel === "buddies" && buddy && !other && (
             <div className="mt-3 rounded-3xl bg-[#1c1c1c] p-4 text-left shadow-sm">
               <button type="button" className="text-xs text-white/45" onClick={() => setBuddy(null)}>Back</button>
               <div className={`mt-3 grid h-14 w-14 place-items-center rounded-full font-serif text-2xl ${buddyMark(buddy.name).className}`} style={buddyMark(buddy.name).style}>{buddy.name.slice(0, 1).toUpperCase()}</div>
@@ -265,15 +270,15 @@ function ProfilePage() {
             </div>
           )}
 
-          {(guest || panel === "review") && (
+          {panel === "review" && (
             <div className="mt-3">
               {(() => {
-                const them = guest && canRate.find((person) => person.handle === guest);
-                if (guest && !them) return null;
+                const them = other && canRate.find((person) => person.handle === profileName);
+                if (other && !them) return null;
                 return (
                   <div className="mb-3 flex justify-end">
                     <button type="button" onClick={() => { if (!open) { setPlans(true); return; } people?.openReview(them || null); }} className="rounded-full bg-[#1c1c1c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">
-                      {guest ? "Rate them" : "Rate someone"}
+                      {other ? "Rate them" : "Rate someone"}
                     </button>
                   </div>
                 );
@@ -315,8 +320,8 @@ function ProfilePage() {
             </div>
           )}
 
-          {!guest && <button type="button" className="mt-4 block text-xs text-white/45" onClick={() => setEdit((v) => !v)}>{edit ? "Close" : "Edit details"}</button>}
-          {edit && !guest && (
+          {!other && <button type="button" className="mt-4 block text-xs text-white/45" onClick={() => setEdit((v) => !v)}>{edit ? "Close" : "Edit details"}</button>}
+          {edit && !other && (
             <form className="mt-3 space-y-2 text-left" onSubmit={(e) => { e.preventDefault(); bb.updateProfile(form); setDraft(null); setEdit(false); }}>
               <label className="block text-xs text-white/45">Username
                 <input value={form.handle} onChange={(e) => setDraft({ ...form, handle: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-[#1c1c1c] px-3 py-2 text-sm text-white" />
@@ -355,14 +360,12 @@ function ProfilePage() {
             </form>
           )}
         </section>
-        {!guest && (
-          <div className="bb-profile-side">
-            <FinishedEvents />
+        <div className="bb-profile-side">
+            <FinishedEvents who={other ? profileName : ""} />
             <div className="mt-6">
               <HelpMark section="07" />
             </div>
           </div>
-        )}
       </div>
       {plans && <PlanWindow onClose={() => setPlans(false)} />}
     </main>
