@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useBB } from "@/components/Providers";
 import { JoinedEvents } from "@/components/PhoneApp";
+import { HelpMark } from "@/components/HelpMark";
 import { say } from "@/lib/say";
 
 export default function MeTimePage() {
@@ -20,11 +21,17 @@ export default function MeTimePage() {
         <div className="bb-lead-gap">
           <p className="text-white/55">Log in to see the seats you joined.</p>
           <Link href="/login" className="mt-5 inline-block rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black">Log in</Link>
+          <div className="mt-6">
+            <HelpMark section="05" />
+          </div>
         </div>
       ) : null}
       {bb.session ? (
         <div className="bb-lead-gap max-w-xl">
           <JoinedEvents />
+          <div className="mt-6">
+            <HelpMark section="05" />
+          </div>
         </div>
       ) : null}
     </main>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useBB } from "@/components/Providers";
 
@@ -52,6 +52,12 @@ function AboutBody() {
   const hk = bb.lang === "zh-HK";
   const steps = hk ? HK_STEPS : STEPS;
   const [tab, setTab] = useState(params.get("tab") === "how" ? "how" : "about");
+  useEffect(() => {
+    if (tab !== "how") return;
+    const id = window.location.hash.replace("#", "");
+    if (!id.startsWith("help-")) return;
+    document.getElementById(id)?.scrollIntoView({ block: "start" });
+  }, [tab, hk]);
   return (
     <main className="bb-frame bg-ink pb-28 pt-10 text-fg md:pb-20">
       <div className="flex gap-2">
@@ -96,7 +102,7 @@ function AboutBody() {
           </p>
           <ol className="bb-lead-gap overflow-hidden rounded-[1.7rem] border border-white/15">
             {steps.map((step) => (
-              <li key={step.n} className="grid grid-cols-[3.2rem_1fr] gap-2 border-t border-white/10 px-6 py-7 first:border-t-0 sm:px-10">
+              <li id={`help-${step.n}`} key={step.n} className="grid scroll-mt-24 grid-cols-[3.2rem_1fr] gap-2 border-t border-white/10 px-6 py-7 first:border-t-0 sm:px-10">
                 <span className="pt-2 text-xs tracking-[0.12em] text-white/40">{step.n}</span>
                 <div>
                   <h2 className="font-serif text-[1.65rem] font-semibold leading-tight text-white md:text-[1.85rem]">{step.title}</h2>

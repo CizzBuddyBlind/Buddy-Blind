@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Editable, Photo } from "@/components/Bits";
 import { HostBadge, PayDialog } from "@/components/Flows";
+import { HelpMark } from "@/components/HelpMark";
 import { JoinerStack } from "@/components/People";
 import { useBB } from "@/components/Providers";
 import { queryHits } from "@/lib/bible";
@@ -150,9 +151,12 @@ export default function QuickPage() {
         })}
           </div>
           <Copy as="p" k="quick.note" legacy={copy.note} className="mt-6 text-sm leading-relaxed text-mute" onEnglish={(d, next) => { d.copy.quick.note = next; }} />
-          <button type="button" className="mt-4 rounded-full border border-char px-5 py-2 text-sm" onClick={() => { setFree((v) => !v); setAsk(false); }}>
-            {say(lang, "I'm free now")}
-          </button>
+          <div className="mt-4 flex items-center gap-3">
+            <button type="button" className="rounded-full border border-char px-5 py-2 text-sm" onClick={() => { setFree((v) => !v); setAsk(false); }}>
+              {say(lang, "I'm free now")}
+            </button>
+            <HelpMark section="03" />
+          </div>
           {free && (
             <div className="mt-4 rounded-2xl border border-black/10 bg-white p-4">
               <p className="text-sm">{say(lang, "Where are you?")}</p>

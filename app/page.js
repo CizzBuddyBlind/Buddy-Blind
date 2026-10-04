@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { DoneShare, HostBadge, PayDialog, ShareSheet, rememberReturn } from "@/components/Flows";
+import { HelpMark } from "@/components/HelpMark";
 import { useBB } from "@/components/Providers";
 import { bookingHold, iso, tableStart } from "@/lib/bible";
 import { say } from "@/lib/say";
@@ -130,9 +131,12 @@ export default function HomePage() {
           <p className="bb-lead-gap max-w-md text-sm leading-relaxed text-white/70">
             {say(bb.lang, "Restaurants provide the scene. Private events create the reason. You bring curiosity.")}
           </p>
-          <Link href="/quick" className="mt-8 inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-ink">
-            {say(bb.lang, "Want a Quick Meet?")}
-          </Link>
+          <div className="mt-8 flex items-center gap-3">
+            <Link href="/quick" className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-ink">
+              {say(bb.lang, "Want a Quick Meet?")}
+            </Link>
+            <HelpMark section="01" />
+          </div>
           <div className="mt-16 grid grid-cols-3 gap-4 border-t border-white/15 pt-5 md:mt-[5.4rem]">
             <div>
               <p className="bb-figure text-4xl text-white">{events}</p>

@@ -8,9 +8,12 @@ import { useBB, peopleYouCanRate } from "./Providers";
 import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso, soonestTable, tableStart } from "@/lib/bible";
 import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
+import { HelpMark } from "./HelpMark";
 import { MeTimeMark } from "./MeTimeMark";
 import { JoinerStack, usePeople } from "./People";
 import { mySeats, pastStats } from "./PhoneApp";
+
+const APP_HEAD = "font-serif font-normal text-[clamp(2rem,8vw,2.4rem)] leading-[1.05]";
 
 function sharedLine(lang, source, fallback) {
   const text = String(source || "").trim() || fallback;
@@ -283,7 +286,7 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
       <p className="text-center text-[0.68rem] uppercase tracking-[0.14em] text-white/55">
         Hong Kong · Tonight · {rows.length} blind boxes / {hosts} hosts / {scenes} scenes
       </p>
-      <h1 className="mt-8 text-center font-serif text-[clamp(2.1rem,9vw,2.8rem)] leading-[1.05] text-white">
+      <h1 className={`mt-8 text-center text-white ${APP_HEAD}`}>
         {say(bb.lang, "You don't know")}
         <br />
         <span>{say(bb.lang, "who you'll meet.")}</span>
@@ -293,6 +296,9 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
       <p className="mx-auto mt-6 max-w-sm text-center text-sm leading-relaxed text-white/65">
         {say(bb.lang, "Restaurants provide the scene. Private events create the reason. You bring curiosity.")}
       </p>
+      <div className="mt-6 flex justify-center">
+        <HelpMark section="01" />
+      </div>
       {featured && (
         <article className="mt-8 overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#141414]">
           <button type="button" className="relative block w-full" onClick={() => (featured.kind === "private" ? onOpenEvent(featured.id) : onOpenVenue(featured.venue.id))}>
@@ -362,7 +368,7 @@ function Venues({ onOpen }) {
         <span>{sharedLine(bb.lang, copy.kickerLeft, "VENUES · RESTAURANTS")}</span>
         <span className="text-right">{sharedLine(bb.lang, copy.kickerRight, "A NEIGHBOURHOOD. A TIME. SEATS LEFT.")}</span>
       </div>
-      <h1 className="mt-6 text-center font-serif text-[clamp(1.8rem,8vw,2.4rem)] leading-tight">
+      <h1 className={`mt-6 text-center ${APP_HEAD}`}>
         {sharedLine(bb.lang, copy.title, "Pick the place.")}
         <br />
         <span className="italic text-ember">{sharedLine(bb.lang, copy.accent, "Leave the rest blind.")}</span>
@@ -370,7 +376,7 @@ function Venues({ onOpen }) {
       <p className="mx-auto mt-4 max-w-sm text-center text-sm leading-relaxed text-white/60">
         {sharedLine(bb.lang, copy.sub, "No faces, just places. Enough to WANT, enough uncertainty to be WORTH having.")}
       </p>
-      <div className="mt-6 flex gap-4 overflow-x-auto border-b border-white/10 pb-2 text-[0.72rem] uppercase tracking-[0.14em]">
+      <div className="mt-6 flex items-center gap-4 overflow-x-auto border-b border-white/10 pb-2 text-[0.72rem] uppercase tracking-[0.14em]">
         {[
           ["all", "All"],
           ["tst", "TST"],
@@ -380,6 +386,7 @@ function Venues({ onOpen }) {
         ].map(([idName, label]) => (
           <button key={idName} type="button" onClick={() => setFilter(idName)} className={`shrink-0 pb-1 ${filter === idName ? "border-b border-white text-white" : "text-white/40"}`}>{translate(bb.lang, idName === "all" ? "filter.all" : idName === "tonight" ? "filter.tonight" : idName === "tst" ? "filter.tst" : idName === "cwb" ? "filter.cwb" : "filter.central")}</button>
         ))}
+        <HelpMark section="02" className="ml-auto" />
       </div>
       <div className="mt-4 grid grid-cols-2 items-start gap-x-3 gap-y-5">
         {venues.map((venue) => {
@@ -460,8 +467,11 @@ function Quick({ onOpen }) {
   const copy = bb.content.copy?.quick || {};
   return (
     <section className="px-[4.5vw] pb-4 pt-3">
-      <h1 className="mt-4 text-center font-serif text-[clamp(2rem,8.5vw,2.7rem)] leading-[1.05]">
-        {sharedLine(bb.lang, copy.title, "I'm free now.")}
+      <h1 className={`mt-4 text-center ${APP_HEAD}`}>
+        <span className="inline-flex items-center justify-center gap-3">
+          {sharedLine(bb.lang, copy.title, "I'm free now.")}
+          <HelpMark section="03" />
+        </span>
         <br />
         <span className="italic text-ember">{sharedLine(bb.lang, copy.accent, "Who wants to join?")}</span>
       </h1>
@@ -532,8 +542,11 @@ function MeTime({ onOpenVenue, onOpenEvent }) {
   if (!bb.session) {
     return (
       <section className="px-[6vw] py-16 text-center">
-        <h1 className="font-serif text-[clamp(2.2rem,9vw,2.8rem)]">Me Time</h1>
+        <h1 className={APP_HEAD}>Me Time</h1>
         <p className="mt-3 text-sm text-white/55">Log in to see the seats you joined.</p>
+        <div className="mt-6 flex justify-center">
+          <HelpMark section="05" />
+        </div>
       </section>
     );
   }
@@ -568,7 +581,7 @@ function MeTime({ onOpenVenue, onOpenEvent }) {
   return (
     <section className="px-[5vw] pb-8 pt-3">
       <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/45">Me Time</p>
-      <h1 className="mt-3 font-serif text-[clamp(2rem,8vw,2.6rem)] leading-none">
+      <h1 className={`mt-3 ${APP_HEAD}`}>
         {say(bb.lang, "Today, and")}
         <br />
         <span className="italic text-ember">{say(bb.lang, "what’s next.")}</span>
@@ -576,6 +589,9 @@ function MeTime({ onOpenVenue, onOpenEvent }) {
       <div className="mt-8 space-y-8">
         {row("Today", now)}
         {row("Upcoming", later)}
+      </div>
+      <div className="mt-6">
+        <HelpMark section="05" />
       </div>
     </section>
   );
@@ -596,12 +612,15 @@ function Private({ onOpen }) {
         <span className="text-ember">{sharedLine(bb.lang, copy.kickerLeft, "PRIVATE · HOST LED")}</span>
         <span>{sharedLine(bb.lang, copy.kickerRight, "INTEREST → CONNECT")}</span>
       </div>
-      <h1 className="mt-5 text-center font-serif text-[clamp(2rem,8.5vw,2.6rem)] leading-[1.05]">
+      <h1 className={`mt-5 text-center ${APP_HEAD}`}>
         {sharedLine(bb.lang, copy.title, "Find your interest.")}
         <br />
         <span className="italic text-ember">{sharedLine(bb.lang, copy.accent, "Meet your people.")}</span>
       </h1>
       <p className="mx-auto mt-3 max-w-xs text-center text-sm leading-relaxed text-black/50">{sharedLine(bb.lang, copy.sub, "Host creates the reason. You find your kind.")}</p>
+      <div className="mt-4 flex justify-center">
+        <HelpMark section="04" />
+      </div>
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
         {[
           ["comed", "Comedian"],
@@ -741,7 +760,7 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   return (
     <section className="px-[5vw] pb-8 pt-3 text-center">
       <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-3xl ${paint.className}`} style={paint.style}>{initials(session)}</div>
-      <h1 className="mt-4 font-serif text-[clamp(1.6rem,7vw,2rem)]">{session.handle}</h1>
+      <h1 className={`mt-4 ${APP_HEAD}`}>{session.handle}</h1>
       {showWho && <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-white/55">{say(bb.lang, showWho)}</p>}
       {showWhere && <p className="text-[11px] uppercase tracking-[0.14em] text-white/55">{say(bb.lang, where)}</p>}
       <p className="mt-1 text-sm text-white/70">{session.points || 0} {say(bb.lang, "points")}{off ? ` · ${off}% ${say(bb.lang, "off")}` : ""}</p>
@@ -779,6 +798,9 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
         <p className="text-[0.68rem] uppercase tracking-[0.14em] text-white/45">{say(bb.lang, "Past")}</p>
         {row("Joined", joined)}
         {row("Created", created)}
+      </div>
+      <div className="mt-6">
+        <HelpMark section="07" />
       </div>
     </section>
   );

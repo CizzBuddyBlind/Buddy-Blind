@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { Copy, Editable, Photo } from "@/components/Bits";
 import { HostBadge } from "@/components/Flows";
+import { HelpMark } from "@/components/HelpMark";
 import { JoinerStack } from "@/components/People";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
@@ -101,7 +102,7 @@ function Home() {
           className="w-full rounded-full border border-white/15 bg-transparent px-5 py-3 text-sm outline-none placeholder:text-mute focus:border-ember"
         />
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-4">
+      <div className="flex items-center gap-2 overflow-x-auto pb-4">
         {FILTERS.map((f) => (
           <button
             key={f.id}
@@ -115,6 +116,7 @@ function Home() {
         <button type="button" onClick={() => setOpen((v) => !v)} className={`shrink-0 rounded-full border px-4 py-2 text-[0.75rem] font-medium ${open ? "border-ember text-ember" : "border-white/15 text-mute"}`}>
           {t("filter.more")}
         </button>
+        <HelpMark section="02" className="ml-auto" />
       </div>
       {open && (
         <div className="mb-5 grid gap-3 rounded-2xl border border-white/10 p-4 text-sm sm:grid-cols-2">

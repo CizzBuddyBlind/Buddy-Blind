@@ -9,6 +9,7 @@ import { PlanWindow } from "@/components/PlanWindow";
 import { AGE_RANGES, badgePaint, discountPercent } from "@/lib/bible";
 import { SEED_ACCOUNTS } from "@/lib/defaults";
 import { FinishedEvents, pastStats } from "@/components/PhoneApp";
+import { HelpMark } from "@/components/HelpMark";
 
 function historyOf(session, content) {
   const handle = session.handle;
@@ -384,7 +385,14 @@ function ProfilePage() {
             </form>
           )}
         </section>
-        {!guest && <FinishedEvents />}
+        {!guest && (
+          <div>
+            <FinishedEvents />
+            <div className="mt-6">
+              <HelpMark section="07" />
+            </div>
+          </div>
+        )}
       </div>
       </div>
       {plans && <PlanWindow onClose={() => setPlans(false)} />}

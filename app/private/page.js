@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Copy, Editable, Photo } from "@/components/Bits";
 import { DoneShare, HostBadge, PayDialog, rememberReturn } from "@/components/Flows";
+import { HelpMark } from "@/components/HelpMark";
 import { JoinerStack } from "@/components/People";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
@@ -91,7 +92,7 @@ export default function PrivatePage() {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("priv.search")} className="flex-1 rounded-full border border-black/10 bg-white px-4 py-3 text-sm" />
         <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Location" className="rounded-full border border-black/10 bg-white px-4 py-3 text-sm" />
       </div>
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
           className="rounded-full bg-char px-4 py-2 text-sm text-paper"
@@ -105,6 +106,7 @@ export default function PrivatePage() {
         >
           {t("btn.host")}
         </button>
+        <HelpMark section="04" />
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
