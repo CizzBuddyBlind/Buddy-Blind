@@ -7,6 +7,7 @@ import { useBB, peopleYouCanRate } from "@/components/Providers";
 import { usePeople } from "@/components/People";
 import { PlanWindow } from "@/components/PlanWindow";
 import { AGE_RANGES, badgePaint, discountPercent } from "@/lib/bible";
+import { SEED_ACCOUNTS } from "@/lib/defaults";
 import { FinishedEvents, pastStats } from "@/components/PhoneApp";
 
 function historyOf(session, content) {
@@ -163,9 +164,53 @@ function ProfilePage() {
   const paint = badgePaint(points, bb.content.pointThresholds, "light");
   const off = discountPercent(points, bb.content.pointThresholds);
 
+  function pointsFor(name) {
+    const key = String(name || "").trim().toLowerCase();
+    if (!key) return 0;
+    let known = false;
+    let score = 0;
+    const take = (person) => {
+      const names = [person?.handle, person?.username, person?.name].map((value) => String(value || "").trim().toLowerCase());
+      if (!names.includes(key)) return;
+      known = true;
+      score = Math.max(score, Number(person.points) || 0);
+    };
+    SEED_ACCOUNTS.forEach(take);
+    (bb.users || []).forEach(take);
+    take(bb.session);
+    if (known) return score;
+    const rank = { plain: 0, bronze: 1, silver: 2, gold: 3 };
+    let tier = "plain";
+    const consider = (personName, personTier) => {
+      if (String(personName || "").trim().toLowerCase() !== key) return;
+      if ((rank[personTier] || 0) > rank[tier]) tier = personTier;
+    };
+    (bb.content?.events || []).forEach((event) => {
+      consider(event.hostName, event.hostTier);
+      (event.participants || []).forEach((person) => consider(person.handle, person.tier));
+    });
+    (bb.content?.venues || []).forEach((venue) => {
+      (venue.tables || []).forEach((table) => {
+        consider(table.hostHandle || table.hostName, table.hostTier);
+        (table.participants || []).forEach((person) => consider(person.handle, person.tier));
+      });
+    });
+    const marks = bb.content?.pointThresholds || {};
+    if (tier === "gold") return Number(marks.gold) || 500;
+    if (tier === "silver") return Number(marks.silver) || 300;
+    if (tier === "bronze") return Number(marks.bronze) || 100;
+    return 0;
+  }
+
+  function buddyMark(name) {
+    const paint = badgePaint(pointsFor(name), bb.content?.pointThresholds, "dark");
+    if (paint.tier === "plain") return { className: "border border-white/15 bg-[#1c1c1c]", style: undefined };
+    return { className: paint.className, style: paint.style };
+  }
+
   return (
-    <main className="bb-frame flex min-h-[calc(100dvh-4rem)] items-start bg-ink pb-28 pt-10">
-      <div className={`grid w-full items-start gap-10 ${guest ? "mx-auto max-w-md" : "md:grid-cols-2"}`}>
+    <main className="bb-frame flex min-h-[calc(100dvh-4rem)] flex-col bg-ink pb-28 pt-10">
+      <div className={`my-auto grid w-full items-start gap-10 ${guest ? "mx-auto max-w-md" : "md:grid-cols-2"}`}>
         <section className="flex flex-col rounded-[28px] bg-[#141414] px-6 py-8 text-[#f5f5f5] ring-1 ring-white/10 md:px-8">
           <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-4xl ${paint.className}`} style={paint.style}>{initial}</div>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
@@ -212,23 +257,29 @@ function ProfilePage() {
             <div className="mt-3">
               {!buddies.length && !pending.length && <p className="text-sm text-white/45">No buddies yet.</p>}
               <div className="flex flex-wrap gap-2">
-                {pending.map((b) => (
-                  <button key={b.id} type="button" title={`${b.name} · waiting`} onClick={() => setBuddy(b)} className="grid h-11 w-11 place-items-center rounded-full border border-dashed border-white/25 text-sm text-white/45">
+                {pending.map((b) => {
+                  const mark = buddyMark(b.name);
+                  return (
+                  <button key={b.id} type="button" title={`${b.name} · waiting`} onClick={() => setBuddy(b)} className={`grid h-11 w-11 place-items-center rounded-full border border-dashed text-sm ${mark.className}`} style={mark.style}>
                     {b.name.slice(0, 1).toUpperCase()}
                   </button>
-                ))}
-                {buddies.map((b) => (
-                  <button key={b.id} type="button" title={b.name} onClick={() => { setGuest(b.name); setPage(0); }} className="grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-[#1c1c1c] font-serif text-lg">
+                  );
+                })}
+                {buddies.map((b) => {
+                  const mark = buddyMark(b.name);
+                  return (
+                  <button key={b.id} type="button" title={b.name} onClick={() => { setGuest(b.name); setPage(0); }} className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg ${mark.className}`} style={mark.style}>
                     {b.name.slice(0, 1).toUpperCase()}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
           {panel === "buddies" && buddy && !guest && (
             <div className="mt-3 rounded-3xl bg-[#1c1c1c] p-4 text-left shadow-sm">
               <button type="button" className="text-xs text-white/45" onClick={() => setBuddy(null)}>Back</button>
-              <div className="mt-3 grid h-14 w-14 place-items-center rounded-full bg-[#1c1c1c] font-serif text-2xl">{buddy.name.slice(0, 1).toUpperCase()}</div>
+              <div className={`mt-3 grid h-14 w-14 place-items-center rounded-full font-serif text-2xl ${buddyMark(buddy.name).className}`} style={buddyMark(buddy.name).style}>{buddy.name.slice(0, 1).toUpperCase()}</div>
               <h2 className="mt-3 text-2xl font-bold">{buddy.name}</h2>
               <p className="mt-1 text-sm text-white/45">{buddy.status === "pending" ? "Waiting" : "Your buddy"}</p>
               {buddy.area && <p className="mt-2 text-sm">{buddy.area}</p>}
