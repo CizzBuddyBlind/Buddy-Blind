@@ -13,6 +13,7 @@ import { personRecord, seatsForHandle, statsForHandle, TEST_PEOPLE } from "@/lib
 import { MeTimeMark } from "./MeTimeMark";
 import { JoinerStack, usePeople } from "./People";
 import { mySeats, pastStats } from "./PhoneApp";
+import { ChangePhone } from "./ChangePhone";
 
 const APP_HEAD = "font-serif font-normal text-[clamp(2rem,8vw,2.4rem)] leading-[1.05]";
 
@@ -172,7 +173,10 @@ export function StoreApp() {
         <div className="absolute right-[4vw] z-40 w-[min(16rem,74vw)] overflow-hidden rounded-2xl border border-black/10 bg-white text-char shadow-2xl" style={{ top: "calc(env(safe-area-inset-top) + 3.6rem)" }}>
           {bb.session && <p className="border-b border-black/10 px-4 py-3 text-sm">{bb.session.handle}</p>}
           {bb.session ? (
-            <button type="button" className="block w-full px-4 py-3 text-left text-sm" onClick={() => { bb.logout(); setMenu(false); }}>{translate(bb.lang, "nav.logout")}</button>
+            <>
+              <ChangePhone className="block w-full px-4 py-3 text-left text-sm" />
+              <button type="button" className="block w-full px-4 py-3 text-left text-sm" onClick={() => { bb.logout(); setMenu(false); }}>{translate(bb.lang, "nav.logout")}</button>
+            </>
           ) : (
             <button type="button" className="block w-full px-4 py-3 text-left text-sm" onClick={() => { setMenu(false); setAuth(true); }}>{translate(bb.lang, "nav.login")}</button>
           )}

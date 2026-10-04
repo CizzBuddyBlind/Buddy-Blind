@@ -10,6 +10,7 @@ import { AGE_RANGES, badgePaint, discountPercent } from "@/lib/bible";
 import { personRecord, sameIdentity, statsForHandle, TEST_PEOPLE } from "@/lib/people";
 import { FinishedEvents, pastStats } from "@/components/PhoneApp";
 import { HelpMark } from "@/components/HelpMark";
+import { ChangePhone } from "@/components/ChangePhone";
 
 function historyOf(session, content) {
   const books = session.bookings || [];
@@ -325,6 +326,7 @@ function ProfilePage() {
           )}
 
           {!other && <button type="button" className="mt-4 block text-xs text-white/45" onClick={() => setEdit((v) => !v)}>{edit ? "Close" : "Edit details"}</button>}
+          {!other && <ChangePhone className="mt-2 block text-xs text-white/70" />}
           {edit && !other && (
             <form className="mt-3 space-y-2 text-left" onSubmit={(e) => { e.preventDefault(); bb.updateProfile(form); setDraft(null); setEdit(false); }}>
               <label className="block text-xs text-white/45">Username

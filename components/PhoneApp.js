@@ -6,6 +6,7 @@ import { useBB } from "./Providers";
 import { Photo as Cover } from "./Bits";
 import { eventPoster, iso, prettyDate, queryHits, soonestTable, tableStart } from "@/lib/bible";
 import { sameIdentity, seatsForHandle } from "@/lib/people";
+import { ChangePhone } from "./ChangePhone";
 
 function hourOf(time) {
   const match = String(time || "").toUpperCase().match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/);
@@ -597,6 +598,7 @@ function ProfileTab() {
         <div className="mt-3 rounded-2xl bg-white p-4 text-sm shadow-sm">
           <p>{bb.session.email}</p>
           <p className="text-neutral-500">{bb.session.phone || "No phone yet"}</p>
+          <ChangePhone className="mt-3 text-sm font-medium" />
         </div>
       )}
       <button type="button" onClick={() => bb.logout()} className="mt-4 w-full rounded-2xl bg-white py-3 text-sm text-red-600 shadow-sm">Sign out</button>

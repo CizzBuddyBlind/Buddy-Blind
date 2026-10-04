@@ -8,7 +8,7 @@ import { bookingHold, iso, logEntry, normalizeContent, privateEditOpen, tableSta
 import { notifyRestaurant } from "@/lib/notify";
 import { putMedia } from "@/lib/media";
 import { pageFromPath, setWording, setWordingPage } from "@/lib/say";
-import { castForFounder, fixtureAccountId, personRecord, sameIdentity, stampContent } from "@/lib/people";
+import { castForFounder, fixtureAccountId, personRecord, phoneDigits, planPhoneChange, sameIdentity, stampContent } from "@/lib/people";
 import { marketFromCode, marketFromTimezone } from "@/lib/market";
 import { effectiveAccess, isInternalRole } from "@/lib/entitlement";
 
@@ -487,8 +487,14 @@ export function BuddyProvider({ children }) {
       const key = String(id || "").trim().toLowerCase();
       const all = [...SEED_ACCOUNTS, ...read(USERS, [])];
       const blocked = read(REVOKED, []);
-      const found = all.find((a) => a.email.toLowerCase() === key || a.username.toLowerCase() === key);
-      if (!found || found.password !== password) return "Wrong email, username, or password.";
+      const digits = phoneDigits(id);
+      const profiles = read(PROFILES, {});
+      const found = all.find((account) => {
+        const extraPhone = profiles[account.userId] || profiles[account.email] || {};
+        const phone = phoneDigits(extraPhone.phone || account.phone);
+        return account.email.toLowerCase() === key || account.username.toLowerCase() === key || (digits.length >= 8 && phone === digits);
+      });
+      if (!found || found.password !== password) return "Wrong email, phone, or password.";
       if (found.role !== "founder" && blocked.includes(found.email.toLowerCase())) return "This admin seat was removed.";
       const pointsMap = read(POINTS, {});
       const books = read(BOOKS, {});
@@ -941,13 +947,8 @@ export function BuddyProvider({ children }) {
 
   const updateProfile = useCallback((partial) => {
     if (!session) return;
-    const allowed = ["handle", "gender", "orientation", "occupation", "neighborhood", "ageRange", "phone", "verified", "showIdentity", "showPlace"];
+    const allowed = ["handle", "gender", "orientation", "occupation", "neighborhood", "ageRange", "showIdentity", "showPlace"];
     const extra = { ...(read(PROFILES, {})[session.userId] || {}) };
-    if (partial.phone) {
-      const digits = String(partial.phone).replace(/\D/g, "");
-      const taken = [...SEED_ACCOUNTS, ...read(USERS, [])].some((account) => account.userId !== session.userId && String(account.phone || "").replace(/\D/g, "") === digits);
-      if (taken) return;
-    }
     allowed.forEach((key) => {
       if (partial[key] !== undefined) extra[key] = partial[key];
     });
@@ -959,6 +960,26 @@ export function BuddyProvider({ children }) {
     setUsers(nextUsers);
     persistSession({ ...session, ...extra, userId: session.userId, email: session.email });
     notify("Profile saved on this browser.");
+  }, [notify, session]);
+
+  const changePhone = useCallback((nextPhone) => {
+    if (!session?.userId) return { error: "Log in first." };
+    const profiles = read(PROFILES, {});
+    const accounts = [...SEED_ACCOUNTS, ...read(USERS, [])];
+    const planned = planPhoneChange({ accounts, profiles, session, nextPhone });
+    if (!planned.ok) return planned;
+    const before = session.userId;
+    write(PROFILES, planned.profiles);
+    const nextUsers = read(USERS, []).map((user) => (
+      user.userId === before || user.email === session.email
+        ? { ...user, phone: planned.session.phone, verified: true, userId: user.userId || before }
+        : user
+    ));
+    write(USERS, nextUsers);
+    setUsers(nextUsers);
+    persistSession(planned.session);
+    notify("Phone number updated.");
+    return { ok: true, userId: planned.session.userId };
   }, [notify, session]);
 
   const toggleNotes = useCallback((on) => {
@@ -1595,6 +1616,7 @@ export function BuddyProvider({ children }) {
       acceptTrial,
       cancelTrial,
       updateProfile,
+      changePhone,
       social,
       toggleNotes,
       markNotesRead,
@@ -1618,7 +1640,7 @@ export function BuddyProvider({ children }) {
       register, createInvite, activate, revokeAdmin, invites, revoked, users, activity,
       versions, restoreVersion, act, insertEvent, removeBlock, duplicateBlock, addBlock, toggleLock,
       toggleHide, resetDraft, confirm, lang, setLang, market, trial, plan, planMeta, premium, entitlement, refreshBilling, setPlan, acceptTrial, cancelTrial,
-      updateProfile, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
+      updateProfile, changePhone, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
       addReview, flow, openTable, joinTable, createPrivate, updatePrivate, joinPrivate, sendPing, replyPing,
     ],
   );
