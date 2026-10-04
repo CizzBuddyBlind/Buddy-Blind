@@ -13,7 +13,7 @@ import { personRecord, seatsForHandle, statsForHandle, TEST_PEOPLE } from "@/lib
 import { MeTimeMark } from "./MeTimeMark";
 import { JoinerStack, usePeople } from "./People";
 import { mySeats, pastStats } from "./PhoneApp";
-import { ChangePhone } from "./ChangePhone";
+import { usePhoneEdit } from "./EditPhone";
 
 const APP_HEAD = "font-serif font-normal text-[clamp(2rem,8vw,2.4rem)] leading-[1.05]";
 
@@ -173,10 +173,7 @@ export function StoreApp() {
         <div className="absolute right-[4vw] z-40 w-[min(16rem,74vw)] overflow-hidden rounded-2xl border border-black/10 bg-white text-char shadow-2xl" style={{ top: "calc(env(safe-area-inset-top) + 3.6rem)" }}>
           {bb.session && <p className="border-b border-black/10 px-4 py-3 text-sm">{bb.session.handle}</p>}
           {bb.session ? (
-            <>
-              <ChangePhone className="block w-full px-4 py-3 text-left text-sm" />
-              <button type="button" className="block w-full px-4 py-3 text-left text-sm" onClick={() => { bb.logout(); setMenu(false); }}>{translate(bb.lang, "nav.logout")}</button>
-            </>
+            <button type="button" className="block w-full px-4 py-3 text-left text-sm" onClick={() => { bb.logout(); setMenu(false); }}>{translate(bb.lang, "nav.logout")}</button>
           ) : (
             <button type="button" className="block w-full px-4 py-3 text-left text-sm" onClick={() => { setMenu(false); setAuth(true); }}>{translate(bb.lang, "nav.login")}</button>
           )}
@@ -255,7 +252,7 @@ export function StoreApp() {
           }}
         >
           <h2 className="font-serif text-2xl">Log in</h2>
-          <input value={id} onChange={(e) => setId(e.target.value)} placeholder="Email or username" className="mt-4 w-full rounded-xl border border-black/10 px-3 py-3 text-base" />
+          <input value={id} onChange={(e) => setId(e.target.value)} type="email" placeholder="Email" className="mt-4 w-full rounded-xl border border-black/10 px-3 py-3 text-base" />
           <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" className="mt-2 w-full rounded-xl border border-black/10 px-3 py-3 text-base" />
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
           <button type="submit" className="mt-4 w-full rounded-full bg-black py-3 text-sm font-semibold text-white">Log in</button>
@@ -741,6 +738,8 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   const bb = useBB();
   const people = usePeople();
   const [panel, setPanel] = useState("info");
+  const [edit, setEdit] = useState(false);
+  const phoneEdit = usePhoneEdit();
   if (!bb.session) {
     return (
       <section className="px-[6vw] py-16 text-center">
@@ -816,6 +815,20 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
         ))}
       </div>
       {panel === "info" && <Info person={viewed} content={bb.content} mine={!other} />}
+      {!other && <button type="button" className="mt-4 text-xs text-white/45" onClick={() => { setEdit((v) => !v); if (edit) phoneEdit.reset(); }}>{edit ? "Close" : "Edit details"}</button>}
+      {edit && !other && (
+        <form
+          className="mx-auto mt-3 max-w-sm space-y-2 text-left"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const phone = await phoneEdit.commit();
+            if (phone.ok) setEdit(false);
+          }}
+        >
+          {phoneEdit.fields}
+          <button type="submit" disabled={phoneEdit.busy} className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black">Save</button>
+        </form>
+      )}
       {panel === "buddies" && (
         <div className="mt-6 grid grid-cols-5 gap-3">
           {buddies.map((buddy) => {

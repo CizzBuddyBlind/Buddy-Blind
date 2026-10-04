@@ -8,7 +8,7 @@ import { bookingHold, iso, logEntry, normalizeContent, privateEditOpen, tableSta
 import { notifyRestaurant } from "@/lib/notify";
 import { putMedia } from "@/lib/media";
 import { pageFromPath, setWording, setWordingPage } from "@/lib/say";
-import { castForFounder, fixtureAccountId, personRecord, phoneDigits, planPhoneChange, sameIdentity, stampContent } from "@/lib/people";
+import { accountByEmail, castForFounder, fixtureAccountId, personRecord, planPhoneChange, sameIdentity, stampContent } from "@/lib/people";
 import { marketFromCode, marketFromTimezone } from "@/lib/market";
 import { effectiveAccess, isInternalRole } from "@/lib/entitlement";
 
@@ -484,17 +484,11 @@ export function BuddyProvider({ children }) {
 
   const login = useCallback(
     (id, password) => {
-      const key = String(id || "").trim().toLowerCase();
+      const email = String(id || "").trim().toLowerCase();
       const all = [...SEED_ACCOUNTS, ...read(USERS, [])];
       const blocked = read(REVOKED, []);
-      const digits = phoneDigits(id);
-      const profiles = read(PROFILES, {});
-      const found = all.find((account) => {
-        const extraPhone = profiles[account.userId] || profiles[account.email] || {};
-        const phone = phoneDigits(extraPhone.phone || account.phone);
-        return account.email.toLowerCase() === key || account.username.toLowerCase() === key || (digits.length >= 8 && phone === digits);
-      });
-      if (!found || found.password !== password) return "Wrong email, phone, or password.";
+      const found = accountByEmail(all, email);
+      if (!found || found.password !== password) return email.includes("@") ? "Wrong email or password." : "Log in with the email on the account.";
       if (found.role !== "founder" && blocked.includes(found.email.toLowerCase())) return "This admin seat was removed.";
       const pointsMap = read(POINTS, {});
       const books = read(BOOKS, {});
@@ -549,7 +543,7 @@ export function BuddyProvider({ children }) {
     if (!input.verified) return "Verify the phone number before creating the account.";
     if (!input.gender || !input.ageRange || !input.orientation) return "Add your gender, age range, and orientation.";
     const all = [...SEED_ACCOUNTS, ...read(USERS, [])];
-    if (all.some((a) => a.email === email || a.username === username)) return "That email or username is already taken.";
+    if (all.some((a) => a.email === email)) return "That email already has an account.";
     if (all.some((a) => String(a.phone || "").replace(/\D/g, "") === digits)) return "That phone number already has an account.";
     const nextUser = blankProfile({
       userId: `acct_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
@@ -626,7 +620,7 @@ export function BuddyProvider({ children }) {
     write(INVITES, left);
     setInvites(left);
     log(`Admin activated · ${invite.email}`);
-    return null;
+    return { email: invite.email };
   }, [log]);
 
   const revokeAdmin = useCallback(

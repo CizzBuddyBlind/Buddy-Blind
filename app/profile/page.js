@@ -10,7 +10,7 @@ import { AGE_RANGES, badgePaint, discountPercent } from "@/lib/bible";
 import { personRecord, sameIdentity, statsForHandle, TEST_PEOPLE } from "@/lib/people";
 import { FinishedEvents, pastStats } from "@/components/PhoneApp";
 import { HelpMark } from "@/components/HelpMark";
-import { ChangePhone } from "@/components/ChangePhone";
+import { usePhoneEdit } from "@/components/EditPhone";
 
 function historyOf(session, content) {
   const books = session.bookings || [];
@@ -104,6 +104,7 @@ function ProfilePage() {
   const [buddy, setBuddy] = useState(null);
   const [page, setPage] = useState(0);
   const [plans, setPlans] = useState(false);
+  const phoneEdit = usePhoneEdit();
   useEffect(() => {
     if (!bb.ready) return;
     const query = new URLSearchParams(window.location.search);
@@ -325,10 +326,17 @@ function ProfilePage() {
             </div>
           )}
 
-          {!other && <button type="button" className="mt-4 block text-xs text-white/45" onClick={() => setEdit((v) => !v)}>{edit ? "Close" : "Edit details"}</button>}
-          {!other && <ChangePhone className="mt-2 block text-xs text-white/70" />}
+          {!other && <button type="button" className="mt-4 block text-xs text-white/45" onClick={() => { setEdit((v) => !v); if (edit) { setDraft(null); phoneEdit.reset(); } }}>{edit ? "Close" : "Edit details"}</button>}
           {edit && !other && (
-            <form className="mt-3 space-y-2 text-left" onSubmit={(e) => { e.preventDefault(); bb.updateProfile(form); setDraft(null); setEdit(false); }}>
+            <form className="mt-3 space-y-2 text-left" onSubmit={async (e) => {
+              e.preventDefault();
+              const phone = await phoneEdit.commit();
+              bb.updateProfile(form);
+              if (!phone.ok) return;
+              setDraft(null);
+              phoneEdit.reset();
+              setEdit(false);
+            }}>
               <label className="block text-xs text-white/45">Username
                 <input value={form.handle} onChange={(e) => setDraft({ ...form, handle: e.target.value })} className="mt-1 w-full rounded-lg border border-white/15 bg-[#1c1c1c] px-3 py-2 text-sm text-white" />
               </label>
@@ -362,7 +370,8 @@ function ProfilePage() {
                 <input type="checkbox" checked={form.showPlace} onChange={(e) => setDraft({ ...form, showPlace: e.target.checked })} />
                 Show where I live and work
               </label>
-              <button type="submit" className="rounded-full bg-ember px-4 py-2 text-sm font-semibold text-white">Save</button>
+              {phoneEdit.fields}
+              <button type="submit" disabled={phoneEdit.busy} className="rounded-full bg-ember px-4 py-2 text-sm font-semibold text-white">Save</button>
             </form>
           )}
         </section>

@@ -25,13 +25,13 @@ export default function LoginForm() {
     e.preventDefault();
     setError("");
     let message = null;
-    if (mode === "in") message = login(email || username, password);
+    if (mode === "in") message = login(email, password);
     else if (mode === "up") {
       window.location.href = "/register";
       return;
     } else {
-      message = activate(code, username, password);
-      if (!message) message = login(username, password);
+      const result = activate(code, username, password);
+      message = typeof result === "string" ? result : login(result.email, password);
     }
     if (message) {
       setError(message);
@@ -63,7 +63,7 @@ export default function LoginForm() {
         {mode === "activate" && <p className="mt-3 text-xs text-ember">Activation code loaded. Choose the username and password you will use next time.</p>}
         <div className="mt-6 space-y-3">
           {mode !== "activate" && (
-            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email or username" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
           )}
           {mode !== "in" && (
             <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" className="w-full rounded-xl border border-white/15 bg-card px-4 py-3 text-sm outline-none" />
