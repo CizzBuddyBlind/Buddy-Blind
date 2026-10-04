@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useBB } from "./Providers";
-import { hasSavedSource, isSavedWording, pageFromPath, say, setWordingPage, wordingFor } from "@/lib/say";
+import { englishKeyFor, hasSavedSource, isSavedWording, pageFromPath, say, setWordingPage, wordingFor } from "@/lib/say";
 
 const mem = new Map();
 const HOLD = "\u2060";
@@ -18,51 +18,19 @@ function readCache() {
 
 if (typeof window !== "undefined") readCache();
 
-function writeCache() {
-  const dump = {};
-  let count = 0;
-  mem.forEach((value, key) => {
-    if (count < 700) dump[key] = value;
-    count += 1;
-  });
-  try {
-    localStorage.setItem("bb_tr", JSON.stringify(dump));
-  } catch {
-    /* ignore */
-  }
-}
-
-async function fill(texts, to) {
-  const missing = [...new Set(texts.filter((text) => text && !hasSavedSource(to, text) && !isSavedWording(text) && !hasHan(text) && !mem.has(`${to}\n${text}`)))];
-  for (let start = 0; start < missing.length; start += 10) {
-    const slice = missing.slice(start, start + 10);
-    const res = await fetch("/api/tr", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texts: slice, to }),
-    });
-    const data = await res.json();
-    slice.forEach((text, index) => mem.set(`${to}\n${text}`, data.texts?.[index] || text));
-  }
-  if (missing.length) writeCache();
-}
-
-function skip(el, leaveApp) {
-  if (!el || el.closest("script, style, noscript, textarea, svg, select, option, input")) return true;
-  const keep = el.closest("[data-keep]");
-  if (keep && keep.getAttribute("data-keep") !== "said") return true;
-  if (el.closest("[data-bb-live]")) return true;
-  if (leaveApp && el.closest(".bb-store")) return true;
-  return false;
-}
-
 function hasHan(text) {
   return /[\u3400-\u9fff]/.test(text || "");
 }
 
+function skip(el) {
+  if (!el || el.closest("script, style, noscript, textarea, svg, select, option, input")) return true;
+  const keep = el.closest("[data-keep]");
+  if (keep && keep.getAttribute("data-keep") !== "said") return true;
+  if (el.closest("[data-bb-live]")) return true;
+  return false;
+}
+
 function localLine(lang, text) {
-  const own = wordingFor(lang, text);
-  if (own != null) return own;
   const line = say(lang, text);
   return line && line !== text ? line : "";
 }
@@ -72,27 +40,32 @@ function englishOf(node, book) {
   const marked = parent?.getAttribute("data-bb-src") || "";
   if (marked) return marked;
   const stored = book.source.get(node);
-  if (stored && stored !== HOLD && !hasHan(stored)) return stored;
+  if (stored && stored !== HOLD) return stored;
   const current = node.nodeValue || "";
+  const recovered = englishKeyFor(current);
+  if (recovered && recovered !== current.trim()) {
+    book.source.set(node, recovered);
+    if (parent && parent.childNodes.length === 1) parent.setAttribute("data-bb-src", recovered);
+    return recovered;
+  }
   if (!current || current === HOLD || hasHan(current) || isSavedWording(current) || !/[A-Za-z]/.test(current)) return "";
   book.source.set(node, current);
   if (parent && parent.childNodes.length === 1) parent.setAttribute("data-bb-src", current.trim());
   return current;
 }
 
-function paint(book, lang, leaveApp) {
+function paint(book, lang) {
   if (typeof location !== "undefined") setWordingPage(pageFromPath(location.pathname));
   book.lock = true;
-  const missing = [];
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   let node = walker.nextNode();
   while (node) {
     const next = walker.nextNode();
-    if (!skip(node.parentElement, leaveApp)) {
+    if (!skip(node.parentElement)) {
       const raw = englishOf(node, book);
       const text = raw.trim().slice(0, 450);
       if (text) {
-        let value = raw;
+        let value = text;
         if (!lang || lang === "en") {
           const hit = wordingFor("en", text);
           if (hit != null) value = hit;
@@ -102,7 +75,6 @@ function paint(book, lang, leaveApp) {
           else if (!hasSavedSource(lang, text)) {
             const hit = localLine(lang, text) || mem.get(`${lang}\n${text}`) || "";
             if (hit) value = hit;
-            else if (!hasHan(text)) missing.push(text);
           }
         }
         if (node.nodeValue !== value) node.nodeValue = value;
@@ -113,7 +85,6 @@ function paint(book, lang, leaveApp) {
   queueMicrotask(() => {
     book.lock = false;
   });
-  return [...new Set(missing)];
 }
 
 export function PageLang() {
@@ -130,7 +101,7 @@ export function PageLang() {
   useLayoutEffect(() => {
     if (!website) return;
     document.querySelectorAll("[data-keep='said']").forEach((el) => el.removeAttribute("data-keep"));
-    paint(book.current, lang, false);
+    paint(book.current, lang);
     document.documentElement.classList.remove("bb-lang-wait");
   }, [lang, path, website]);
 
@@ -138,27 +109,15 @@ export function PageLang() {
     if (!website) return undefined;
     let dead = false;
     let timer = 0;
-    const missing = paint(book.current, lang, false);
-    if (missing.length && lang && lang !== "en") {
-      fill(missing, lang).then(() => {
-        if (!dead) paint(book.current, lang, false);
-      }).catch(() => {});
-    }
-
     const obs = new MutationObserver(() => {
       if (book.current.lock) return;
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         if (dead || book.current.lock) return;
-        const left = paint(book.current, lang, false);
-        if (left.length && lang && lang !== "en") {
-          fill(left, lang).then(() => {
-            if (!dead) paint(book.current, lang, false);
-          }).catch(() => {});
-        }
-      }, 40);
+        paint(book.current, lang);
+      }, 80);
     });
-    obs.observe(document.body, { subtree: true, childList: true, characterData: true });
+    obs.observe(document.body, { subtree: true, childList: true });
     return () => {
       dead = true;
       window.clearTimeout(timer);
@@ -172,26 +131,16 @@ export function PageLang() {
 function watchApp(lang, book) {
   let dead = false;
   let timer = 0;
-  const missing = paint(book, lang, false);
-  if (missing.length && lang && lang !== "en") {
-    fill(missing, lang).then(() => {
-      if (!dead) paint(book, lang, false);
-    }).catch(() => {});
-  }
+  paint(book, lang);
   const obs = new MutationObserver(() => {
     if (book.lock) return;
     window.clearTimeout(timer);
     timer = window.setTimeout(() => {
-      if (dead) return;
-      const left = paint(book, lang, false);
-      if (left.length && lang && lang !== "en") {
-        fill(left, lang).then(() => {
-          if (!dead) paint(book, lang, false);
-        }).catch(() => {});
-      }
-    }, 40);
+      if (dead || book.lock) return;
+      paint(book, lang);
+    }, 80);
   });
-  obs.observe(document.body, { subtree: true, childList: true, characterData: true });
+  obs.observe(document.body, { subtree: true, childList: true });
   return () => {
     dead = true;
     window.clearTimeout(timer);
