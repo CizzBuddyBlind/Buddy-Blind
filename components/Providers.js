@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { SEED, SEED_ACCOUNTS } from "@/lib/defaults";
 import { loadSharedContent, saveSharedContent, supabaseReady } from "@/lib/supabase";
@@ -10,9 +10,22 @@ import { putMedia } from "@/lib/media";
 import { pageFromPath, setWording, setWordingPage } from "@/lib/say";
 import { accountByEmail, castForFounder, fixtureAccountId, personRecord, planPhoneChange, sameIdentity, stampContent } from "@/lib/people";
 import { marketFromCode, marketFromTimezone } from "@/lib/market";
+import { APP_BREAKPOINT } from "@/lib/layoutMode";
 import { effectiveAccess, isInternalRole } from "@/lib/entitlement";
 
 const Ctx = createContext(null);
+
+function subscribeNarrow(callback) {
+  const mq = window.matchMedia(`(max-width: ${APP_BREAKPOINT - 1}px)`);
+  mq.addEventListener("change", callback);
+  return () => mq.removeEventListener("change", callback);
+}
+function narrowNow() {
+  return window.matchMedia(`(max-width: ${APP_BREAKPOINT - 1}px)`).matches;
+}
+function narrowServer() {
+  return false;
+}
 export function useBB() {
   const value = useContext(Ctx);
   if (!value) throw new Error("useBB outside provider");
@@ -379,14 +392,7 @@ export function BuddyProvider({ children }) {
     syncHistFlags();
   }, []);
 
-  const [narrow, setNarrow] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const apply = () => setNarrow(mq.matches);
-    apply();
-    mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
-  }, []);
+  const narrow = useSyncExternalStore(subscribeNarrow, narrowNow, narrowServer);
   const staff = !!(session && (session.role === "admin" || session.role === "founder"));
   const editing = false;
   const content = editing ? draft || published : published;
@@ -1562,6 +1568,7 @@ export function BuddyProvider({ children }) {
       setPreview,
       device,
       setDevice,
+      narrow,
       panel,
       setPanel,
       dirty,
@@ -1629,7 +1636,7 @@ export function BuddyProvider({ children }) {
       replyPing,
     }),
     [
-      ready, remote, content, session, staff, editing, preview, device, panel, dirty, toast, notify,
+      ready, remote, content, session, staff, editing, preview, device, narrow, panel, dirty, toast, notify,
       selectedId, canUndo, canRedo, undo, redo, update, saveDraft, publish, login, logout,
       register, createInvite, activate, revokeAdmin, invites, revoked, users, activity,
       versions, restoreVersion, act, insertEvent, removeBlock, duplicateBlock, addBlock, toggleLock,

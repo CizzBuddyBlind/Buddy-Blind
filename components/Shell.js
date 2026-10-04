@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
@@ -12,6 +12,8 @@ import { MeTimeMark } from "./MeTimeMark";
 import { usePeople } from "./People";
 import { iso, badgePaint } from "@/lib/bible";
 import { say } from "@/lib/say";
+import { StoreApp } from "./StoreApp";
+import { appToPath, pathToApp } from "@/lib/layoutMode";
 
 const TOP = [
   { href: "/venues", label: "Venues" },
@@ -77,6 +79,7 @@ const BOTTOM = [
 
 export function Shell({ children }) {
   const path = usePathname() || "/";
+  const router = useRouter();
   const light = path === "/quick" || path.startsWith("/private");
   const bb = useBB();
   const people = usePeople();
@@ -102,6 +105,7 @@ export function Shell({ children }) {
     bb.content.events.find((v) => v.id === bb.selectedId);
   const selectedKind = bb.content.venues.some((v) => v.id === bb.selectedId) ? "venue" : "event";
   const flowVenue = bb.content.venues.find((v) => v.id === bb.flow?.venueId);
+  const showApp = !!bb.narrow && !!pathToApp(path);
 
   const [appFlow, setAppFlow] = useState(false);
   useEffect(() => {
@@ -109,6 +113,11 @@ export function Shell({ children }) {
     const from = new URLSearchParams(window.location.search).get("from");
     setAppFlow(from === "app" && (path === "/login" || path === "/register"));
   }, [path]);
+  useEffect(() => {
+    if (bb.narrow || (path !== "/m" && !path.startsWith("/m/"))) return;
+    const mapped = pathToApp(path, window.location.search) || { tab: "home" };
+    router.replace(appToPath(mapped));
+  }, [bb.narrow, path, router]);
   useEffect(() => {
     if (!bb.ready || path !== "/" || !trialLive || bb.editing || bb.flow) return;
     const key = `bb_today_${iso(0)}`;
@@ -124,24 +133,33 @@ export function Shell({ children }) {
     return <div className="min-h-dvh bg-ink text-fg">{children}</div>;
   }
 
-  if (path === "/m" || path.startsWith("/m/")) {
+  const flows = (
+    <>
+      {bb.toast && (
+        <div className="fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-[70] -translate-x-1/2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-ink shadow-xl">
+          {bb.toast}
+        </div>
+      )}
+      {bb.flow?.type === "invite" && flowVenue && <OpenTableWizard venue={flowVenue} onClose={() => bb.setFlow(null)} />}
+      {bb.flow?.type === "quick-invite" && flowVenue && <OpenTableWizard venue={flowVenue} todayOnly onClose={() => bb.setFlow(null)} />}
+      {bb.flow?.type === "join" && flowVenue && (
+        <JoinWizard venue={flowVenue} tableId={bb.flow.tableId} onClose={() => bb.setFlow(null)} />
+      )}
+      {bb.flow?.type === "private-create" && (
+        <PrivateWizard venueId={bb.flow.venueId || ""} onClose={() => bb.setFlow(null)} />
+      )}
+    </>
+  );
+
+  if (showApp || path === "/m" || path.startsWith("/m/")) {
+    if (!bb.narrow && (path === "/m" || path.startsWith("/m/"))) {
+      return <div className="min-h-dvh bg-ink" />;
+    }
     return (
       <div className="min-h-dvh bg-ink text-fg">
         <PageLang />
-        {children}
-        {bb.toast && (
-          <div className="fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-[70] -translate-x-1/2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-ink shadow-xl">
-            {bb.toast}
-          </div>
-        )}
-        {bb.flow?.type === "invite" && flowVenue && <OpenTableWizard venue={flowVenue} onClose={() => bb.setFlow(null)} />}
-        {bb.flow?.type === "quick-invite" && flowVenue && <OpenTableWizard venue={flowVenue} todayOnly onClose={() => bb.setFlow(null)} />}
-        {bb.flow?.type === "join" && flowVenue && (
-          <JoinWizard venue={flowVenue} tableId={bb.flow.tableId} onClose={() => bb.setFlow(null)} />
-        )}
-        {bb.flow?.type === "private-create" && (
-          <PrivateWizard venueId={bb.flow.venueId || ""} onClose={() => bb.setFlow(null)} />
-        )}
+        <StoreApp embedded />
+        {flows}
       </div>
     );
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Photo } from "./Bits";
 import { HostBadge, PayDialog } from "./Flows";
@@ -14,6 +15,7 @@ import { MeTimeMark } from "./MeTimeMark";
 import { JoinerStack, usePeople } from "./People";
 import { mySeats, pastStats } from "./PhoneApp";
 import { usePhoneEdit } from "./EditPhone";
+import { appToPath, pathToApp } from "@/lib/layoutMode";
 
 const APP_HEAD = "font-serif font-normal text-[clamp(2rem,8vw,2.4rem)] leading-[1.05]";
 
@@ -82,8 +84,9 @@ function Icon({ tab }) {
   return <svg {...common} fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="6" y="4" width="12" height="16" rx="2" /><path d="M9 9h6M9 12h6M9 15h4" /></svg>;
 }
 
-export function StoreApp() {
+export function StoreApp({ embedded = false }) {
   const bb = useBB();
+  const router = useRouter();
   const [tab, setTab] = useState("home");
   const [venueId, setVenueId] = useState("");
   const [eventId, setEventId] = useState("");
@@ -93,6 +96,7 @@ export function StoreApp() {
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [live, setLive] = useState(false);
   const light = tab === "quick" || tab === "private";
   const mark = initials(bb.session);
   const paint = bb.session ? badgePaint(bb.session.points, bb.content?.pointThresholds, "dark") : null;
@@ -104,9 +108,20 @@ export function StoreApp() {
   const scroller = useRef(null);
 
   useEffect(() => {
-    const next = new URLSearchParams(window.location.search).get("tab");
-    if (next) setTab(next);
+    const mapped = pathToApp(window.location.pathname, window.location.search) || { tab: "home", venueId: "", eventId: "", guest: "" };
+    setTab(mapped.tab || "home");
+    setVenueId(mapped.venueId || "");
+    setEventId(mapped.eventId || "");
+    if (mapped.guest) people?.holdGuest(mapped.guest);
+    setLive(true);
   }, []);
+
+  useEffect(() => {
+    if (!live) return;
+    const next = appToPath({ tab, venueId, eventId, guest: people?.guest || "" });
+    const current = window.location.pathname + window.location.search;
+    if (current !== next) router.replace(next);
+  }, [live, tab, venueId, eventId, people?.guest, router]);
 
   useEffect(() => {
     people?.bindApp(() => {
@@ -117,11 +132,12 @@ export function StoreApp() {
   }, [people]);
 
   useEffect(() => {
+    if (embedded) return;
     if (bb.session?.role === "admin") {
       bb.logout();
       bb.notify("Admin login stays on the website.");
     }
-  }, [bb.session?.role]);
+  }, [bb.session?.role, embedded]);
 
   function go(next) {
     people?.clearGuest();

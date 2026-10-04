@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { HostBadge } from "./Flows";
 import { peopleYouCanRate, useBB } from "./Providers";
+import { pathToApp } from "@/lib/layoutMode";
 import { personRecord, presentedPerson } from "@/lib/people";
 import { setPeopleApi } from "./peopleNav";
 
@@ -64,7 +65,7 @@ export function PeopleProvider({ children }) {
   const bb = useBB();
   const router = useRouter();
   const path = usePathname() || "/";
-  const app = path === "/m" || path.startsWith("/m/");
+  const app = !!bb.narrow && !!pathToApp(path);
   const go = useRef(null);
   const [guest, setGuest] = useState("");
   const [group, setGroup] = useState(null);
@@ -80,6 +81,7 @@ export function PeopleProvider({ children }) {
     if (app) {
       setGuest(mine ? "" : record.userId);
       go.current?.();
+      router.replace(mine ? "/profile" : `/profile?u=${encodeURIComponent(record.userId)}`);
       return;
     }
     router.push(mine ? "/profile" : `/profile?u=${encodeURIComponent(record.userId)}`);
@@ -115,6 +117,7 @@ export function PeopleProvider({ children }) {
   const api = {
     guest,
     clearGuest: () => setGuest(""),
+    holdGuest: (id) => setGuest(id || ""),
     bindApp: (fn) => { go.current = fn; },
     openProfile,
     openGroup,
