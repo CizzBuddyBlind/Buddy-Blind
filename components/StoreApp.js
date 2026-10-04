@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { Photo } from "./Bits";
 import { HostBadge, PayDialog } from "./Flows";
 import { useBB, peopleYouCanRate } from "./Providers";
-import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso, queryHits, soonestTable, tableStart } from "@/lib/bible";
+import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso, prettyDate, queryHits, soonestTable, tablePrefs, tableStart } from "@/lib/bible";
 import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
 import { HelpMark } from "./HelpMark";
@@ -18,6 +18,18 @@ import { usePhoneEdit } from "./EditPhone";
 import { appToPath, pathToApp } from "@/lib/layoutMode";
 
 const APP_HEAD = "font-serif font-normal text-[clamp(2rem,8vw,2.4rem)] leading-[1.05]";
+
+function saidPrefs(lang, table) {
+  const prefs = tablePrefs(table);
+  if (!prefs) return say(lang, "Meet friends");
+  return prefs.split(" · ").map((part) => say(lang, part)).join(" · ");
+}
+
+function venuePlaces(venue) {
+  const branches = (venue.branches || []).map((branch) => [branch.label, branch.address].filter(Boolean).join(" · ")).filter(Boolean);
+  if (branches.length) return branches;
+  return venue.address ? [venue.address] : [];
+}
 
 function sharedLine(lang, source, fallback) {
   const text = String(source || "").trim() || fallback;
@@ -337,6 +349,14 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
             <p className="mt-3 text-sm leading-relaxed text-white/70">
               {say(bb.lang, featured.kind === "private" ? (featured.event.description || featured.event.forWhom) : featured.venue.about)}
             </p>
+            {featured.kind === "table" && (
+              <p className="mt-2 text-sm leading-relaxed text-white/70">
+                {prettyDate(featured.table.dateISO, bb.lang)} · {featured.table.time}
+                <br />
+                {saidPrefs(bb.lang, featured.table)} · {bookingHold(featured.table).places} {say(bb.lang, "left")}
+              </p>
+            )}
+            {featured.kind === "table" && featured.venue.petFriendly && <p className="mt-2 text-[11px] uppercase tracking-[0.12em] text-ember">{translate(bb.lang, "venue.pet")}</p>}
             <div className="mt-4 flex items-center gap-2">
               <button type="button" onClick={join} className="flex-1 rounded-full bg-white px-3 py-3 text-[13px] font-semibold text-black">{say(bb.lang, "Love it. Let's do this.")}</button>
               <button type="button" onClick={onVenues} className="rounded-full border border-white/25 px-4 py-3 text-[13px] font-semibold">{say(bb.lang, "Explore more")}</button>
@@ -418,8 +438,9 @@ function Venues({ onOpen }) {
                 <span className="absolute bottom-2 left-2 rounded-full bg-white px-2.5 py-1 text-[9px] font-semibold uppercase text-black">{next?.table.time || venue.timeLabel}</span>
               </div>
               <h2 data-keep className="mt-2 line-clamp-2 min-h-[2.4em] font-serif text-[clamp(1rem,4.2vw,1.2rem)] leading-tight">{say(bb.lang, venue.name, false)}</h2>
-              <p className="mt-1 line-clamp-1 text-[10px] uppercase tracking-[0.08em] text-white/55">{say(bb.lang, venue.typeLabel)}</p>
-              <p className="line-clamp-2 min-h-[2em] text-[11px] text-white/50">{say(bb.lang, venue.locationLabel)}</p>
+              <p className="mt-1 line-clamp-2 text-[10px] uppercase tracking-[0.08em] text-white/55">{say(bb.lang, venue.cuisine || venue.typeLabel)}</p>
+              <p className="line-clamp-2 text-[11px] text-white/50">{[venue.locationLabel, venue.priceTier, venue.hours].filter(Boolean).map((part) => say(bb.lang, part)).join(" · ")}</p>
+              {venue.petFriendly && <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-ember">{translate(bb.lang, "venue.pet")}</p>}
               <span className="mt-2 flex h-6 items-center gap-1.5">
                 {next && (
                   <>
@@ -428,6 +449,13 @@ function Venues({ onOpen }) {
                   </>
                 )}
               </span>
+              {next && (
+                <p className="text-[11px] leading-snug text-white/60">
+                  {prettyDate(next.table.dateISO, bb.lang)} · {next.table.time}
+                  <br />
+                  {saidPrefs(bb.lang, next.table)} · {next.hold.places} {say(bb.lang, "left")}
+                </p>
+              )}
               <p className="text-[11px] text-white/45">{say(bb.lang, venue.priceLabel)}</p>
             </button>
           );
@@ -449,13 +477,25 @@ function VenueDetail({ id, onBack }) {
         <Photo src={venue.gallery?.[0] || venue.imageUrl} alt="" />
       </div>
       <h1 data-keep className="mt-4 font-serif text-[clamp(1.8rem,8vw,2.4rem)]">{say(bb.lang, venue.name, false)}</h1>
-      <p className="mt-2 text-sm text-white/60">{say(bb.lang, venue.typeLabel)} · {say(bb.lang, venue.locationLabel)}</p>
+      <p className="mt-1 text-xs uppercase tracking-[0.16em] text-ember">{say(bb.lang, venue.cuisine || venue.typeLabel)}</p>
+      <p className="mt-2 text-sm text-white/60">{[venue.locationLabel, venue.priceTier, venue.hours].filter(Boolean).map((part) => say(bb.lang, part)).join(" · ")}</p>
+      {venue.petFriendly && <p className="mt-3 inline-flex rounded-full border border-ember/40 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-ember">{translate(bb.lang, "venue.pet")}</p>}
       <p className="mt-3 text-sm leading-relaxed text-white/75">{say(bb.lang, venue.about)}</p>
+      {venue.goodFor && <p className="mt-3 text-sm text-white/60">{translate(bb.lang, "venue.good")} · {say(bb.lang, venue.goodFor)}</p>}
+      {venuePlaces(venue).length > 0 && (
+        <ul className="mt-3 space-y-1 text-sm text-white/55">
+          {venuePlaces(venue).map((place) => <li key={place}>{say(bb.lang, place, false)}</li>)}
+        </ul>
+      )}
       <div className="mt-4 space-y-2">
+        {rows.length > 0 && <h2 className="font-serif text-xl">{translate(bb.lang, "venue.events")}</h2>}
         {rows.slice(0, 5).map(({ table, hold }) => (
           <div key={table.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 px-3 py-3">
-            <p className="text-sm">{table.dateISO} · {table.time} · {hold.places} left</p>
-            <button type="button" className="rounded-full border border-ember px-3 py-1.5 text-xs font-semibold text-ember" onClick={() => bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>{translate(bb.lang, "btn.join")}</button>
+            <div className="min-w-0">
+              <p className="text-sm">{prettyDate(table.dateISO, bb.lang)} · {table.time}</p>
+              <p className="mt-1 text-xs text-white/60">{saidPrefs(bb.lang, table)} · {hold.places} {say(bb.lang, "left")}</p>
+            </div>
+            <button type="button" className="shrink-0 rounded-full border border-ember px-3 py-1.5 text-xs font-semibold text-ember" onClick={() => bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>{translate(bb.lang, "btn.join")}</button>
           </div>
         ))}
       </div>
@@ -522,7 +562,12 @@ function Quick({ onOpen }) {
         ))}
       </div>
       <div className="mt-2 divide-y divide-black/10">
-        {rows.map((row) => (
+        {rows.map((row) => {
+          const venue = (bb.content.venues || []).find((item) => item.id === row.venueId || String(item.name || "").toLowerCase() === String(row.name || "").toLowerCase());
+          const branch = (venue?.branches || []).find((item) => item.address) || venue?.branches?.[0];
+          const address = branch?.address || venue?.address || venue?.locationLabel || "";
+          const cuisine = venue?.cuisine || row.typeLabel || "";
+          return (
           <div key={row.id} className="flex w-full items-center gap-3 py-3 text-left">
             <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-neutral-200">
               <Photo src={row.imageUrl} alt="" />
@@ -533,7 +578,10 @@ function Quick({ onOpen }) {
                 <span data-keep className="truncate font-serif text-lg">{say(bb.lang, row.name, false)}</span>
                 <HostBadge handle={row.hostName || ""} userId={row.hostUserId || ""} tier={row.hostTier || "gold"} />
               </span>
-              <span className="block text-xs text-black/45">{say(bb.lang, row.detail)}</span>
+              {address && <span className="block truncate text-xs text-black/45">{say(bb.lang, address, false)}</span>}
+              {cuisine && <span className="block truncate text-xs text-black/45">{say(bb.lang, cuisine)}</span>}
+              {venue?.petFriendly && <span className="block text-[10px] uppercase tracking-[0.08em] text-ember">{translate(bb.lang, "venue.pet")}</span>}
+              <span className="block text-xs text-black/45">{say(bb.lang, row.detail)}{row.spots != null ? ` · ${row.spots} ${say(bb.lang, "left")}` : ""}</span>
             </span>
             <button
               type="button"
@@ -546,7 +594,8 @@ function Quick({ onOpen }) {
               }}
             >{translate(bb.lang, "btn.join")}</button>
           </div>
-        ))}
+          );
+        })}
       </div>
       <p className="mt-4 rounded-2xl bg-white px-4 py-4 text-sm leading-relaxed text-black/70">{say(bb.lang, "No one around yet? Create one. If nobody joins, fine — you were already planning to eat alone.")}</p>
       <div className="mt-4 flex items-center gap-3">
@@ -700,7 +749,8 @@ function Private({ onOpen }) {
             <div className="px-3 py-3">
               <h2 className="font-serif text-[clamp(1rem,4vw,1.15rem)] leading-tight">{say(bb.lang, night.name, false)}</h2>
               <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-black/45">{say(bb.lang, night.typeLabel)}</p>
-              <p className="mt-1 text-xs text-black/55">{say(bb.lang, night.upcomingLabel || `${night.spots} places`)}</p>
+              {night.forWhom && night.forWhom !== night.typeLabel && <p className="mt-1 text-[11px] leading-snug text-black/55">{say(bb.lang, night.forWhom)}</p>}
+              <p className="mt-1 text-xs text-black/55">{night.dateISO ? `${prettyDate(night.dateISO, bb.lang)} · ` : ""}{say(bb.lang, night.upcomingLabel || `${night.spots} ${say(bb.lang, "left")}`)}</p>
               <span className="mt-2 flex items-center justify-between gap-2">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <HostBadge handle={night.hostName || ""} userId={night.hostUserId || ""} tier={night.hostTier || "bronze"} />
@@ -731,8 +781,11 @@ function PrivateDetail({ id, onBack }) {
         <Photo src={eventPhotos(event)[0] || ""} fallback={eventPoster(event)} alt="" />
       </div>
       <h1 className="mt-4 font-serif text-[clamp(1.8rem,8vw,2.4rem)]">{say(bb.lang, event.name, false)}</h1>
-      <p className="mt-2 text-sm">{say(bb.lang, event.location)} · {event.dateISO} · {say(bb.lang, event.timeLabel)}</p>
-      <p className="mt-3 text-sm leading-relaxed text-black/70">{say(bb.lang, event.description || event.forWhom)}</p>
+      <p className="mt-2 text-xs uppercase tracking-[0.14em] text-ember">{say(bb.lang, event.forWhom || event.typeLabel)}</p>
+      <p className="mt-2 text-sm">{[event.location, event.dateISO ? prettyDate(event.dateISO, bb.lang) : "", event.timeLabel].filter(Boolean).join(" · ")}</p>
+      <p className="mt-1 text-sm text-black/55">{Number(event.spots) > 0 ? `${event.spots} ${say(bb.lang, "left")}` : say(bb.lang, "Full")}</p>
+      <p className="mt-3 text-sm leading-relaxed text-black/70">{say(bb.lang, event.description || "")}</p>
+      {event.aboutHost && <p className="mt-3 text-sm leading-relaxed text-black/70">{say(bb.lang, event.aboutHost)}</p>}
       <p className="mt-4 flex items-center gap-2 text-sm"><HostBadge handle={event.hostName || ""} userId={event.hostUserId || ""} tier={event.hostTier || "bronze"} /> {personRecord(event.hostUserId, { session: bb.session, users: bb.users })?.handle || event.hostName}</p>
       <button type="button" className="mt-5 w-full rounded-full bg-black py-3 text-sm font-semibold text-white" onClick={() => { if (!bb.session) { bb.notify("Log in first."); return; } setPay(true); }}>{translate(bb.lang, "btn.join")}</button>
       {premium && <button type="button" className="mt-2 w-full rounded-full border border-black/15 py-3 text-sm" onClick={() => bb.setFlow({ type: "private-create", venueId: event.venueId || "" })}>{translate(bb.lang, "btn.host")}</button>}
@@ -759,7 +812,7 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   if (!bb.session) {
     return (
       <section className="px-[6vw] py-16 text-center">
-        <h1 className="font-serif text-3xl">Your seat.</h1>
+        <h1 className={APP_HEAD}>Your seat.</h1>
         <p className="mt-2 text-sm text-white/55">Log in to see your buddies.</p>
         <button type="button" onClick={onLogin} className="mt-6 inline-block rounded-full bg-white px-6 py-3 text-sm font-semibold text-black">Log in</button>
       </section>

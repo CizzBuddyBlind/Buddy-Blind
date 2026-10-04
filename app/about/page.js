@@ -50,6 +50,8 @@ function AboutBody() {
   const params = useSearchParams();
   const bb = useBB();
   const hk = bb.lang === "zh-HK";
+  const narrow = !!bb.narrow;
+  const head = "font-serif font-normal text-[clamp(2rem,8vw,2.4rem)] leading-[1.05]";
   const steps = hk ? HK_STEPS : STEPS;
   const [tab, setTab] = useState(params.get("tab") === "how" ? "how" : "about");
   useEffect(() => {
@@ -78,10 +80,10 @@ function AboutBody() {
 
       {tab === "about" ? (
         <>
-          <h1 className="mt-8 max-w-4xl font-serif leading-[1.05]">
-            <span className="block text-3xl text-white sm:text-4xl md:text-5xl">The restaurant is the setting.</span>
-            <span className="mt-2 block text-3xl text-white sm:text-4xl md:text-5xl">The people are the experience.</span>
-            <span className="mt-3 block text-5xl text-ember sm:text-6xl md:text-7xl">The conversation is the point.</span>
+          <h1 className={narrow ? `mt-8 ${head}` : "mt-8 max-w-4xl font-serif leading-[1.05]"}>
+            <span className={narrow ? "block" : "block text-3xl text-white sm:text-4xl md:text-5xl"}>The restaurant is the setting.</span>
+            <span className={narrow ? "mt-2 block" : "mt-2 block text-3xl text-white sm:text-4xl md:text-5xl"}>The people are the experience.</span>
+            <span className={narrow ? "mt-3 block italic text-ember" : "mt-3 block text-5xl text-ember sm:text-6xl md:text-7xl"}>The conversation is the point.</span>
           </h1>
           <div className="bb-lead-gap max-w-2xl space-y-5 text-base leading-relaxed text-white/70">
             <p>Buddy Blind is built on one simple idea: meet people without knowing exactly who you’re going to meet.</p>
@@ -92,7 +94,7 @@ function AboutBody() {
         </>
       ) : (
         <div className="bb-how mx-auto w-full max-w-5xl" {...(hk ? { "data-keep": "1" } : {})}>
-          <h1 className="mt-8 max-w-4xl font-serif text-[3.4rem] font-normal leading-[0.95] text-white sm:text-6xl md:text-7xl">
+          <h1 className={narrow ? `mt-8 ${head}` : "mt-8 max-w-4xl font-serif text-[3.4rem] font-normal leading-[0.95] text-white sm:text-6xl md:text-7xl"}>
             {hk ? "齋睇場，齋睇 Feel" : "See venue, see vibe"}
             <br />
             <span className="italic text-ember">{hk ? "唔諗 LU，坐低先算" : "Take a seat."}</span>
@@ -105,7 +107,7 @@ function AboutBody() {
               <li id={`help-${step.n}`} key={step.n} className="grid scroll-mt-24 grid-cols-[3.2rem_1fr] gap-2 border-t border-white/10 px-6 py-7 first:border-t-0 sm:px-10">
                 <span className="pt-2 text-xs tracking-[0.12em] text-white/40">{step.n}</span>
                 <div>
-                  <h2 className="font-serif text-[1.65rem] font-normal leading-tight text-white md:text-[1.85rem]">{step.title}</h2>
+                  <h2 className={narrow ? "font-serif text-xl font-normal leading-tight text-white" : "font-serif text-[1.65rem] font-normal leading-tight text-white md:text-[1.85rem]"}>{step.title}</h2>
                   {step.body.map((line) => (
                     <p key={line} className="mt-2 max-w-2xl text-sm leading-relaxed text-white/55"><Rich text={line} /></p>
                   ))}
