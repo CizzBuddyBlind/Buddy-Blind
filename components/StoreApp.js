@@ -6,11 +6,16 @@ import { Photo } from "./Bits";
 import { HostBadge, PayDialog } from "./Flows";
 import { useBB, peopleYouCanRate } from "./Providers";
 import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso, soonestTable, tableStart } from "@/lib/bible";
-import { resolveCopy, translate } from "@/lib/i18n";
+import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
 import { MeTimeMark } from "./MeTimeMark";
 import { JoinerStack, usePeople } from "./People";
 import { mySeats, pastStats } from "./PhoneApp";
+
+function sharedLine(lang, source, fallback) {
+  const text = String(source || "").trim() || fallback;
+  return say(lang, text);
+}
 
 function initials(session) {
   const name = String(session?.handle || session?.username || "").trim();
@@ -50,15 +55,6 @@ function upcoming(content) {
   });
   rows.sort((a, b) => b.joined - a.joined || a.when - b.when);
   return rows;
-}
-
-function useWords() {
-  const bb = useBB();
-  return {
-    bb,
-    t: (key) => translate(bb.lang, key),
-    copy: (key, legacy) => resolveCopy(bb.content, bb.lang, key, legacy),
-  };
 }
 
 function Dock({ children }) {
@@ -288,14 +284,14 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
         Hong Kong · Tonight · {rows.length} blind boxes / {hosts} hosts / {scenes} scenes
       </p>
       <h1 className="mt-8 text-center font-serif text-[clamp(2.1rem,9vw,2.8rem)] leading-[1.05] text-white">
-        {resolveCopy(bb.content, bb.lang, "app.home.1", "You don't know")}
+        {say(bb.lang, "You don't know")}
         <br />
-        <span>{resolveCopy(bb.content, bb.lang, "app.home.2", "who you'll meet.")}</span>
+        <span>{say(bb.lang, "who you'll meet.")}</span>
         <br />
-        <span className="italic text-ember">{resolveCopy(bb.content, bb.lang, "app.home.3", "That's the point.")}</span>
+        <span className="italic text-ember">{say(bb.lang, "That's the point.")}</span>
       </h1>
       <p className="mx-auto mt-6 max-w-sm text-center text-sm leading-relaxed text-white/65">
-        {resolveCopy(bb.content, bb.lang, "app.home.story", "Restaurants provide the scene. Private events create the reason. You bring curiosity.")}
+        {say(bb.lang, "Restaurants provide the scene. Private events create the reason. You bring curiosity.")}
       </p>
       {featured && (
         <article className="mt-8 overflow-hidden rounded-[1.6rem] border border-white/10 bg-[#141414]">
@@ -359,19 +355,20 @@ function Venues({ onOpen }) {
     if (filter !== "all" && venue.area !== filter) return false;
     return true;
   });
+  const copy = bb.content.copy?.venues || {};
   return (
     <section className="px-[4.5vw] pb-6 pt-3">
       <div className="flex justify-between gap-3 text-[0.62rem] uppercase tracking-[0.14em] text-white/45">
-        <span>{say(bb.lang, "Venues · Restaurants")}</span>
-        <span className="text-right">{say(bb.lang, "A neighbourhood. A time. Seats left.")}</span>
+        <span>{sharedLine(bb.lang, copy.kickerLeft, "VENUES · RESTAURANTS")}</span>
+        <span className="text-right">{sharedLine(bb.lang, copy.kickerRight, "A NEIGHBOURHOOD. A TIME. SEATS LEFT.")}</span>
       </div>
       <h1 className="mt-6 text-center font-serif text-[clamp(1.8rem,8vw,2.4rem)] leading-tight">
-        {resolveCopy(bb.content, bb.lang, "app.venues.1", "Pick the place.")}
+        {sharedLine(bb.lang, copy.title, "Pick the place.")}
         <br />
-        <span className="italic text-ember">{resolveCopy(bb.content, bb.lang, "app.venues.2", "Leave the rest blind.")}</span>
+        <span className="italic text-ember">{sharedLine(bb.lang, copy.accent, "Leave the rest blind.")}</span>
       </h1>
       <p className="mx-auto mt-4 max-w-sm text-center text-sm leading-relaxed text-white/60">
-        {resolveCopy(bb.content, bb.lang, "app.venues.3", "No faces, just places. Enough to WANT, enough uncertainty to be WORTH having.")}
+        {sharedLine(bb.lang, copy.sub, "No faces, just places. Enough to WANT, enough uncertainty to be WORTH having.")}
       </p>
       <div className="mt-6 flex gap-4 overflow-x-auto border-b border-white/10 pb-2 text-[0.72rem] uppercase tracking-[0.14em]">
         {[
@@ -460,14 +457,15 @@ function Quick({ onOpen }) {
     if (chip === "coffee") return /coffee|tea/.test(blob);
     return true;
   });
+  const copy = bb.content.copy?.quick || {};
   return (
     <section className="px-[4.5vw] pb-4 pt-3">
       <h1 className="mt-4 text-center font-serif text-[clamp(2rem,8.5vw,2.7rem)] leading-[1.05]">
-        {resolveCopy(bb.content, bb.lang, "quick.title", "I'm free now.")}
+        {sharedLine(bb.lang, copy.title, "I'm free now.")}
         <br />
-        <span className="italic text-ember">{resolveCopy(bb.content, bb.lang, "quick.accent", "Who wants to join?")}</span>
+        <span className="italic text-ember">{sharedLine(bb.lang, copy.accent, "Who wants to join?")}</span>
       </h1>
-      <p className="mx-auto mt-4 max-w-xs text-center text-sm leading-relaxed text-black/55">{resolveCopy(bb.content, bb.lang, "app.quick.story", "A seat nearby. A time. No bio, no swipe. If you're free, sit down.")}</p>
+      <p className="mx-auto mt-4 max-w-xs text-center text-sm leading-relaxed text-black/55">{say(bb.lang, "A seat nearby. A time. No bio, no swipe. If you're free, sit down.")}</p>
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
         {[
           ["nearby", "Nearby"],
@@ -591,18 +589,19 @@ function Private({ onOpen }) {
     if (!chip) return true;
     return `${event.typeLabel || ""} ${event.name || ""} ${event.forWhom || ""}`.toLowerCase().includes(chip);
   });
+  const copy = bb.content.copy?.private || {};
   return (
     <section className="px-[4.5vw] pb-6 pt-3">
       <div className="flex justify-between gap-3 text-[0.62rem] uppercase tracking-[0.14em] text-black/40">
-        <span className="text-ember">{say(bb.lang, "Private · Host led")}</span>
-        <span>{say(bb.lang, "Interest → Connect")}</span>
+        <span className="text-ember">{sharedLine(bb.lang, copy.kickerLeft, "PRIVATE · HOST LED")}</span>
+        <span>{sharedLine(bb.lang, copy.kickerRight, "INTEREST → CONNECT")}</span>
       </div>
       <h1 className="mt-5 text-center font-serif text-[clamp(2rem,8.5vw,2.6rem)] leading-[1.05]">
-        {resolveCopy(bb.content, bb.lang, "private.title", "Find your interest.")}
+        {sharedLine(bb.lang, copy.title, "Find your interest.")}
         <br />
-        <span className="italic text-ember">{resolveCopy(bb.content, bb.lang, "private.accent", "Meet your people.")}</span>
+        <span className="italic text-ember">{sharedLine(bb.lang, copy.accent, "Meet your people.")}</span>
       </h1>
-      <p className="mx-auto mt-3 max-w-xs text-center text-sm leading-relaxed text-black/50">{resolveCopy(bb.content, bb.lang, "private.sub", "Host creates the reason. You find your kind.")}</p>
+      <p className="mx-auto mt-3 max-w-xs text-center text-sm leading-relaxed text-black/50">{sharedLine(bb.lang, copy.sub, "Host creates the reason. You find your kind.")}</p>
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
         {[
           ["comed", "Comedian"],
