@@ -230,6 +230,47 @@ h1 *, h2 *, h3 *,
 .bb-kicker, a, span, div {
   font-family: var(--font-playfair), "Iansui", "PingFang HK", "PingFang SC", "Noto Sans HK", "Noto Sans SC", "Microsoft JhengHei", Georgia, serif;
 }
+.bb-how,
+.bb-how h1,
+.bb-how h2,
+.bb-how p,
+.bb-how span,
+.bb-how strong {
+  font-weight: 400 !important;
+}
+.bb-how .bb-how-mark {
+  color: #fff;
+  font-weight: 400 !important;
+}
+.bb-profile-page {
+  min-height: calc(100dvh - 4rem);
+  display: grid;
+  align-content: safe center;
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+  overflow-x: hidden;
+}
+.bb-profile-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 2.5rem;
+  width: 100%;
+  min-width: 0;
+}
+.bb-profile-card,
+.bb-profile-side {
+  min-width: 0;
+  height: auto;
+}
+.bb-profile-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.bb-profile-actions > button {
+  min-width: 0;
+}
 .bb-home-hero {
   container-type: inline-size;
 }

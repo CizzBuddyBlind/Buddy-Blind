@@ -7,8 +7,10 @@ import { useBB } from "@/components/Providers";
 function Rich({ text }) {
   const parts = String(text).split(/(\*[^*]+\*)/g);
   return parts.map((part, index) => {
-    const value = part.startsWith("*") && part.endsWith("*") && part.length > 2 ? part.slice(1, -1) : part;
-    return <span key={index}>{value}</span>;
+    if (part.startsWith("*") && part.endsWith("*") && part.length > 2) {
+      return <span key={index} className="bb-how-mark">{part.slice(1, -1)}</span>;
+    }
+    return <span key={index}>{part}</span>;
   });
 }
 
@@ -89,7 +91,7 @@ function AboutBody() {
           </div>
         </>
       ) : (
-        <div className="mx-auto w-full max-w-5xl" {...(hk ? { "data-keep": "1" } : {})}>
+        <div className="bb-how mx-auto w-full max-w-5xl" {...(hk ? { "data-keep": "1" } : {})}>
           <h1 className="mt-8 max-w-4xl font-serif text-[3.4rem] font-normal leading-[0.95] text-white sm:text-6xl md:text-7xl">
             {hk ? "齋睇場，齋睇 Feel" : "See venue, see vibe"}
             <br />

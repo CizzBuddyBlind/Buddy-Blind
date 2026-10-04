@@ -171,7 +171,6 @@ export default function HomePage() {
                 <div className="absolute right-3 top-4">
                   <HostBadge handle={featured.host || "C"} tier={featured.tier || "bronze"} size="feature" />
                 </div>
-                <Link href="/how" className="absolute bottom-3 left-3 grid h-8 w-8 place-items-center rounded-full bg-white text-sm font-semibold text-ink">?</Link>
                 <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">{featured.home?.chip || featured.meta}</span>
               </div>
               <div className="px-5 pb-5 pt-5">

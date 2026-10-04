@@ -210,10 +210,9 @@ function ProfilePage() {
   }
 
   return (
-    <main className="bb-frame flex min-h-[calc(100dvh-4rem)] flex-col bg-ink">
-      <div className="flex min-h-[calc(100dvh-4rem-7rem)] flex-col justify-center py-8 md:min-h-[calc(100dvh-4rem)]">
-      <div className={`grid w-full items-start gap-10 ${guest ? "mx-auto max-w-md" : "md:grid-cols-2"}`}>
-        <section className="flex flex-col rounded-[28px] bg-[#141414] px-6 py-8 text-[#f5f5f5] ring-1 ring-white/10 md:px-8">
+    <main className="bb-profile-page bb-frame bg-ink">
+      <div className={guest ? "mx-auto w-full max-w-md" : "bb-profile-split"}>
+        <section className="bb-profile-card flex flex-col rounded-[28px] bg-[#141414] px-6 py-8 text-[#f5f5f5] ring-1 ring-white/10 md:px-8">
           <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-4xl ${paint.className}`} style={paint.style}>{initial}</div>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
             <h1 className="text-3xl font-bold tracking-tight">{guest || session.handle}</h1>
@@ -226,7 +225,7 @@ function ProfilePage() {
             <button type="button" className="mt-3 text-xs text-white/45" onClick={() => { setGuest(null); setPage(0); }}>Back</button>
           )}
           {!guest && (
-          <div className="mt-6 grid grid-cols-3 gap-3">
+          <div className="bb-profile-actions mt-6">
             {[
               ["info", String(stats.joined + stats.invited + stats.quick + stats.privJoin + stats.privHost).padStart(2, "0"), "Info"],
               ["buddies", String(buddies.length).padStart(2, "0"), "Buddies"],
@@ -247,11 +246,11 @@ function ProfilePage() {
 
           {panel === "info" && !guest && (
             <div className="mt-4 rounded-3xl bg-[#1c1c1c] px-5 py-4 text-left text-sm shadow-sm">
-              <p className="flex justify-between text-white/70"><span>Joined</span><span>{stats.joined}</span></p>
-              <p className="mt-2 flex justify-between text-white/70"><span>Invited</span><span>{stats.invited}</span></p>
-              <p className="mt-2 flex justify-between text-white/70"><span>Quick meet</span><span>{stats.quick}</span></p>
-              <p className="mt-2 flex justify-between text-white/70"><span>Private joined</span><span>{stats.privJoin}</span></p>
-              <p className="mt-2 flex justify-between text-white/70"><span>Private hosted</span><span>{stats.privHost}</span></p>
+              <p className="flex items-start justify-between gap-3 text-white/70"><span className="min-w-0">Joined</span><span className="shrink-0">{stats.joined}</span></p>
+              <p className="mt-2 flex items-start justify-between gap-3 text-white/70"><span className="min-w-0">Invited</span><span className="shrink-0">{stats.invited}</span></p>
+              <p className="mt-2 flex items-start justify-between gap-3 text-white/70"><span className="min-w-0">Quick meet</span><span className="shrink-0">{stats.quick}</span></p>
+              <p className="mt-2 flex items-start justify-between gap-3 text-white/70"><span className="min-w-0">Private joined</span><span className="shrink-0">{stats.privJoin}</span></p>
+              <p className="mt-2 flex items-start justify-between gap-3 text-white/70"><span className="min-w-0">Private hosted</span><span className="shrink-0">{stats.privHost}</span></p>
             </div>
           )}
 
@@ -386,14 +385,13 @@ function ProfilePage() {
           )}
         </section>
         {!guest && (
-          <div>
+          <div className="bb-profile-side">
             <FinishedEvents />
             <div className="mt-6">
               <HelpMark section="07" />
             </div>
           </div>
         )}
-      </div>
       </div>
       {plans && <PlanWindow onClose={() => setPlans(false)} />}
     </main>
