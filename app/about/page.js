@@ -46,20 +46,34 @@ const HK_STEPS = [
   { n: "10", title: "點解要收 $5 行政費？", body: ["Blind 還 Blind，*但唔代表冇人知你係邊個。* 你每次 Join Event，個 Booking 都會將你嘅註冊 Account 同嗰次 *Event、日期、時間同付款紀錄* 連埋一齊。你註冊時提供嘅聯絡及驗證資料，加上同 Booking 有關嘅付款紀錄，可以喺有嚴重事故發生時，協助確認個位背後係邊個 Account。", "例如有人食完唔埋單、整爛場地，或者有嚴重事件需要警方介入，Buddy Blind 可以確認相關 Account 同 Event 紀錄，並喺適當或者法律要求嘅情況下，向場地或有關當局提供我哋持有嘅相關資料。所以 Booking 一經確認，*$5 行政費不設退款*，就算之後你決定唔出席都一樣。呢 $5 唔單止係一個位，亦係嗰次 Booking 留低嘅一份 Accountability Record。", "*你可以唔知隔離坐邊個 但坐得低 就唔係完全匿名*"] },
 ];
 
+const CN_STEPS = [
+  { n: "01", title: "首页", body: ["从这里开始。你不知道谁会出现， *这才有意思。* 每天我们还会帮你挑一场。不想选？那就直接去看看。"] },
+  { n: "02", title: "餐厅", body: ["*选一家你本来就想去的餐厅* 你会知道在哪里、几点、还有几个位置。至于谁会坐在你旁边？ *到了就知道。*", "看到合适的就 Join，想叫人一起就 Invite，没有合适的，也可以自己开一桌。 *地方你来选 人就留给未知*"] },
+  { n: "03", title: "马上见", body: ["*今天有空，又不想一个人？* 工作日一起吃个午饭、喝杯咖啡或茶、下班喝一杯，或者在学校附近找个人一起吃饭。看看附近有没有空位，有就加入。没有？那就自己开一个。不用约到下个星期，也不用计划半天。刚好你有空，刚好别人也有空。 *那就见一面。*"] },
+  { n: "04", title: "私人活动", body: ["*这次你来组局* 想做什么，由你决定。人数可以从 2 人到 20 人。IT、律师、医生、Designer、Founder Networking。50+ 一起徒步、打麻将。LGBTQ+ Night，Gay、Lesbian、Bi、Trans、Queer community。Geek 桌游局。Movieholic 一起看电影。兴趣、活动、时间、地点、人数， *都由你决定。*", "别人加入你的活动，是因为大家刚好对同一件事感兴趣，不是因为看完你的 Profile 才决定要不要认识你。 *Hosting 属于 Premium 功能*"] },
+  { n: "05", title: "我的时间", body: ["*今天，以及接下来的安排* 你加入过的活动，都在这里。到了当天，点一下告诉我们： *我会来* 或者 *我到了* 然后把手机收起来。 *真人登场。*"] },
+  { n: "06", title: "订阅", body: ["*选一个适合你的方式* Free — 免费探索 Buddy Blind。Lite — 评论 · 评分。Premium — 自己组局。Premium 可以先试，用得喜欢再留下。订阅费用和每次 Booking 的行政费是两回事。"] },
+  { n: "07", title: "个人主页", body: ["*你在 Buddy Blind 留下的足迹* 你的 Circle、积分、好友、加入过什么、发起过什么，都在这里。只有真正一起参加过同一个活动的人，活动结束后才可以互相评论 · 评分。 *真的见过，才有得评价。*"] },
+  { n: "08", title: "好友", body: ["*有些人见一次就够 有些人你会想再见* 只有一起参加过同一个活动，才可以把对方加为好友。所以 Buddy Blind 的好友，不是到处看 Profile 加回来的。 *是你真的见过的人。*", "成为好友以后，下次你邀请、加入或者发起活动时，可以直接选择想叫上的好友，我们会通知对方。 *第一次交给未知 下一次由你来选*"] },
+  { n: "09", title: "积分", body: ["*不是考试分数 是把你的 Circle 越玩越大* 加入、邀请、组局，都可以获得积分。 *加入 +1 · 邀请 +2 · 发起 +5* 积分越多，Circle 等级越高，优惠也会跟着增加。"] },
+  { n: "10", title: "为什么要收 $5 行政费？", body: ["*Blind 归 Blind，但不代表完全匿名。* 每次你加入一个活动，Booking 都会把你的注册账户和那次活动、日期、时间以及付款记录关联起来。", "如果发生比较严重的情况，例如吃完不付款、损坏餐厅财物，或者需要警方介入，Buddy Blind 可以找到相关账户和活动，并在适当或法律要求的情况下提供相关信息。", "Booking 一旦确认， *$5 行政费不予退款。* 这 $5 不只是一个座位，也让这次 Booking 留下一份 Accountability Record。 *你可以不知道旁边坐的是谁 但既然坐下来了 就不是完全匿名*"] },
+];
+
 function AboutBody() {
   const params = useSearchParams();
   const bb = useBB();
   const hk = bb.lang === "zh-HK";
+  const zh = bb.lang === "zh";
   const narrow = !!bb.narrow;
   const head = "font-serif font-normal text-[clamp(2rem,8vw,2.4rem)] leading-[1.05]";
-  const steps = hk ? HK_STEPS : STEPS;
+  const steps = hk ? HK_STEPS : zh ? CN_STEPS : STEPS;
   const [tab, setTab] = useState(params.get("tab") === "how" ? "how" : "about");
   useEffect(() => {
     if (tab !== "how") return;
     const id = window.location.hash.replace("#", "");
     if (!id.startsWith("help-")) return;
     document.getElementById(id)?.scrollIntoView({ block: "start" });
-  }, [tab, hk]);
+  }, [tab, bb.lang]);
   return (
     <main className="bb-frame bg-ink pb-28 pt-10 text-fg md:pb-20">
       <div className="flex gap-2">
@@ -93,14 +107,15 @@ function AboutBody() {
           </div>
         </>
       ) : (
-        <div className="bb-how mx-auto w-full max-w-5xl" {...(hk ? { "data-keep": "1" } : {})}>
-          <h1 className={narrow ? `mt-8 ${head}` : "mt-8 max-w-4xl font-serif text-[3.4rem] font-normal leading-[0.95] text-white sm:text-6xl md:text-7xl"}>
-            {hk ? "齋睇場，齋睇 Feel" : "See venue, see vibe"}
+        <div className="bb-how mx-auto w-full max-w-5xl" {...(hk || zh ? { "data-keep": "1" } : {})}>
+          {zh && <p className="mt-8 text-[0.72rem] tracking-[0.16em] text-white/55">怎么玩</p>}
+          <h1 className={narrow ? `${zh ? "mt-3" : "mt-8"} ${head}` : `${zh ? "mt-3" : "mt-8"} max-w-4xl font-serif text-[3.4rem] font-normal leading-[0.95] text-white sm:text-6xl md:text-7xl`}>
+            {zh ? "看看地方，感受一下氛围" : hk ? "齋睇場，齋睇 Feel" : "See venue, see vibe"}
             <br />
-            <span className="italic text-ember">{hk ? "唔諗 LU，坐低先算" : "Take a seat."}</span>
+            <span className={zh ? "italic text-white" : "italic text-ember"}>{zh ? "先坐下来再说" : hk ? "唔諗 LU，坐低先算" : "Take a seat."}</span>
           </h1>
           <p className="mt-6 max-w-2xl text-sm leading-relaxed text-white/55">
-            <Rich text={hk ? "揀地方、時間、興趣，唔使揀人。 *坐低，Show up，睇吓今次撞到邊個。*" : "Pick the place, time, or interest — not the people. *Take a seat, show up, and see who you meet.*"} />
+            <Rich text={zh ? "选地方、时间和兴趣，不用选人。坐下来，见个面，看看这次会遇见谁。" : hk ? "揀地方、時間、興趣，唔使揀人。 *坐低，Show up，睇吓今次撞到邊個。*" : "Pick the place, time, or interest — not the people. *Take a seat, show up, and see who you meet.*"} />
           </p>
           <ol className="bb-lead-gap overflow-hidden rounded-[1.7rem] border border-white/15">
             {steps.map((step) => (
@@ -117,7 +132,7 @@ function AboutBody() {
                         <div key={badge.letter} className="flex flex-col items-center text-center">
                           <span className={`grid h-9 w-9 place-items-center rounded-full font-serif text-base font-normal ring-1 ring-black/15 ${badge.circle}`}>{badge.letter}</span>
                           <span className="mt-2 block text-xs text-white">{badge.name}</span>
-                          <span className="block text-[10px] leading-tight text-white/45">{hk ? badge.pointsHk : badge.points}</span>
+                          <span className="block text-[10px] leading-tight text-white/45">{hk || zh ? badge.pointsHk : badge.points}</span>
                           <span className="block text-[10px] text-white/45">{badge.note}</span>
                         </div>
                       ))}
@@ -129,7 +144,7 @@ function AboutBody() {
                           <span className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg font-normal ring-1 ring-black/15 ${badge.circle}`}>{badge.letter}</span>
                           <span>
                             <span className="block text-sm text-white">{badge.name}</span>
-                            <span className="block text-xs text-white/45">{hk ? badge.pointsHk : badge.points} · {badge.note}</span>
+                            <span className="block text-xs text-white/45">{hk || zh ? badge.pointsHk : badge.points} · {badge.note}</span>
                           </span>
                         </div>
                       ))}
