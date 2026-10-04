@@ -182,30 +182,34 @@ function Home() {
                   <p className="text-[0.72rem] tracking-wide text-mute">
                     <Editable locked={venue.locked} value={say(bb.lang, venue.locationLabel)} onChange={(locationLabel) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) v.locationLabel = locationLabel; })} />
                   </p>
-                  <p className="mt-1 text-[0.8rem] text-mute">{venue.priceTier} · {venue.hours}</p>
-                  {venue.petFriendly && <p className="mt-1 text-[0.72rem] uppercase tracking-[0.12em] text-ember">{t("venue.pet")}</p>}
-                  {preview ? (
-                    <div className="mb-2 mt-3 flex items-start gap-2 text-[0.75rem]">
-                      <HostBadge handle={preview.table.hostHandle} userId={preview.table.hostUserId || ""} tier={preview.table.hostTier} />
-                      <div className="min-w-0">
-                        <p className="text-mute">{(() => {
-                          const d = new Date(`${preview.table.dateISO}T12:00:00`);
-                          const wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
-                          const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"][d.getMonth()];
-                          return `${wd}, ${d.getDate()} ${mon}`;
-                        })()} • {preview.table.time} • {preview.hold.joined} people • {preview.hold.places} left</p>
-                        <p className="mt-1 flex items-center gap-2 text-mute">
-                          <span>{preview.table.tableType === "blind-date" ? "Blind date" : "Meet friends"}{more > 0 ? " + More" : ""}</span>
-                          {(() => {
-                            const host = preview.table.hostHandle;
-                            const joiners = (preview.table.participants || []).filter((p) => p && p.handle && p.handle !== host && p.role !== "host");
-                            if (!joiners.length) return null;
-                            return <JoinerStack people={joiners} cap={6} />;
-                          })()}
-                        </p>
-                      </div>
+                  <div className="mt-auto pt-3">
+                    <p className="min-h-[1.15rem] text-[0.8rem] text-mute">{venue.priceTier} · {venue.hours}</p>
+                    <p className="mt-1 min-h-[1.15rem] text-[0.72rem] uppercase tracking-[0.12em] text-ember">{venue.petFriendly ? t("venue.pet") : "\u00a0"}</p>
+                    <div className="mb-2 mt-3 flex min-h-[2.75rem] items-start gap-2 text-[0.75rem]">
+                      {preview ? (
+                        <>
+                          <HostBadge handle={preview.table.hostHandle} userId={preview.table.hostUserId || ""} tier={preview.table.hostTier} />
+                          <div className="min-w-0">
+                            <p className="text-mute">{(() => {
+                              const d = new Date(`${preview.table.dateISO}T12:00:00`);
+                              const wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
+                              const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"][d.getMonth()];
+                              return `${wd}, ${d.getDate()} ${mon}`;
+                            })()} • {preview.table.time} • {preview.hold.joined} people • {preview.hold.places} left</p>
+                            <p className="mt-1 flex items-center gap-2 text-mute">
+                              <span>{preview.table.tableType === "blind-date" ? "Blind date" : "Meet friends"}{more > 0 ? " + More" : ""}</span>
+                              {(() => {
+                                const host = preview.table.hostHandle;
+                                const joiners = (preview.table.participants || []).filter((p) => p && p.handle && p.handle !== host && p.role !== "host");
+                                if (!joiners.length) return null;
+                                return <JoinerStack people={joiners} cap={6} />;
+                              })()}
+                            </p>
+                          </div>
+                        </>
+                      ) : null}
                     </div>
-                  ) : null}
+                  </div>
                 </div>
               </Link>
               <div className="mt-auto flex gap-2.5 px-4 pb-[18px] pt-2">
