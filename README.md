@@ -2,6 +2,8 @@
 
 Hong Kong blind social dining. Next.js app for Vercel.
 
+Before changing shared UI, responsive behaviour, or navigation, read [UI_INVARIANTS.md](UI_INVARIANTS.md). If a change conflicts with one of those rules, report the conflict instead of overriding it.
+
 Production: https://buddyblind.com
 
 ```bash
