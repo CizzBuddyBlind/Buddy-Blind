@@ -5,6 +5,7 @@ export function middleware(request) {
   if (
     pathname === "/gate" ||
     pathname.startsWith("/api/gate") ||
+    pathname.startsWith("/api/stripe/webhook") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
     pathname === "/bb-logo.jpg" ||
