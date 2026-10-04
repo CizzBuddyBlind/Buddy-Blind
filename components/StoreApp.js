@@ -425,11 +425,11 @@ function Venues({ onOpen }) {
         ))}
         <HelpMark section="02" className="ml-auto" />
       </div>
-      <div className="mt-4 grid grid-cols-2 items-start gap-x-3 gap-y-5">
+      <div className="mt-4 grid grid-cols-2 items-stretch gap-x-3 gap-y-5">
         {venues.map((venue) => {
           const next = soonestTable(venue)[0];
           return (
-            <button key={venue.id} type="button" onClick={() => onOpen(venue.id)} className="flex flex-col text-left">
+            <button key={venue.id} type="button" onClick={() => onOpen(venue.id)} className="flex h-full flex-col text-left">
               <div className="relative w-full overflow-hidden rounded-2xl bg-black" style={{ paddingBottom: "133%" }}>
                 <div className="absolute inset-0">
                   <Photo src={venue.imageUrl} alt="" />
@@ -438,25 +438,29 @@ function Venues({ onOpen }) {
                 <span className="absolute bottom-2 left-2 rounded-full bg-white px-2.5 py-1 text-[9px] font-semibold uppercase text-black">{next?.table.time || venue.timeLabel}</span>
               </div>
               <h2 data-keep className="mt-2 line-clamp-2 min-h-[2.4em] font-serif text-[clamp(1rem,4.2vw,1.2rem)] leading-tight">{say(bb.lang, venue.name, false)}</h2>
-              <p className="mt-1 line-clamp-2 text-[10px] uppercase tracking-[0.08em] text-white/55">{say(bb.lang, venue.cuisine || venue.typeLabel)}</p>
-              <p className="line-clamp-2 text-[11px] text-white/50">{[venue.locationLabel, venue.priceTier, venue.hours].filter(Boolean).map((part) => say(bb.lang, part)).join(" · ")}</p>
-              {venue.petFriendly && <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-ember">{translate(bb.lang, "venue.pet")}</p>}
-              <span className="mt-2 flex h-6 items-center gap-1.5">
-                {next && (
-                  <>
-                    <HostBadge handle={next.table.hostHandle || ""} userId={next.table.hostUserId || ""} tier={next.table.hostTier || "bronze"} />
-                    <Joiners people={next.table.participants} host={next.table.hostHandle} />
-                  </>
-                )}
-              </span>
-              {next && (
-                <p className="text-[11px] leading-snug text-white/60">
-                  {prettyDate(next.table.dateISO, bb.lang)} · {next.table.time}
-                  <br />
-                  {saidPrefs(bb.lang, next.table)} · {next.hold.places} {say(bb.lang, "left")}
+              <p className="mt-1 line-clamp-2 min-h-[2em] text-[10px] uppercase tracking-[0.08em] text-white/55">{say(bb.lang, venue.cuisine || venue.typeLabel)}</p>
+              <p className="line-clamp-2 min-h-[2em] text-[11px] text-white/50">{say(bb.lang, venue.locationLabel)}</p>
+              <div className="mt-auto pt-2">
+                <p className="min-h-[1rem] text-[11px] text-white/45">{[venue.priceTier, venue.hours].filter(Boolean).join(" · ") || "\u00a0"}</p>
+                <p className="mt-1 min-h-[0.9rem] text-[10px] uppercase tracking-[0.08em] text-ember">{venue.petFriendly ? translate(bb.lang, "venue.pet") : "\u00a0"}</p>
+                <span className="mt-2 flex h-6 items-center gap-1.5">
+                  {next && (
+                    <>
+                      <HostBadge handle={next.table.hostHandle || ""} userId={next.table.hostUserId || ""} tier={next.table.hostTier || "bronze"} />
+                      <Joiners people={next.table.participants} host={next.table.hostHandle} />
+                    </>
+                  )}
+                </span>
+                <p className="min-h-[2.2em] text-[11px] leading-snug text-white/60">
+                  {next ? (
+                    <>
+                      {prettyDate(next.table.dateISO, bb.lang)} · {next.table.time}
+                      <br />
+                      {saidPrefs(bb.lang, next.table)} · {next.hold.places} {say(bb.lang, "left")}
+                    </>
+                  ) : "\u00a0"}
                 </p>
-              )}
-              <p className="text-[11px] text-white/45">{say(bb.lang, venue.priceLabel)}</p>
+              </div>
             </button>
           );
         })}
