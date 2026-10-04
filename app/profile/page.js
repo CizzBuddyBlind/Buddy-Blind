@@ -209,8 +209,9 @@ function ProfilePage() {
   }
 
   return (
-    <main className="bb-frame flex min-h-[calc(100dvh-4rem)] flex-col bg-ink pb-28 pt-10">
-      <div className={`my-auto grid w-full items-start gap-10 ${guest ? "mx-auto max-w-md" : "md:grid-cols-2"}`}>
+    <main className="bb-frame flex min-h-[calc(100dvh-4rem)] flex-col bg-ink">
+      <div className="flex min-h-[calc(100dvh-4rem-7rem)] flex-col justify-center py-8 md:min-h-[calc(100dvh-4rem)]">
+      <div className={`grid w-full items-start gap-10 ${guest ? "mx-auto max-w-md" : "md:grid-cols-2"}`}>
         <section className="flex flex-col rounded-[28px] bg-[#141414] px-6 py-8 text-[#f5f5f5] ring-1 ring-white/10 md:px-8">
           <div className={`mx-auto grid h-24 w-24 place-items-center rounded-full font-serif text-4xl ${paint.className}`} style={paint.style}>{initial}</div>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
@@ -384,6 +385,7 @@ function ProfilePage() {
           )}
         </section>
         {!guest && <FinishedEvents />}
+      </div>
       </div>
       {plans && <PlanWindow onClose={() => setPlans(false)} />}
     </main>
