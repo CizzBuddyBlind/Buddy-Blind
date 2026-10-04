@@ -746,9 +746,11 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
     );
   }
   const session = bb.session;
-  const record = people?.guest ? personRecord(people.guest, { session, users: bb.users }) : null;
-  const other = !!(record?.userId && record.userId !== session.userId);
-  const viewed = other ? record : session;
+  const asked = people?.guest || "";
+  const record = asked ? personRecord(asked, { session, users: bb.users }) : null;
+  const mine = !asked || !!(record?.userId && session?.userId && record.userId === session.userId);
+  const other = !mine;
+  const viewed = mine ? session : (record || { userId: asked, handle: asked, points: 0 });
   const paint = badgePaint(viewed?.points || 0, bb.content?.pointThresholds, "light");
   const buddies = other
     ? (viewed.test ? TEST_PEOPLE.filter((person) => person.handle !== viewed.handle).map((person) => ({ id: person.id, name: person.handle, status: "accepted" })) : [])

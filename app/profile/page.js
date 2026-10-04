@@ -106,11 +106,7 @@ function ProfilePage() {
   const [panel, setPanel] = useState("info");
   const [buddy, setBuddy] = useState(null);
   const [page, setPage] = useState(0);
-  const [guest, setGuest] = useState(null);
   const [plans, setPlans] = useState(false);
-  useEffect(() => {
-    setGuest(search.get("u") || null);
-  }, [search]);
   useEffect(() => {
     if (!bb.ready) return;
     const query = new URLSearchParams(window.location.search);
@@ -150,9 +146,11 @@ function ProfilePage() {
     showIdentity: session.showIdentity !== false,
     showPlace: session.showPlace !== false,
   };
-  const record = guest ? personRecord(guest, { session, users: bb.users }) : null;
-  const other = !!(record?.userId && record.userId !== session.userId);
-  const viewed = other ? record : session;
+  const asked = search.get("u") || "";
+  const record = asked ? personRecord(asked, { session, users: bb.users }) : null;
+  const mine = !asked || !!(record?.userId && session?.userId && record.userId === session.userId);
+  const viewed = mine ? session : (record || { userId: asked, handle: asked, points: 0 });
+  const other = !mine;
   const profileName = viewed.handle || session.handle;
   const ownBuddies = [
     ...(social.buddies || []).filter((b) => b.status === "accepted"),
@@ -208,7 +206,7 @@ function ProfilePage() {
           {where && <p className="text-center text-sm text-white/45">{where}</p>}
           <p className="mt-1 text-center text-sm text-white/70">{points} points{off ? ` · ${off}% off` : ""}</p>
           {other && (
-            <button type="button" className="mt-3 text-xs text-white/45" onClick={() => { router.push("/profile"); setGuest(null); setPage(0); }}>Back</button>
+            <button type="button" className="mt-3 text-xs text-white/45" onClick={() => { router.push("/profile"); setPage(0); }}>Back</button>
           )}
           <div className="bb-profile-actions mt-6">
             {[

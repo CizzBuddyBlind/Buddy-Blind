@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { HostBadge } from "./Flows";
 import { peopleYouCanRate, useBB } from "./Providers";
-import { personRecord } from "@/lib/people";
+import { personRecord, presentedPerson } from "@/lib/people";
 import { setPeopleApi } from "./peopleNav";
 
 const PeopleCtx = createContext(null);
@@ -90,7 +90,8 @@ export function PeopleProvider({ children }) {
     const list = (people || []).filter((person) => person?.handle).slice(0, cap);
     if (!list.length) return;
     if (list.length === 1) {
-      openProfile(list[0].handle);
+      const person = presentedPerson(list[0], { session: bb.session, users: bb.users });
+      openProfile(person.userId || person.handle || list[0].handle);
       return;
     }
     setGroup({ people: list, cap });
@@ -127,15 +128,19 @@ export function PeopleProvider({ children }) {
       {children}
       {group && (
         <div className="fixed inset-0 z-[80] grid place-items-center bg-black/70 p-4" onClick={() => setGroup(null)}>
-          <div className="max-h-[70dvh] w-full max-w-sm overflow-y-auto rounded-3xl bg-[#141414] p-5 text-white" onClick={(e) => e.stopPropagation()}>
-            <p className="text-center text-xs uppercase tracking-[0.16em] text-white/50">Who joined</p>
-            <div className="mt-4 grid grid-cols-4 gap-3">
-              {group.people.map((person) => (
-                <button key={person.handle} type="button" onClick={() => openProfile(person.handle)} className="grid justify-items-center gap-1 text-center">
-                  <HostBadge handle={person.handle} userId={person.userId || ""} tier={person.tier || "bronze"} quiet />
-                  <span className="max-w-full truncate text-[10px] text-white/70">{person.handle}</span>
-                </button>
-              ))}
+          <div className="max-h-[88dvh] w-full max-w-3xl overflow-y-auto rounded-[2rem] bg-[#141414] px-6 py-10 text-white sm:px-12" onClick={(e) => e.stopPropagation()}>
+            <p className="text-center text-sm uppercase tracking-[0.2em] text-white/60">Who joined</p>
+            <div className="mt-10 grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3">
+              {group.people.map((raw) => {
+                const person = presentedPerson(raw, { session: bb.session, users: bb.users });
+                const label = person.handle || raw.handle;
+                return (
+                  <button key={person.userId || label} type="button" onClick={() => openProfile(person.userId || label)} className="grid justify-items-center gap-4 text-center">
+                    <HostBadge handle={label} userId={person.userId || ""} size="person" quiet />
+                    <span className="text-lg text-white">{label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

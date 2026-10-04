@@ -26,7 +26,7 @@ export function HostBadge({ handle = "?", userId = "", size = "host", quiet = fa
   const record = personRecord(userId || handle, { session: bb.session, users: bb.users });
   const paint = badgePaint(record?.points || 0, bb.content?.pointThresholds, "dark");
   const letter = String(record?.handle || handle || "?").slice(0, 1).toUpperCase();
-  const box = size === "joiner" ? "h-4 w-4 text-[8px]" : size === "feature" ? "h-9 w-9 text-sm" : "h-5 w-5 text-[10px]";
+  const box = size === "joiner" ? "h-4 w-4 text-[8px]" : size === "person" ? "h-20 w-20 text-3xl" : size === "feature" ? "h-9 w-9 text-sm" : "h-5 w-5 text-[10px]";
   const face = (
     <span className={`grid shrink-0 place-items-center rounded-full font-serif font-semibold ${box} ${paint.className}`} style={paint.style} title={`${record?.handle || handle} · ${paint.tier}`}>
       {letter}
