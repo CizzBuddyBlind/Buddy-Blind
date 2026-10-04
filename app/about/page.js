@@ -2,17 +2,28 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useBB } from "@/components/Providers";
+
+function Rich({ text }) {
+  const parts = String(text).split(/(\*[^*]+\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith("*") && part.endsWith("*") && part.length > 2) {
+      return <strong key={index} className="font-semibold text-white">{part.slice(1, -1)}</strong>;
+    }
+    return <span key={index}>{part}</span>;
+  });
+}
 
 const STEPS = [
-  { n: "01", title: "See the place", body: "The photo is the filter. A restaurant, or a private night. Like the room, you’ll like the night." },
-  { n: "02", title: "See enough", body: "Neighbourhood, time, seats left. Soho tonight or Central tomorrow. No faces. Enough to want it." },
-  { n: "03", title: "Take a seat", body: "Join, or open the table. HK$5 only when you confirm. That’s for trust, not the meal." },
-  { n: "04", title: "Show up", body: "No names before. No photos before. The restaurant is the scene. You bring the vibe." },
-  { n: "05", title: "After the meal", body: "Stars aren’t about looks. A short line is your reputation. Your voice matters." },
-  { n: "06", title: "Add a buddy", body: "Hey, you’re my vibe. One tap. If they say yes too, you’re buddies." },
-  { n: "07", title: "Host the reason", body: "Premium. A private night, up to 20. Wine, social, a hike. You make the reason." },
-  { n: "08", title: "Points change the circle", body: "Not the price. Join adds 1. Invite adds 2. Host adds 5. Enjoy the discount." },
+  { n: "01", title: "Home", body: ["Start here. *You don’t know who you’ll meet. That’s the point.* Beside it, we show one event we picked: the fullest table today."] },
+  { n: "02", title: "Venues", body: ["Pick from our partner restaurants. See the *place, time, and seats left — not who’s coming.*", "Join a table that already exists, invite others to one, or open your own. *You pick where and when. The people stay blind.*"] },
+  { n: "03", title: "Quick Meet", body: ["For when you’re free *today* and just want someone nearby to join you.", "Maybe nobody at work is free for lunch. Maybe you want someone for a coffee or tea break, a casual after-work drink, or you’re a student looking for someone around campus to grab food with.", "*Open a seat or join one nearby.* No planning weeks ahead — just find someone who happens to be free too."] },
+  { n: "04", title: "Private", body: ["This one starts with *your reason*.", "Create almost any kind of social event and decide how small or large you want it to be — *from 2 people to 20*.", "Bring IT people together for networking. Start something for lawyers, doctors, designers, founders, or whatever field you’re in.", "Create a hiking or mahjong group for people 50+ who want to expand their social circle. Host an LGBTQ+ night, or create something specifically for gay, lesbian, bi, trans, or queer people who want to meet others in their community.", "Find fellow geeks for a board-game night. Find another movie lover who actually wants to go to the cinema with you.", "*You decide the interest, activity, time, place, and number of people.*", "Others join because they’re interested in the same thing — *not because they picked your profile.*", "Hosting is *Premium*."] },
+  { n: "05", title: "Me Time", body: ["Everything you’ve joined, in one place. *Today, and what’s next.*", "When the day comes, one tap tells us *I’m coming* or *I’m here*.", "Then put the app away and meet the people behind the seats."] },
+  { n: "06", title: "Plan", body: ["*Free* to explore. *Lite* to comment and rate. *Premium* to host.", "Try Premium free, then stay if you want.", "Your plan unlocks features; it is separate from the *$5 administrative fee* for joining an event."] },
+  { n: "07", title: "Profile", body: ["Your Buddy Blind history lives here: *your circle, points, Buddies, events you joined, and events you hosted.*", "After an event, people who actually attended the same event can *review and rate each other*."] },
+  { n: "08", title: "Buddies", body: ["Met someone you actually want to see again? *Add them as a Buddy.*", "You can only add someone after you’ve both been part of the same event. That keeps Buddies about people you’ve actually met through Buddy Blind — not random profiles you found in the app.", "Once you’re Buddies, meeting again is easy. Whenever you *Invite, Join, or Host*, you can select the Buddies you want to bring along and notify them directly.", "*Meet blind once. Meet again by choice.*"] },
+  { n: "09", title: "Points change the circle", body: ["Points reward you for taking part and bringing people together.", "*Join adds 1. Invite adds 2. Host adds 5.*", "More points move your circle up and give you a bigger discount."] },
+  { n: "10", title: "Why the $5 administrative fee?", body: ["The $5 administrative fee helps keep Buddy Blind *accountable* when people who may not know each other are meeting in real life.", "When you join an event, your booking creates a record connecting your registered account to that specific *event, date, and time*.", "Your registered contact and verification information, together with the payment record associated with the booking, can help identify the account behind a seat if something serious happens.", "For example, if someone leaves without paying their bill, damages property, or an incident requires police involvement, Buddy Blind can identify the relevant account and event record and, where appropriate or legally required, assist the venue or authorities with information available to us.", "For that reason, the $5 administrative fee is *non-refundable once the booking is confirmed*, including if you later decide not to attend. It is attached to the confirmed booking and the accountability record created with it.", "*You may not know who’s sitting at the table. But nobody at the table is completely anonymous.*"] },
 ];
 
 const BADGES = [
@@ -23,8 +34,6 @@ const BADGES = [
 
 function AboutBody() {
   const params = useSearchParams();
-  const bb = useBB();
-  const fee = bb.market?.fee || "HK$5";
   const [tab, setTab] = useState(params.get("tab") === "how" ? "how" : "about");
   return (
     <main className="bb-frame bg-ink pb-28 pt-10 text-fg md:pb-20">
@@ -60,26 +69,31 @@ function AboutBody() {
         </>
       ) : (
         <div className="mx-auto w-full max-w-5xl">
-          <h1 className="mt-8 max-w-4xl font-serif text-[3.4rem] leading-[0.95] text-white sm:text-6xl md:text-7xl">
+          <h1 className="mt-8 max-w-4xl font-serif text-[3.4rem] font-semibold leading-[0.95] text-white sm:text-6xl md:text-7xl">
             See venue, see vibe
             <br />
             <span className="italic text-ember">Take a seat.</span>
           </h1>
+          <p className="mt-6 max-w-2xl text-sm leading-relaxed text-white/55">
+            <Rich text="Pick the place, time, or interest — not the people. *Take a seat, show up, and see who you meet.*" />
+          </p>
           <ol className="bb-lead-gap overflow-hidden rounded-[1.7rem] border border-white/15">
             {STEPS.map((step) => (
               <li key={step.n} className="grid grid-cols-[3.2rem_1fr] gap-2 border-t border-white/10 px-6 py-7 first:border-t-0 sm:px-10">
                 <span className="pt-2 text-xs tracking-[0.12em] text-white/40">{step.n}</span>
                 <div>
-                  <h2 className="font-serif text-[1.65rem] leading-tight text-white md:text-[1.85rem]">{step.title}</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/55">{step.n === "03" ? `Join, or open the table. ${fee} only when you confirm. That’s for trust, not the meal.` : step.body}</p>
-                  {step.n === "08" && (
+                  <h2 className="font-serif text-[1.65rem] font-semibold leading-tight text-white md:text-[1.85rem]">{step.title}</h2>
+                  {step.body.map((line) => (
+                    <p key={line} className="mt-2 max-w-2xl text-sm leading-relaxed text-white/55"><Rich text={line} /></p>
+                  ))}
+                  {step.n === "09" && (
                     <div className="mt-5 flex flex-wrap gap-6">
                       {BADGES.map((badge) => (
                         <div key={badge.letter} className="flex items-center gap-3">
                           <span className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg font-semibold ring-1 ring-black/15 ${badge.circle}`}>{badge.letter}</span>
                           <span>
                             <span className="block text-sm text-white">{badge.name}</span>
-                            <span className="block text-xs text-white/45">{badge.points} · {badge.note}</span>
+                            <span className="block text-xs text-white/45"><strong className="font-semibold">{badge.points}</strong> · <strong className="font-semibold">{badge.note}</strong></span>
                           </span>
                         </div>
                       ))}
