@@ -13,6 +13,7 @@ import { usePeople } from "./People";
 import { iso, badgePaint } from "@/lib/bible";
 import { say } from "@/lib/say";
 import { StoreApp } from "./StoreApp";
+import { MobileHello } from "./MobileHello";
 import { appToPath, pathToApp } from "@/lib/layoutMode";
 
 const TOP = [
@@ -160,6 +161,7 @@ export function Shell({ children }) {
         <PageLang />
         <StoreApp embedded />
         {flows}
+        <MobileHello />
       </div>
     );
   }
@@ -170,6 +172,7 @@ export function Shell({ children }) {
         <PageLang />
         <a href="/m?tab=profile" data-keep className="bb-word block px-5 pt-[max(1.25rem,env(safe-area-inset-top))] text-sm tracking-[0.16em]">BUDDY BLIND</a>
         {children}
+        <MobileHello />
       </div>
     );
   }
@@ -563,6 +566,7 @@ export function Shell({ children }) {
       {bb.flow?.type === "private-create" && (
         <PrivateWizard venueId={bb.flow.venueId || ""} onClose={() => bb.setFlow(null)} />
       )}
+      <MobileHello />
     </div>
   );
 }
