@@ -9,6 +9,7 @@ import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso
 import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
 import { HelpMark } from "./HelpMark";
+import { personRecord, TEST_PEOPLE } from "@/lib/people";
 import { MeTimeMark } from "./MeTimeMark";
 import { JoinerStack, usePeople } from "./People";
 import { mySeats, pastStats } from "./PhoneApp";
@@ -306,13 +307,13 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
               {featured.kind === "table" ? `${featured.table.time || ""}` : featured.event.timeLabel}
             </span>
             <span className="absolute right-3 top-3">
-              <HostBadge handle={featured.host || "C"} tier={featured.tier || "bronze"} size="feature" />
+              <HostBadge handle={featured.host || ""} tier={featured.tier || "bronze"} size="feature" />
             </span>
           </button>
           <div className="px-4 py-4">
             <h2 className="font-serif text-[clamp(1.6rem,7vw,2rem)] leading-none" {...(featured.kind === "table" ? { "data-keep": "1" } : {})}>{featured.name}</h2>
             <div className="mt-3 flex items-center gap-2">
-              <HostBadge handle={featured.host || "C"} tier={featured.tier || "bronze"} />
+              <HostBadge handle={featured.host || ""} tier={featured.tier || "bronze"} />
               <Joiners people={featured.kind === "table" ? featured.table.participants : featured.event.participants} host={featured.host} cap={featured.kind === "private" ? 20 : 6} />
             </div>
             <p className="mt-3 text-sm leading-relaxed text-white/70">
@@ -404,7 +405,7 @@ function Venues({ onOpen }) {
               <span className="mt-2 flex h-6 items-center gap-1.5">
                 {next && (
                   <>
-                    <HostBadge handle={next.table.hostHandle || "C"} tier={next.table.hostTier || "bronze"} />
+                    <HostBadge handle={next.table.hostHandle || ""} tier={next.table.hostTier || "bronze"} />
                     <Joiners people={next.table.participants} host={next.table.hostHandle} />
                   </>
                 )}
@@ -512,7 +513,7 @@ function Quick({ onOpen }) {
               <span className="block text-[10px] uppercase tracking-[0.12em] text-black/45">{say(bb.lang, row.timeLabel)}</span>
               <span className="mt-0.5 flex items-center gap-2">
                 <span data-keep className="truncate font-serif text-lg">{say(bb.lang, row.name, false)}</span>
-                <HostBadge handle={row.hostName || "CJ"} tier={row.hostTier || "gold"} />
+                <HostBadge handle={row.hostName || ""} tier={row.hostTier || "gold"} />
               </span>
               <span className="block text-xs text-black/45">{say(bb.lang, row.detail)}</span>
             </span>
@@ -684,7 +685,7 @@ function Private({ onOpen }) {
               <p className="mt-1 text-xs text-black/55">{say(bb.lang, night.upcomingLabel || `${night.spots} places`)}</p>
               <span className="mt-2 flex items-center justify-between gap-2">
                 <span className="flex min-w-0 items-center gap-1.5">
-                  <HostBadge handle={night.hostName || "Host"} tier={night.hostTier || "bronze"} />
+                  <HostBadge handle={night.hostName || ""} tier={night.hostTier || "bronze"} />
                   <Joiners people={night.participants} host={night.hostName} cap={20} />
                 </span>
                 <span className="shrink-0 rounded-full bg-black px-3 py-1.5 text-[10px] font-semibold text-white">{translate(bb.lang, "btn.join")}</span>
@@ -714,7 +715,7 @@ function PrivateDetail({ id, onBack }) {
       <h1 className="mt-4 font-serif text-[clamp(1.8rem,8vw,2.4rem)]">{say(bb.lang, event.name, false)}</h1>
       <p className="mt-2 text-sm">{say(bb.lang, event.location)} · {event.dateISO} · {say(bb.lang, event.timeLabel)}</p>
       <p className="mt-3 text-sm leading-relaxed text-black/70">{say(bb.lang, event.description || event.forWhom)}</p>
-      <p className="mt-4 flex items-center gap-2 text-sm"><HostBadge handle={event.hostName || "Host"} tier={event.hostTier || "bronze"} /> {event.hostName}</p>
+      <p className="mt-4 flex items-center gap-2 text-sm"><HostBadge handle={event.hostName || ""} tier={event.hostTier || "bronze"} /> {event.hostName}</p>
       <button type="button" className="mt-5 w-full rounded-full bg-black py-3 text-sm font-semibold text-white" onClick={() => { if (!bb.session) { bb.notify("Log in first."); return; } setPay(true); }}>{translate(bb.lang, "btn.join")}</button>
       {premium && <button type="button" className="mt-2 w-full rounded-full border border-black/15 py-3 text-sm" onClick={() => bb.setFlow({ type: "private-create", venueId: event.venueId || "" })}>{translate(bb.lang, "btn.host")}</button>}
       <Dock>
@@ -747,15 +748,18 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   const session = bb.session;
   const guestName = people?.guest && people.guest !== session.handle ? people.guest : "";
   if (guestName) {
-    const person = (bb.users || []).find((user) => user.handle === guestName);
+    const person = personRecord(guestName, { session, users: bb.users });
     const theirs = (bb.content.peerReviews || []).filter((review) => review.to === guestName);
     const them = peopleYouCanRate(bb.content, session.handle).find((item) => item.handle === guestName);
     const paintGuest = badgePaint(person?.points || 0, bb.content?.pointThresholds, "light");
+    const about = [person?.neighborhood && `Lives in ${person.neighborhood}`, person?.occupation].filter(Boolean).join(" · ");
     return (
       <section className="px-[5vw] pb-8 pt-3 text-center">
         <button type="button" onClick={() => people.clearGuest()} className="text-xs uppercase tracking-[0.14em] text-white/45">Back</button>
         <div className={`mx-auto mt-4 grid h-20 w-20 place-items-center rounded-full font-serif text-3xl ${paintGuest.className}`} style={paintGuest.style}>{guestName.slice(0, 1).toUpperCase()}</div>
-        <h1 className="mt-3 text-2xl font-bold">{guestName}</h1>
+        <h1 className="mt-3 text-2xl font-bold">{person?.handle || guestName}</h1>
+        <p className="mt-1 text-sm text-white/70">{person?.points || 0} points</p>
+        {about && <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/55">{about}</p>}
         {them && <button type="button" onClick={() => people.openReview(them)} className="mt-4 rounded-full bg-[#1c1c1c] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/80">Rate them</button>}
         <div className="mt-5 space-y-3 text-left">
           {theirs.slice(0, 3).map((review) => (
@@ -767,7 +771,12 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
     );
   }
   const paint = badgePaint(session.points, bb.content?.pointThresholds, "light");
-  const buddies = (bb.social?.buddies || []).filter((b) => b.status === "accepted");
+  const buddies = [
+    ...(bb.social?.buddies || []).filter((b) => b.status === "accepted"),
+    ...(session.role === "founder"
+      ? TEST_PEOPLE.filter((person) => person.handle.toLowerCase() !== String(session.handle || "").toLowerCase()).map((person) => ({ id: person.id, name: person.handle, status: "accepted" }))
+      : []),
+  ].filter((buddy, index, list) => list.findIndex((item) => item.name === buddy.name) === index);
   const who = [session.gender, session.ageRange, session.orientation].filter(Boolean).join(" · ");
   const where = [session.neighborhood && `Lives in ${session.neighborhood}`, session.occupation && `Works in ${session.occupation}`].filter(Boolean).join(" · ");
   const showWho = session.showIdentity !== false && who;
@@ -816,9 +825,13 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
       {panel === "info" && <Info session={session} content={bb.content} />}
       {panel === "buddies" && (
         <div className="mt-6 grid grid-cols-5 gap-3">
-          {buddies.map((buddy) => (
-            <span key={buddy.id} className="grid aspect-square place-items-center rounded-full border border-white/15 bg-[#161616] font-serif text-lg">{buddy.name.slice(0, 1).toUpperCase()}</span>
-          ))}
+          {buddies.map((buddy) => {
+            const record = personRecord(buddy.name, { session, users: bb.users });
+            const mark = badgePaint(record?.points || 0, bb.content?.pointThresholds, "dark");
+            return (
+              <button key={buddy.id} type="button" onClick={() => people.openProfile(buddy.name)} className={`grid aspect-square place-items-center rounded-full font-serif text-lg ${mark.className}`} style={mark.style}>{buddy.name.slice(0, 1).toUpperCase()}</button>
+            );
+          })}
           {!buddies.length && <p className="col-span-5 text-sm text-white/45">{say(bb.lang, "No buddies yet.")}</p>}
         </div>
       )}

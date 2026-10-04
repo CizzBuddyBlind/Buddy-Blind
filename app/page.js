@@ -169,7 +169,7 @@ export default function HomePage() {
                   <span className="rounded-full bg-ember px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#1a1408]">{say(bb.lang, featured.home?.spots || `${featured.spots ?? 0} spots left`)}</span>
                 </div>
                 <div className="absolute right-3 top-4">
-                  <HostBadge handle={featured.host || "C"} tier={featured.tier || "bronze"} size="feature" />
+                  <HostBadge handle={featured.host || ""} tier={featured.tier || "bronze"} size="feature" />
                 </div>
                 <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white">{featured.home?.chip || featured.meta}</span>
               </div>

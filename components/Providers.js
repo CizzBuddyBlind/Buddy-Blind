@@ -8,6 +8,7 @@ import { bookingHold, iso, logEntry, normalizeContent, privateEditOpen, tableSta
 import { notifyRestaurant } from "@/lib/notify";
 import { putMedia } from "@/lib/media";
 import { pageFromPath, setWording, setWordingPage } from "@/lib/say";
+import { castForFounder } from "@/lib/people";
 import { marketFromCode, marketFromTimezone } from "@/lib/market";
 import { effectiveAccess, isInternalRole } from "@/lib/entitlement";
 
@@ -1502,7 +1503,7 @@ export function BuddyProvider({ children }) {
     () => ({
       ready,
       remote,
-      content,
+      content: castForFounder(content, session),
       session,
       staff,
       editing,

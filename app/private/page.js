@@ -79,7 +79,7 @@ export default function PrivatePage() {
             </div>
             <p className="mt-4 flex items-center justify-between gap-3 text-sm text-paper/70">
               <span className="flex min-w-0 items-center gap-2">
-                <HostBadge handle={campaign.hostName || "Host"} tier={campaign.hostTier || "bronze"} />
+                <HostBadge handle={campaign.hostName || ""} tier={campaign.hostTier || "bronze"} />
                 <span className="truncate">{campaign.hostName || campaign.hostLabel}</span>
               </span>
               <span className="shrink-0 rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">{t("btn.join")}</span>
@@ -128,7 +128,7 @@ export default function PrivatePage() {
               </div>
               <div className="mt-3 flex items-center justify-between gap-2 px-4 pb-4 text-sm">
                   <span className="flex min-w-0 items-center gap-2">
-                    <HostBadge handle={night.hostName || "Host"} tier={night.hostTier || "bronze"} />
+                    <HostBadge handle={night.hostName || ""} tier={night.hostTier || "bronze"} />
                     <span className="truncate">{night.hostName || night.hostLabel}</span>
                     <JoinerStack people={night.participants} host={night.hostName} cap={20} />
                   </span>

@@ -72,14 +72,16 @@ export function PeopleProvider({ children }) {
 
   function openProfile(handle) {
     const name = String(handle || "").trim();
-    if (!name) return;
+    if (!name || name === "?" || /^host$/i.test(name)) return;
     setGroup(null);
+    setReview(null);
+    const mine = bb.session?.handle && bb.session.handle.toLowerCase() === name.toLowerCase();
     if (app) {
-      setGuest(name);
-      go.current?.(name);
+      setGuest(mine ? "" : name);
+      go.current?.();
       return;
     }
-    router.push(`/profile?u=${encodeURIComponent(name)}`);
+    router.push(mine ? "/profile" : `/profile?u=${encodeURIComponent(name)}`);
   }
 
   function openGroup(people, cap = 6) {

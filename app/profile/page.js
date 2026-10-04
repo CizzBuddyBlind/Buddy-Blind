@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useBB, peopleYouCanRate } from "@/components/Providers";
 import { usePeople } from "@/components/People";
 import { PlanWindow } from "@/components/PlanWindow";
 import { AGE_RANGES, badgePaint, discountPercent } from "@/lib/bible";
-import { SEED_ACCOUNTS } from "@/lib/defaults";
+import { personRecord, TEST_PEOPLE } from "@/lib/people";
 import { FinishedEvents, pastStats } from "@/components/PhoneApp";
 import { HelpMark } from "@/components/HelpMark";
 
@@ -90,6 +90,7 @@ function canSeeComments(bb) {
 function ProfilePage() {
   const bb = useBB();
   const people = usePeople();
+  const router = useRouter();
   const search = useSearchParams();
   const { session, social } = bb;
   const [draft, setDraft] = useState(null);
@@ -100,8 +101,7 @@ function ProfilePage() {
   const [guest, setGuest] = useState(null);
   const [plans, setPlans] = useState(false);
   useEffect(() => {
-    const named = search.get("u");
-    if (named) setGuest(named);
+    setGuest(search.get("u") || null);
   }, [search]);
   useEffect(() => {
     if (!bb.ready) return;
@@ -142,7 +142,12 @@ function ProfilePage() {
     showIdentity: session.showIdentity !== false,
     showPlace: session.showPlace !== false,
   };
-  const buddies = (social.buddies || []).filter((b) => b.status === "accepted");
+  const buddies = [
+    ...(social.buddies || []).filter((b) => b.status === "accepted"),
+    ...(session.role === "founder"
+      ? TEST_PEOPLE.filter((person) => person.handle.toLowerCase() !== String(session.handle || "").toLowerCase()).map((person) => ({ id: person.id, name: person.handle, status: "accepted" }))
+      : []),
+  ].filter((buddy, index, list) => list.findIndex((item) => item.name === buddy.name) === index);
   const pending = (social.buddies || []).filter((b) => b.status === "pending");
   const initial = String((guest || session.handle) || "B").trim().slice(0, 1).toUpperCase();
   const received = commentsAbout(guest || session.handle, bb.content);
@@ -161,52 +166,16 @@ function ProfilePage() {
     setPage(0);
   }
 
-  const points = Number(session.points) || 0;
+  const viewed = guest ? personRecord(guest, { session, users: bb.users }) : session;
+  const points = Number(viewed?.points) || 0;
   const paint = badgePaint(points, bb.content.pointThresholds, "light");
   const off = discountPercent(points, bb.content.pointThresholds);
 
-  function pointsFor(name) {
-    const key = String(name || "").trim().toLowerCase();
-    if (!key) return 0;
-    let known = false;
-    let score = 0;
-    const take = (person) => {
-      const names = [person?.handle, person?.username, person?.name].map((value) => String(value || "").trim().toLowerCase());
-      if (!names.includes(key)) return;
-      known = true;
-      score = Math.max(score, Number(person.points) || 0);
-    };
-    SEED_ACCOUNTS.forEach(take);
-    (bb.users || []).forEach(take);
-    take(bb.session);
-    if (known) return score;
-    const rank = { plain: 0, bronze: 1, silver: 2, gold: 3 };
-    let tier = "plain";
-    const consider = (personName, personTier) => {
-      if (String(personName || "").trim().toLowerCase() !== key) return;
-      if ((rank[personTier] || 0) > rank[tier]) tier = personTier;
-    };
-    (bb.content?.events || []).forEach((event) => {
-      consider(event.hostName, event.hostTier);
-      (event.participants || []).forEach((person) => consider(person.handle, person.tier));
-    });
-    (bb.content?.venues || []).forEach((venue) => {
-      (venue.tables || []).forEach((table) => {
-        consider(table.hostHandle || table.hostName, table.hostTier);
-        (table.participants || []).forEach((person) => consider(person.handle, person.tier));
-      });
-    });
-    const marks = bb.content?.pointThresholds || {};
-    if (tier === "gold") return Number(marks.gold) || 500;
-    if (tier === "silver") return Number(marks.silver) || 300;
-    if (tier === "bronze") return Number(marks.bronze) || 100;
-    return 0;
-  }
-
   function buddyMark(name) {
-    const paint = badgePaint(pointsFor(name), bb.content?.pointThresholds, "dark");
-    if (paint.tier === "plain") return { className: "border border-white/15 bg-[#1c1c1c]", style: undefined };
-    return { className: paint.className, style: paint.style };
+    const record = personRecord(name, { session, users: bb.users });
+    const mark = badgePaint(record?.points || 0, bb.content?.pointThresholds, "dark");
+    if (mark.tier === "plain") return { className: "border border-white/15 bg-[#1c1c1c]", style: undefined };
+    return { className: mark.className, style: mark.style };
   }
 
   return (
@@ -221,8 +190,10 @@ function ProfilePage() {
           {!guest && form.showIdentity && who && <p className="mt-2 text-center text-sm text-white/45">{who}</p>}
           {!guest && form.showPlace && where && <p className="text-center text-sm text-white/45">{where}</p>}
           {!guest && <p className="mt-1 text-center text-sm text-white/70">{points} points{off ? ` · ${off}% off` : ""}</p>}
+          {guest && <p className="mt-1 text-center text-sm text-white/70">{points} points{off ? ` · ${off}% off` : ""}</p>}
+          {guest && <p className="mt-1 text-center text-sm text-white/45">{[viewed?.neighborhood && `Lives in ${viewed.neighborhood}`, viewed?.occupation].filter(Boolean).join(" · ")}</p>}
           {guest && (
-            <button type="button" className="mt-3 text-xs text-white/45" onClick={() => { setGuest(null); setPage(0); }}>Back</button>
+            <button type="button" className="mt-3 text-xs text-white/45" onClick={() => { router.push("/profile"); setGuest(null); setPage(0); }}>Back</button>
           )}
           {!guest && (
           <div className="bb-profile-actions mt-6">
@@ -269,7 +240,7 @@ function ProfilePage() {
                 {buddies.map((b) => {
                   const mark = buddyMark(b.name);
                   return (
-                  <button key={b.id} type="button" title={b.name} onClick={() => { setGuest(b.name); setPage(0); }} className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg ${mark.className}`} style={mark.style}>
+                  <button key={b.id} type="button" title={b.name} onClick={() => people.openProfile(b.name)} className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg ${mark.className}`} style={mark.style}>
                     {b.name.slice(0, 1).toUpperCase()}
                   </button>
                   );

@@ -6,6 +6,7 @@ import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
 import { localPrice } from "@/lib/market";
 import { peopleApi } from "./peopleNav";
+import { personRecord } from "@/lib/people";
 import {
   AGE_RANGES,
   TIMES,
@@ -20,20 +21,18 @@ import {
   tablePrefs,
 } from "@/lib/bible";
 
-export function HostBadge({ handle = "?", tier = "", size = "host", quiet = false }) {
+export function HostBadge({ handle = "?", size = "host", quiet = false }) {
   const bb = useBB();
-  const mine = bb.session?.handle && bb.session.handle === handle;
-  const paint = mine
-    ? badgePaint(bb.session?.points, bb.content?.pointThresholds, "dark")
-    : badgePaint(tier === "gold" ? 500 : tier === "silver" ? 300 : tier === "bronze" ? 1 : 0, null, "dark");
-  const letter = String(handle || "?").slice(0, 1).toUpperCase();
+  const record = personRecord(handle, { session: bb.session, users: bb.users });
+  const paint = badgePaint(record?.points || 0, bb.content?.pointThresholds, "dark");
+  const letter = String(record?.handle || handle || "?").slice(0, 1).toUpperCase();
   const box = size === "joiner" ? "h-4 w-4 text-[8px]" : size === "feature" ? "h-9 w-9 text-sm" : "h-5 w-5 text-[10px]";
   const face = (
-    <span className={`grid shrink-0 place-items-center rounded-full font-serif font-semibold ${box} ${paint.className}`} style={paint.style} title={`${handle} · ${paint.tier}`}>
+    <span className={`grid shrink-0 place-items-center rounded-full font-serif font-semibold ${box} ${paint.className}`} style={paint.style} title={`${record?.handle || handle} · ${paint.tier}`}>
       {letter}
     </span>
   );
-  if (quiet) return face;
+  if (quiet || !record) return face;
   return (
     <span
       role="button"
@@ -42,13 +41,13 @@ export function HostBadge({ handle = "?", tier = "", size = "host", quiet = fals
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        peopleApi().openProfile(handle);
+        peopleApi().openProfile(record.handle);
       }}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault();
           e.stopPropagation();
-          peopleApi().openProfile(handle);
+          peopleApi().openProfile(record.handle);
         }
       }}
     >
