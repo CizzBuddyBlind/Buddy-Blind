@@ -249,8 +249,8 @@ export default function SubscribePage() {
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
         <p className="bb-kicker text-white/55">Subscription</p>
         <h1 className="mt-5 font-serif text-4xl leading-[1.15] sm:text-5xl md:text-6xl">
-          <span className="block text-ember">{say(bb.lang, "【真】O傾")}</span>
-          <span className="mt-3 block text-white">{say(bb.lang, "由O開始")}</span>
+          <span className="block text-ember">{say(bb.lang, "Your reason.")}</span>
+          <span className="mt-3 block text-white">{say(bb.lang, "New people.")}</span>
         </h1>
         <p className="bb-lead-gap max-w-xl text-sm leading-relaxed text-mute">
           Wine, work, a hike. Or whatever you care about.

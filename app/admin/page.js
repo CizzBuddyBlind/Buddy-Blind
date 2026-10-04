@@ -172,8 +172,8 @@ function siteLines(content) {
   ].forEach((line) => addLine(rows, seen, "PROFILE", line));
   [
     "Subscription",
-    "【真】O傾",
-    "由O開始",
+    "Your reason.",
+    "New people.",
     "Wine, work, a hike. Or whatever you care about.",
     "Free",
     "Try once",
