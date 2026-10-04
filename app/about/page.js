@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useBB } from "@/components/Providers";
 
 function Rich({ text }) {
   const parts = String(text).split(/(\*[^*]+\*)/g);
@@ -27,13 +28,29 @@ const STEPS = [
 ];
 
 const BADGES = [
-  { letter: "B", name: "Bronze", points: "100 points", note: "5%", circle: "bb-metal-bronze" },
-  { letter: "S", name: "Silver", points: "300 points", note: "10%", circle: "bb-metal-silver" },
-  { letter: "G", name: "Gold", points: "500 points", note: "20%", circle: "bb-metal-gold" },
+  { letter: "B", name: "Bronze", points: "100 points", pointsHk: "100 Points", note: "5%", circle: "bb-metal-bronze" },
+  { letter: "S", name: "Silver", points: "300 points", pointsHk: "300 Points", note: "10%", circle: "bb-metal-silver" },
+  { letter: "G", name: "Gold", points: "500 points", pointsHk: "500 Points", note: "20%", circle: "bb-metal-gold" },
+];
+
+const HK_STEPS = [
+  { n: "01", title: "Home", body: ["由呢度開始。 *你唔知邊個會 Show up，呢個先係重點。* 每日仲有我哋幫你揀嘅一局：*唔使煩，即管盲撐*"] },
+  { n: "02", title: "盲約", body: ["揀間你本身都想去嘅餐廳。你會知 *邊度、幾點、仲有幾多個位*，至於邊個坐你隔離？*到時咪知。* 見到啱嘅枱就 Join，想叫人一齊就 Invite，冇啱嘅就自己開一枱。 *地方你揀 人就 Blind*"] },
+  { n: "03", title: "即興", body: ["*今日得閒，又唔想一個人？* 返工附近冇人陪你食 Lunch？想 Tea 一 Tea、飲杯 Coffee？放工想飲返杯？喺學校想搵個人一齊食嘢？ *開個位，或者 Join 附近有位嗰枱。* 唔使約定下個禮拜，唔使計劃咁多。 *啱啱你得閒，啱啱佢又得閒。* 咁咪坐低囉。"] },
+  { n: "04", title: "我話事", body: ["*今次個局 你話事* 想搞咩都得，人數由 *2 個到 20 個*，你自己決定。做 IT 想識返 IT 人？Lawyer、醫生、Designer、Founder 想 Networking？50+ 想行山、打麻雀、擴闊下生活圈？想搞 LGBTQ+ Night，或者開一局俾 Gay、Lesbian、Bi、Trans、Queer 嘅人識下自己 Community 入面嘅人？Geek 想搵 Geek 開 Board Game Night？Movieholic 想搵個真係肯陪你入戲院嘅人？", "*興趣、活動、時間、地方、人數 全部你話事。* 人哋 Join 你個局，係因為 *大家啱同一樣嘢*，唔係因為睇完你個 Profile 先揀你。 *Hosting 屬於 Premium 功能*"] },
+  { n: "05", title: "Me Time", body: ["*今日約咗 日日都約咗* 你 Join 過嘅局，全部喺返呢度。到嗰日，一撳就話俾我哋知 *我會嚟* 或者 *我到咗*。之後收埋部電話。 *真人出場。*"] },
+  { n: "06", title: "我要升呢", body: ["*窮 L 恩物* — 四圍睇。 *平平哋* — Comment & Rate。 *都唔貴* — 自己開局。 *都唔貴* 可以先試，啱先留低。"] },
+  { n: "07", title: "個人", body: ["*你喺 Buddy Blind 留低嘅足跡* 你嘅 Circle、Points、Buddies、Join 過咩、Host 過咩，全部喺度。一齊出席過同一個 Event 嘅人，完場之後先可以 *Review & Rate 對方*。 *真係見過 先有得講*"] },
+  { n: "08", title: "Buddies", body: ["*有啲人 Blind 一次就夠 有啲人你會想見多次* 一齊參加過同一個 Event，先可以 Add 對方做 Buddy。所以 Buddies 唔係你周圍睇 Profile Add 返嚟，*係你真係見過嘅人*。做咗 Buddies 之後就簡單。下次你 *Invite、Join 或 Host*，可以直接揀想叫埋邊個 Buddy，我哋幫你通知佢。 *第一次 Blind 下次你揀*"] },
+  { n: "09", title: "啲分唔係 DSE，儲分玩大個圈", body: ["盲約盲撐有分加，話吓事更加有。 *Join +1 · Invite +2 · Host +5* 分愈多，個 Circle 愈高，Discount 都跟住升。"] },
+  { n: "10", title: "點解要收 $5 行政費？", body: ["Blind 還 Blind，*但唔代表冇人知你係邊個。* 你每次 Join Event，個 Booking 都會將你嘅註冊 Account 同嗰次 *Event、日期、時間同付款紀錄* 連埋一齊。你註冊時提供嘅聯絡及驗證資料，加上同 Booking 有關嘅付款紀錄，可以喺有嚴重事故發生時，協助確認個位背後係邊個 Account。", "例如有人食完唔埋單、整爛場地，或者有嚴重事件需要警方介入，Buddy Blind 可以確認相關 Account 同 Event 紀錄，並喺適當或者法律要求嘅情況下，向場地或有關當局提供我哋持有嘅相關資料。所以 Booking 一經確認，*$5 行政費不設退款*，就算之後你決定唔出席都一樣。呢 $5 唔單止係一個位，亦係嗰次 Booking 留低嘅一份 Accountability Record。", "*你可以唔知隔離坐邊個 但坐得低 就唔係完全匿名*"] },
 ];
 
 function AboutBody() {
   const params = useSearchParams();
+  const bb = useBB();
+  const hk = bb.lang === "zh-HK";
+  const steps = hk ? HK_STEPS : STEPS;
   const [tab, setTab] = useState(params.get("tab") === "how" ? "how" : "about");
   return (
     <main className="bb-frame bg-ink pb-28 pt-10 text-fg md:pb-20">
@@ -68,17 +85,17 @@ function AboutBody() {
           </div>
         </>
       ) : (
-        <div className="mx-auto w-full max-w-5xl">
+        <div className="mx-auto w-full max-w-5xl" {...(hk ? { "data-keep": "1" } : {})}>
           <h1 className="mt-8 max-w-4xl font-serif text-[3.4rem] font-semibold leading-[0.95] text-white sm:text-6xl md:text-7xl">
-            See venue, see vibe
+            {hk ? "齋睇場，齋睇 Feel" : "See venue, see vibe"}
             <br />
-            <span className="italic text-ember">Take a seat.</span>
+            <span className="italic text-ember">{hk ? "唔諗 LU，坐低先算" : "Take a seat."}</span>
           </h1>
           <p className="mt-6 max-w-2xl text-sm leading-relaxed text-white/55">
-            <Rich text="Pick the place, time, or interest — not the people. *Take a seat, show up, and see who you meet.*" />
+            <Rich text={hk ? "揀地方、時間、興趣，唔使揀人。 *坐低，Show up，睇吓今次撞到邊個。*" : "Pick the place, time, or interest — not the people. *Take a seat, show up, and see who you meet.*"} />
           </p>
           <ol className="bb-lead-gap overflow-hidden rounded-[1.7rem] border border-white/15">
-            {STEPS.map((step) => (
+            {steps.map((step) => (
               <li key={step.n} className="grid grid-cols-[3.2rem_1fr] gap-2 border-t border-white/10 px-6 py-7 first:border-t-0 sm:px-10">
                 <span className="pt-2 text-xs tracking-[0.12em] text-white/40">{step.n}</span>
                 <div>
@@ -93,7 +110,7 @@ function AboutBody() {
                           <span className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg font-semibold ring-1 ring-black/15 ${badge.circle}`}>{badge.letter}</span>
                           <span>
                             <span className="block text-sm text-white">{badge.name}</span>
-                            <span className="block text-xs text-white/45"><strong className="font-semibold">{badge.points}</strong> · <strong className="font-semibold">{badge.note}</strong></span>
+                            <span className="block text-xs text-white/45"><strong className="font-semibold">{hk ? badge.pointsHk : badge.points}</strong> · <strong className="font-semibold">{badge.note}</strong></span>
                           </span>
                         </div>
                       ))}
