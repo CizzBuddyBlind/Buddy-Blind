@@ -134,7 +134,6 @@ function PayStep({ checked, setChecked, onConfirm, busy, error }) {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
   const label = bb.market?.fee || "HK$5";
-  const paid = true;
   return (
     <div className="space-y-3 text-sm">
       <div className="rounded-xl border border-white/10 p-3">
@@ -142,14 +141,14 @@ function PayStep({ checked, setChecked, onConfirm, busy, error }) {
         <p className="mt-2 text-xs text-mute">Points do not change this fee.</p>
         <div className="mt-2 flex justify-between font-semibold"><span>{t("pay.total")}</span><span data-bb-live>{label}</span></div>
       </div>
-      <p className="text-mute">{paid ? t("pay.why") : t("pay.free")}</p>
+      <p className="text-mute">{t("pay.free")} {t("pay.why")}</p>
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
-        <span>{paid ? t("pay.check") : t("pay.freeCheck")}</span>
+        <span>{t("pay.check")}</span>
       </label>
       {error && <p className="text-sm text-ember">{error}</p>}
       <button type="button" disabled={!checked || busy} onClick={onConfirm} className="w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink disabled:opacity-40">
-        {busy ? "One moment" : paid ? t("pay.confirm") : t("pay.confirmFree")}
+        {busy ? "One moment" : t("pay.confirm")}
       </button>
     </div>
   );
