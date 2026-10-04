@@ -8,7 +8,7 @@ import { bookingHold, iso, logEntry, normalizeContent, privateEditOpen, tableSta
 import { notifyRestaurant } from "@/lib/notify";
 import { putMedia } from "@/lib/media";
 import { pageFromPath, setWording, setWordingPage } from "@/lib/say";
-import { castForFounder } from "@/lib/people";
+import { castForFounder, personRecord, sameIdentity, stampContent } from "@/lib/people";
 import { marketFromCode, marketFromTimezone } from "@/lib/market";
 import { effectiveAccess, isInternalRole } from "@/lib/entitlement";
 
@@ -76,39 +76,50 @@ function stripHeavy(node, seen = new Set()) {
   }
 }
 
-export function peopleYouCanRate(content, handle) {
+export function peopleYouCanRate(content, handle, ctx = {}) {
   if (!content || !handle) return [];
+  const me = personRecord(handle, ctx);
+  const meId = me?.userId || "";
+  const who = (ref) => personRecord(ref, ctx);
+  const same = (ref) => {
+    const record = who(ref);
+    if (meId && record?.userId) return record.userId === meId;
+    return String(ref || "").trim().toLowerCase() === String(handle || "").trim().toLowerCase();
+  };
   const now = Date.now();
   const found = new Map();
   const take = (label, eventId, dateISO, time, names) => {
     const people = [...new Set((names || []).filter(Boolean))];
-    if (!people.includes(handle)) return;
+    if (!people.some(same)) return;
     const start = tableStart({ dateISO, time: time || "7:00 PM" }).getTime();
     if (!dateISO || Number.isNaN(start) || now < start) return;
     people.forEach((name) => {
-      if (name === handle || found.has(name)) return;
-      const reviewed = (content.peerReviews || []).some((review) => review.from === handle && review.to === name);
-      found.set(name, { handle: name, eventId, label, reviewed });
+      const record = who(name);
+      const id = record?.userId || name;
+      if (same(name) || found.has(id)) return;
+      const reviewed = (content.peerReviews || []).some((review) => same(review.fromUserId || review.from) && (who(review.toUserId || review.to)?.userId || review.to) === id);
+      found.set(id, { handle: record?.handle || name, userId: record?.userId || "", eventId, label, reviewed });
     });
   };
   (content.venues || []).forEach((venue) => {
     (venue.tables || []).forEach((table) => {
       take(venue.name, table.id, table.dateISO, table.time, [
-        table.hostHandle,
-        ...(table.participants || []).map((p) => p.handle),
+        table.hostUserId || table.hostHandle,
+        ...(table.participants || []).map((p) => p.userId || p.handle),
       ]);
     });
   });
   (content.events || []).forEach((event) => {
     take(event.name, event.id, event.dateISO, event.timeLabel, [
-      event.hostName,
-      ...(event.participants || []).map((p) => p.handle),
+      event.hostUserId || event.hostName,
+      ...(event.participants || []).map((p) => p.userId || p.handle),
     ]);
   });
   const list = [...found.values()];
-  if (handle && handle !== "Alex" && !list.some((person) => person.handle === "Alex")) {
-    const reviewed = (content.peerReviews || []).some((review) => review.from === handle && review.to === "Alex");
-    list.unshift({ handle: "Alex", eventId: "review-sample", label: "Last supper", reviewed });
+  if (handle && !same("Alex") && !list.some((person) => person.userId === "acct_alex" || person.handle === "Alex")) {
+    const alex = who("Alex");
+    const reviewed = (content.peerReviews || []).some((review) => same(review.fromUserId || review.from) && (review.toUserId === "acct_alex" || review.to === "Alex"));
+    list.unshift({ handle: alex?.handle || "Alex", userId: alex?.userId || "acct_alex", eventId: "review-sample", label: "Last supper", reviewed });
   }
   return list;
 }
@@ -231,9 +242,17 @@ export function BuddyProvider({ children }) {
       const dr = read(DRAFT, null);
       const ses = read(SES, null);
       if (ses?.email) {
+        const seed = SEED_ACCOUNTS.find((account) => account.email === ses.email);
+        const profiles = read(PROFILES, {});
+        ses.userId = ses.userId || seed?.userId || `acct_${ses.email.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
+        const extra = profiles[ses.userId] || profiles[ses.email] || {};
+        if (extra.handle) ses.handle = extra.handle;
+        const previous = new Set([...(extra.previousHandles || []), ...(ses.previousHandles || [])]);
+        if (seed?.handle && seed.handle !== ses.handle) previous.add(seed.handle);
+        ses.previousHandles = [...previous];
         const pointsMap = read(POINTS, {});
-        const mapped = Number(pointsMap[ses.email]);
-        const seeded = SEED_ACCOUNTS.find((account) => account.email === ses.email)?.points || 0;
+        const mapped = Number(pointsMap[ses.userId] ?? pointsMap[ses.email]);
+        const seeded = seed?.points || 0;
         ses.points = Math.max(Number(ses.points) || 0, Number.isFinite(mapped) ? mapped : 0, Number(seeded) || 0);
       }
       setSession(ses);
@@ -283,7 +302,7 @@ export function BuddyProvider({ children }) {
 
       stripHeavy(pub);
       applyRemembered(pub);
-      const clean = normalizeContent(pub);
+      const clean = stampContent(normalizeContent(pub), { session: ses, users: read(USERS, []) });
       publishedRef.current = clean;
       setPublished(clean);
       write(PUB, clean);
@@ -478,13 +497,18 @@ export function BuddyProvider({ children }) {
       if (found.role !== "founder" && blocked.includes(found.email.toLowerCase())) return "This admin seat was removed.";
       const pointsMap = read(POINTS, {});
       const books = read(BOOKS, {});
-      const extra = read(PROFILES, {})[found.email] || {};
+      const extra = read(PROFILES, {})[found.userId] || read(PROFILES, {})[found.email] || {};
+      const userId = found.userId || extra.userId || `acct_${found.email.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
+      const previous = new Set([...(extra.previousHandles || [])]);
+      if (found.handle && extra.handle && found.handle !== extra.handle) previous.add(found.handle);
       const ses = {
+        userId,
         email: found.email,
         username: found.username,
         role: found.role,
         handle: extra.handle || found.handle,
-        points: Math.max(Number(found.points) || 0, Number(pointsMap[found.email]) || 0),
+        previousHandles: [...previous],
+        points: Math.max(Number(found.points) || 0, Number(pointsMap[userId]) || 0, Number(pointsMap[found.email]) || 0),
         neighborhood: extra.neighborhood || found.neighborhood,
         ageRange: extra.ageRange || found.ageRange,
         occupation: extra.occupation || found.occupation,
@@ -527,6 +551,7 @@ export function BuddyProvider({ children }) {
     const all = [...SEED_ACCOUNTS, ...read(USERS, [])];
     if (all.some((a) => a.email === email || a.username === username)) return "That email or username is already taken.";
     const nextUser = blankProfile({
+      userId: `acct_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
       email,
       username,
       password,
@@ -639,8 +664,9 @@ export function BuddyProvider({ children }) {
       }
       const gain = mode === "invite" ? 2 : mode === "create" ? 5 : 1;
       const pointsMap = read(POINTS, {});
-      const points = Math.max(Number(session.points) || 0, Number(pointsMap[session.email]) || 0) + gain;
+      const points = Math.max(Number(session.points) || 0, Number(pointsMap[session.userId]) || 0, Number(pointsMap[session.email]) || 0) + gain;
       const booking = { id, name: item.name, kind, mode, at: Date.now() };
+      if (session.userId) pointsMap[session.userId] = points;
       pointsMap[session.email] = points;
       write(POINTS, pointsMap);
       const books = read(BOOKS, {});
@@ -707,8 +733,9 @@ export function BuddyProvider({ children }) {
         if (!saved.ok && saved.error) notify(saved.error);
       }
       const pointsMap = read(POINTS, {});
-      const points = Math.max(Number(session.points) || 0, Number(pointsMap[session.email]) || 0) + pointsGain;
-      pointsMap[session.email] = points;
+      const points = Math.max(Number(session.points) || 0, Number(pointsMap[session.userId]) || 0, Number(pointsMap[session.email]) || 0) + pointsGain;
+      pointsMap[session.userId || session.email] = points;
+      if (session.email) pointsMap[session.email] = points;
       write(POINTS, pointsMap);
       const books = read(BOOKS, {});
       const booking = { id: item.id, name: item.name, kind: item.kind, mode: "create", at: Date.now() };
@@ -920,16 +947,21 @@ export function BuddyProvider({ children }) {
   const updateProfile = useCallback((partial) => {
     if (!session) return;
     const allowed = ["handle", "gender", "orientation", "occupation", "neighborhood", "ageRange", "phone", "verified", "showIdentity", "showPlace"];
-    const extra = { ...(read(PROFILES, {})[session.email] || {}) };
+    const extra = { ...(read(PROFILES, {})[session.userId] || read(PROFILES, {})[session.email] || {}) };
+    if (partial.handle && partial.handle !== session.handle) {
+      const previous = new Set([...(extra.previousHandles || []), ...(session.previousHandles || []), session.handle].filter(Boolean));
+      extra.previousHandles = [...previous];
+    }
     allowed.forEach((key) => {
       if (partial[key] !== undefined) extra[key] = partial[key];
     });
-    const all = { ...read(PROFILES, {}), [session.email]: extra };
+    extra.userId = session.userId;
+    const all = { ...read(PROFILES, {}), [session.userId || session.email]: extra, [session.email]: extra };
     write(PROFILES, all);
-    const nextUsers = read(USERS, []).map((u) => (u.email === session.email ? { ...u, ...extra } : u));
+    const nextUsers = read(USERS, []).map((u) => (u.email === session.email ? { ...u, ...extra, userId: u.userId || session.userId } : u));
     write(USERS, nextUsers);
     setUsers(nextUsers);
-    persistSession({ ...session, ...extra });
+    persistSession({ ...session, ...extra, userId: session.userId, email: session.email });
     notify("Profile saved on this browser.");
   }, [notify, session]);
 
@@ -956,7 +988,8 @@ export function BuddyProvider({ children }) {
 
   const requestBuddy = useCallback((name) => {
     if (!session) return { needLogin: true };
-    const buddy = { id: `b-${Date.now()}`, name, status: "pending", at: Date.now() };
+    const record = personRecord(name, { session, users });
+    const buddy = { id: `b-${Date.now()}`, name: record?.handle || name, userId: record?.userId || "", status: "pending", at: Date.now() };
     const next = { ...social, buddies: [buddy, ...(social.buddies || [])] };
     saveSocial(next);
     pushNote("Buddy request", `${name} — Hey! You are my vibe, let's be buddies!`);
@@ -1007,9 +1040,10 @@ export function BuddyProvider({ children }) {
     const staffReview = session.role === "founder" || session.role === "admin";
     if (!(plan === "lite" || plan === "premium" || trialOk || staffReview)) return { error: "Comments and stars are on Lite and Premium." };
     if (!score || !target) return { error: "Pick someone and a star." };
-    if (target === session.handle) return { error: "You can't rate yourself." };
-    const allowed = peopleYouCanRate(publishedRef.current, session.handle);
-    const match = allowed.find((person) => person.handle === target);
+    if (sameIdentity(target, session, { session, users })) return { error: "You can't rate yourself." };
+    const allowed = peopleYouCanRate(publishedRef.current, session.userId || session.handle, { session, users });
+    const targetRecord = personRecord(target, { session, users });
+    const match = allowed.find((person) => (person.userId && person.userId === targetRecord?.userId) || person.handle === target);
     if (!match) return { error: "You can only rate someone who sat with you." };
     const review = {
       id: `r-${Date.now()}`,
@@ -1017,7 +1051,9 @@ export function BuddyProvider({ children }) {
       body: text,
       tags: picked,
       from: session.handle,
-      to: target,
+      fromUserId: session.userId || "",
+      to: match.handle || target,
+      toUserId: match.userId || targetRecord?.userId || "",
       eventId: eventId || match.eventId || "",
       at: Date.now(),
     };
@@ -1034,7 +1070,7 @@ export function BuddyProvider({ children }) {
     }, 0);
     notify("Saved.");
     return { ok: true };
-  }, [notify, plan, session, trialOk]);
+  }, [notify, plan, session, trialOk, users]);
 
   const applyLive = useCallback(async (base) => {
     if (editing) {
@@ -1050,6 +1086,7 @@ export function BuddyProvider({ children }) {
     const book = pointsMap && typeof pointsMap === "object" ? pointsMap : {};
     const current = Math.max(Number(session?.points) || 0, Number(book[session?.email]) || 0);
     const points = current + gain;
+    if (session?.userId) book[session.userId] = points;
     if (session?.email) book[session.email] = points;
     write(POINTS, book);
     return points;
@@ -1081,6 +1118,7 @@ export function BuddyProvider({ children }) {
       tableType: input.tableType,
       capacity,
       joined: 1,
+      hostUserId: session.userId || "",
       hostHandle: session.handle,
       hostTier: tierFromPoints(session.points || 0, src.pointThresholds),
       gender: input.gender || "",
@@ -1090,7 +1128,7 @@ export function BuddyProvider({ children }) {
       area: branch?.area || found.area,
       address: branch?.address || found.address,
       inviteText: `${session.handle} invites you to join a dinner and meet new friends.`,
-      participants: [{ handle: session.handle, role: "host" }],
+      participants: [{ userId: session.userId || "", handle: session.handle, role: "host" }],
       pings: [],
     };
     const existing = Array.isArray(found.tables) ? found.tables.filter(Boolean) : [];
@@ -1149,7 +1187,7 @@ export function BuddyProvider({ children }) {
     const before = bookingHold(current);
     if (before.closed || before.places <= 0 || before.status === "walk-in") return { error: before.reason || "That table is full." };
     const people = [...(current.participants || [])];
-    if (!people.some((p) => p.handle === session.handle)) people.push({ handle: session.handle, role: "guest" });
+    if (!people.some((p) => sameIdentity(p.userId || p.handle, session, { session, users }))) people.push({ userId: session.userId || "", handle: session.handle, role: "guest" });
     const table = {
       ...current,
       joined: (current.joined || 1) + 1,
@@ -1236,6 +1274,7 @@ export function BuddyProvider({ children }) {
       name: (input.name || input.venueName || "Private table").trim(),
       typeLabel: input.forWhom || input.orientation || "Private",
       hostLabel: `Blind with ${session.handle}`,
+      hostUserId: session.userId || "",
       hostName: session.handle,
       hostTier: tierFromPoints(session.points || 0, publishedRef.current?.pointThresholds),
       upcomingLabel: `${capacity - 1} places`,
@@ -1268,7 +1307,7 @@ export function BuddyProvider({ children }) {
       showHostPhoto: !!input.showHostPhoto,
       imageUrl,
       gallery,
-      participants: [{ handle: session.handle, role: "host" }],
+      participants: [{ userId: session.userId || "", handle: session.handle, role: "host" }],
       pings: [],
     };
     const saved = await insertEvent(item, 5);
@@ -1282,8 +1321,8 @@ export function BuddyProvider({ children }) {
     const src = publishedRef.current;
     const current = (src?.events || []).find((event) => event.id === input.id && event.kind === "private");
     if (!current) return { error: "That night is gone." };
-    const host = current.hostName || current.hostProfile?.handle;
-    if (host !== session.handle) return { error: "Only the host can edit this." };
+    const host = current.hostUserId || current.hostName || current.hostProfile?.handle;
+    if (!sameIdentity(host, session, { session, users })) return { error: "Only the host can edit this." };
     if (!privateEditOpen(current.dateISO)) return { error: "Too close to the night. Nothing can change now." };
     let gallery = (Array.isArray(input.gallery) ? input.gallery : current.gallery || []).filter(Boolean).slice(0, 6);
     let videoUrl = input.videoUrl == null ? current.videoUrl || "" : input.videoUrl;
@@ -1335,8 +1374,8 @@ export function BuddyProvider({ children }) {
     item.spots -= 1;
     item.joined = (item.joined || 1) + 1;
     if (!Array.isArray(item.participants)) item.participants = [];
-    if (!item.participants.some((p) => p.handle === session.handle)) {
-      item.participants.push({ handle: session.handle, role: "guest" });
+    if (!item.participants.some((p) => sameIdentity(p.userId || p.handle, session, { session, users }))) {
+      item.participants.push({ userId: session.userId || "", handle: session.handle, role: "guest" });
     }
     const saved = await applyLive(base);
     if (!saved.ok && saved.error) return { error: saved.error };
@@ -1364,11 +1403,10 @@ export function BuddyProvider({ children }) {
       ? base.events.find((e) => e.id === eventId)
       : base.venues.find((v) => v.id === venueId)?.tables?.find((t) => t.id === tableId);
     if (!target) return { error: "That event is gone." };
-    const joined = (target.participants || []).some((p) => p.handle === session.handle)
-      || target.hostHandle === session.handle
-      || target.hostName === session.handle;
+    const joined = (target.participants || []).some((p) => sameIdentity(p.userId || p.handle, session, { session, users }))
+      || sameIdentity(target.hostUserId || target.hostHandle || target.hostName, session, { session, users });
     if (!joined) return { error: "Join this table first." };
-    const others = (target.participants || []).filter((p) => p.handle && p.handle !== session.handle);
+    const others = (target.participants || []).filter((p) => (p.userId || p.handle) && !sameIdentity(p.userId || p.handle, session, { session, users }));
     if (!others.length) return { error: "No one else has joined yet." };
     const day = target.dateISO || "";
     if (day && day < iso(0)) return { error: "That event is already over." };
@@ -1379,6 +1417,7 @@ export function BuddyProvider({ children }) {
     if (!live && choice !== "coming" && choice !== "cant") return { error: "That line opens once it starts." };
     target.pings = [...(target.pings || []), {
       id: `ping-${Date.now().toString(36)}`,
+      fromUserId: session.userId || "",
       from: session.handle,
       kind: choice,
       at: Date.now(),
@@ -1407,9 +1446,9 @@ export function BuddyProvider({ children }) {
       arrive: ["see-ya", "next-time"],
     };
     if (!(allowed[ping.kind] || allowed.coming).includes(choice)) return { error: "Pick a line first." };
-    if (ping.from === session.handle) return { error: "This one is already yours." };
-    if ((ping.replies || []).some((r) => r.from === session.handle)) return { error: "Already sent." };
-    ping.replies = [...(ping.replies || []), { from: session.handle, choice, at: Date.now() }];
+    if (sameIdentity(ping.fromUserId || ping.from, session, { session, users })) return { error: "This one is already yours." };
+    if ((ping.replies || []).some((r) => sameIdentity(r.fromUserId || r.from, session, { session, users }))) return { error: "Already sent." };
+    ping.replies = [...(ping.replies || []), { fromUserId: session.userId || "", from: session.handle, choice, at: Date.now() }];
     const saved = await applyLive(base);
     if (!saved.ok && saved.error) return { error: saved.error };
     const socialNext = { ...emptySocial(), ...read(SOCIAL, {}) };
@@ -1420,7 +1459,8 @@ export function BuddyProvider({ children }) {
 
   useEffect(() => {
     if (!ready || !session) return;
-    const mine = session.handle;
+    const me = session;
+    const isMe = (ref) => sameIdentity(ref, me, { session: me, users });
     const additions = [];
     const seen = new Set((social.notes || []).map((n) => n.id));
     const line = {
@@ -1439,14 +1479,14 @@ export function BuddyProvider({ children }) {
       ok: "Ok, no worries",
     };
     const collect = (ping, meta, title) => {
-      if (ping.from !== mine) {
+      if (!isMe(ping.fromUserId || ping.from)) {
         const id = `ping-note-${ping.id}`;
-        if (!seen.has(id) && !(ping.replies || []).some((r) => r.from === mine)) {
+        if (!seen.has(id) && !(ping.replies || []).some((r) => isMe(r.fromUserId || r.from))) {
           seen.add(id);
           additions.push({
             id,
             title,
-            body: `${ping.from} · ${line[ping.kind] || "I'm coming"}`,
+            body: `${personRecord(ping.fromUserId || ping.from, { session, users })?.handle || ping.from} · ${line[ping.kind] || "I'm coming"}`,
             at: ping.at || Date.now(),
             read: false,
             ping: { ...meta, pingId: ping.id, kind: ping.kind },
@@ -1461,7 +1501,7 @@ export function BuddyProvider({ children }) {
         additions.push({
           id,
           title,
-          body: `${reply.from} · ${replyLine[reply.choice] || "See ya"}`,
+          body: `${personRecord(reply.fromUserId || reply.from, { session, users })?.handle || reply.from} · ${replyLine[reply.choice] || "See ya"}`,
           at: reply.at || Date.now(),
           read: false,
           ping: { ...meta, pingId: ping.id, replyOnly: true },
@@ -1470,20 +1510,20 @@ export function BuddyProvider({ children }) {
     };
     (content.venues || []).forEach((venue) => {
       (venue.tables || []).forEach((table) => {
-        const joined = (table.participants || []).some((p) => p.handle === mine) || table.hostHandle === mine;
+        const joined = (table.participants || []).some((p) => isMe(p.userId || p.handle)) || isMe(table.hostUserId || table.hostHandle);
         if (!joined) return;
         (table.pings || []).forEach((ping) => collect(ping, { venueId: venue.id, tableId: table.id }, `${venue.name} · ${table.time}`));
       });
     });
     (content.events || []).forEach((event) => {
       if (event.kind !== "private") return;
-      const joined = (event.participants || []).some((p) => p.handle === mine) || event.hostName === mine;
+      const joined = (event.participants || []).some((p) => isMe(p.userId || p.handle)) || isMe(event.hostUserId || event.hostName);
       if (!joined) return;
       (event.pings || []).forEach((ping) => collect(ping, { eventId: event.id }, event.name));
     });
     if (!additions.length) return;
     saveSocial({ ...emptySocial(), ...read(SOCIAL, {}), notes: [...additions, ...(read(SOCIAL, {}).notes || [])].slice(0, 40) });
-  }, [content, ready, session, social.notes]);
+  }, [content, ready, session, social.notes, users]);
 
   useEffect(() => {
     if (!ready || !session || social.notesOn === false) return;

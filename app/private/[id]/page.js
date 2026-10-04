@@ -9,6 +9,7 @@ import { useBB } from "@/components/Providers";
 import { eventPhotos, eventPoster, privateEditOpen, privateLockDate } from "@/lib/bible";
 import { getMedia } from "@/lib/media";
 import { say } from "@/lib/say";
+import { personRecord } from "@/lib/people";
 
 export default function PrivateDetailPage() {
   const { id } = useParams();
@@ -52,10 +53,11 @@ export default function PrivateDetailPage() {
   ];
   const slide = slides[shot] || slides[0];
   const host = event.hostProfile || { handle: event.hostName || "Host" };
+  const hostRecord = personRecord(event.hostUserId || event.hostName || host.handle, { session: bb.session, users: bb.users });
+  const hostName = hostRecord?.handle || event.hostName || host.handle;
   const buddyLabel = Number(host.buddies) >= 15 ? "15+" : host.buddies != null ? String(host.buddies) : "";
   const full = (event.spots || 0) <= 0;
-  const hostHandle = event.hostName || event.hostProfile?.handle || "";
-  const isHost = !!(bb.session?.handle && hostHandle && bb.session.handle === hostHandle);
+  const isHost = !!(bb.session?.userId && hostRecord?.userId && bb.session.userId === hostRecord.userId);
   const canEdit = privateEditOpen(event.dateISO);
   const lockOn = privateLockDate(event.dateISO);
   const lockLabel = lockOn
@@ -217,18 +219,18 @@ export default function PrivateDetailPage() {
           <Editable as="p" className="mt-6 text-base leading-relaxed" value={say(bb.lang, event.description || "")} onChange={(description) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.description = description; })} />
           <div className="mt-8 border-t border-black/10 pt-6">
             <div className="flex items-center gap-3">
-              <HostBadge handle={host.handle} tier={event.hostTier || "bronze"} />
+              <HostBadge handle={hostName} userId={hostRecord?.userId || event.hostUserId || ""} tier={event.hostTier || "bronze"} />
               <div>
-                <p className="font-serif text-xl">{event.hostName || host.handle}</p>
+                <p className="font-serif text-xl">{hostName}</p>
                 <p className="text-xs uppercase tracking-[0.14em] text-mute">Host</p>
               </div>
             </div>
             <div className="mt-4 space-y-1 text-sm text-mute">
-              {host.ageRange && <p>Age · {host.ageRange}</p>}
-              {host.gender && <p>Gender · {host.gender}</p>}
-              {host.orientation && <p>Orientation · {host.orientation}</p>}
-              {host.neighborhood && <p>Lives in · {host.neighborhood}</p>}
-              {host.occupation && <p>Work · {host.occupation}</p>}
+              {(hostRecord?.ageRange || host.ageRange) && <p>Age · {hostRecord?.ageRange || host.ageRange}</p>}
+              {(hostRecord?.gender || host.gender) && <p>Gender · {hostRecord?.gender || host.gender}</p>}
+              {(hostRecord?.orientation || host.orientation) && <p>Orientation · {hostRecord?.orientation || host.orientation}</p>}
+              {(hostRecord?.neighborhood || host.neighborhood) && <p>Lives in · {hostRecord?.neighborhood || host.neighborhood}</p>}
+              {(hostRecord?.occupation || host.occupation) && <p>Work · {hostRecord?.occupation || host.occupation}</p>}
               {buddyLabel !== "" && <p className="text-char">Buddies {buddyLabel}</p>}
             </div>
             {(event.aboutHost || bb.editing) && (

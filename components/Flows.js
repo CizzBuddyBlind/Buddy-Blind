@@ -21,9 +21,9 @@ import {
   tablePrefs,
 } from "@/lib/bible";
 
-export function HostBadge({ handle = "?", size = "host", quiet = false }) {
+export function HostBadge({ handle = "?", userId = "", size = "host", quiet = false }) {
   const bb = useBB();
-  const record = personRecord(handle, { session: bb.session, users: bb.users });
+  const record = personRecord(userId || handle, { session: bb.session, users: bb.users });
   const paint = badgePaint(record?.points || 0, bb.content?.pointThresholds, "dark");
   const letter = String(record?.handle || handle || "?").slice(0, 1).toUpperCase();
   const box = size === "joiner" ? "h-4 w-4 text-[8px]" : size === "feature" ? "h-9 w-9 text-sm" : "h-5 w-5 text-[10px]";
@@ -42,13 +42,13 @@ export function HostBadge({ handle = "?", size = "host", quiet = false }) {
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        peopleApi().openProfile(handle);
+        peopleApi().openProfile(record.userId || userId || handle);
       }}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault();
           e.stopPropagation();
-          peopleApi().openProfile(handle);
+          peopleApi().openProfile(record.userId || userId || handle);
         }
       }}
     >

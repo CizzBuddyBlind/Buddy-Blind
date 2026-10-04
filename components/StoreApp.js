@@ -715,7 +715,7 @@ function PrivateDetail({ id, onBack }) {
       <h1 className="mt-4 font-serif text-[clamp(1.8rem,8vw,2.4rem)]">{say(bb.lang, event.name, false)}</h1>
       <p className="mt-2 text-sm">{say(bb.lang, event.location)} · {event.dateISO} · {say(bb.lang, event.timeLabel)}</p>
       <p className="mt-3 text-sm leading-relaxed text-black/70">{say(bb.lang, event.description || event.forWhom)}</p>
-      <p className="mt-4 flex items-center gap-2 text-sm"><HostBadge handle={event.hostName || ""} tier={event.hostTier || "bronze"} /> {event.hostName}</p>
+      <p className="mt-4 flex items-center gap-2 text-sm"><HostBadge handle={event.hostName || ""} userId={event.hostUserId || ""} tier={event.hostTier || "bronze"} /> {personRecord(event.hostUserId || event.hostName, { session: bb.session, users: bb.users })?.handle || event.hostName}</p>
       <button type="button" className="mt-5 w-full rounded-full bg-black py-3 text-sm font-semibold text-white" onClick={() => { if (!bb.session) { bb.notify("Log in first."); return; } setPay(true); }}>{translate(bb.lang, "btn.join")}</button>
       {premium && <button type="button" className="mt-2 w-full rounded-full border border-black/15 py-3 text-sm" onClick={() => bb.setFlow({ type: "private-create", venueId: event.venueId || "" })}>{translate(bb.lang, "btn.host")}</button>}
       <Dock>
@@ -747,7 +747,7 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
   }
   const session = bb.session;
   const record = people?.guest ? personRecord(people.guest, { session, users: bb.users }) : null;
-  const other = !!(record && record.id !== session.email);
+  const other = !!(record?.userId && record.userId !== session.userId);
   const viewed = other ? record : session;
   const paint = badgePaint(viewed?.points || 0, bb.content?.pointThresholds, "light");
   const buddies = other
@@ -765,7 +765,10 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
     ? (viewed.showPlace !== false ? [viewed.neighborhood && `Lives in ${viewed.neighborhood}`, viewed.occupation && `Works in ${viewed.occupation}`].filter(Boolean).join(" · ") : "")
     : (session.showPlace !== false ? [session.neighborhood && `Lives in ${session.neighborhood}`, session.occupation && `Works in ${session.occupation}`].filter(Boolean).join(" · ") : "");
   const off = discountPercent(viewed?.points || 0, bb.content?.pointThresholds);
-  const reviews = (bb.content.peerReviews || []).filter((review) => review.to === viewed.handle);
+  const reviews = (bb.content.peerReviews || []).filter((review) => {
+    const target = personRecord(review.toUserId || review.to, { session, users: bb.users });
+    return target?.userId && target.userId === viewed.userId;
+  });
   const done = other ? seatsForHandle(bb.content, viewed.handle) : mySeats(bb, "finished");
   const joined = done.filter((seat) => !seat.created);
   const created = done.filter((seat) => seat.created);
@@ -827,7 +830,7 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
             <p key={review.id || review.at} className="rounded-2xl bg-[#161616] px-4 py-3 text-sm text-white/75">{say(bb.lang, review.body || review.note, false)}</p>
           ))}
           {!reviews.length && <p className="text-center text-sm text-white/45">{say(bb.lang, "No reviews yet.")}</p>}
-          {peopleYouCanRate(bb.content, session.handle).length > 0 && <p className="text-center text-xs text-white/40">{say(bb.lang, "Rate someone after you have shared a table.")}</p>}
+          {peopleYouCanRate(bb.content, session.userId || session.handle, { session, users: bb.users }).length > 0 && <p className="text-center text-xs text-white/40">{say(bb.lang, "Rate someone after you have shared a table.")}</p>}
         </div>
       )}
       <div className="mt-8 space-y-6 text-left">

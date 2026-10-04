@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useBB } from "./Providers";
 import { Photo as Cover } from "./Bits";
 import { eventPoster, iso, prettyDate, queryHits, soonestTable, tableStart } from "@/lib/bible";
-import { seatsForHandle } from "@/lib/people";
+import { sameIdentity, seatsForHandle } from "@/lib/people";
 
 function hourOf(time) {
   const match = String(time || "").toUpperCase().match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/);
@@ -274,11 +274,12 @@ export function mySeats(bb, which = "upcoming") {
     seen.add(key);
     seats.push(seat);
   };
-  const handle = bb.session?.handle;
+  const me = bb.session;
+  const isMe = (ref) => sameIdentity(ref, me, { session: me, users: bb.users });
   (bb.session?.bookings || []).forEach((booking) => {
     if (booking.kind === "private") {
       const event = (bb.content.events || []).find((item) => item.id === booking.id);
-      const host = event?.hostName === handle;
+      const host = isMe(event?.hostUserId || event?.hostName);
       add({
         name: event?.name || booking.name,
         date: event?.dateISO || booking.dateISO,
@@ -292,14 +293,14 @@ export function mySeats(bb, which = "upcoming") {
         venueId: "",
         eventId: booking.id,
         kind: "private",
-        created: seatSide({ kind: "private", mode: booking.mode, host, handle }) === "created",
+        created: seatSide({ kind: "private", mode: booking.mode, host, handle: me?.handle }) === "created",
       });
       return;
     }
     const venue = (bb.content.venues || []).find((item) => item.id === booking.venueId);
     const table = venue?.tables?.find((item) => item.id === booking.id);
     const kind = booking.kind === "quick" ? "quick" : "table";
-    const host = table?.hostHandle === handle;
+    const host = isMe(table?.hostUserId || table?.hostHandle);
     add({
       name: venue?.name || booking.name,
       date: table?.dateISO || booking.dateISO,
@@ -313,13 +314,13 @@ export function mySeats(bb, which = "upcoming") {
       venueId: booking.venueId || venue?.id || "",
       tableId: booking.id,
       kind,
-      created: seatSide({ kind, mode: booking.mode, host, handle }) === "created",
+      created: seatSide({ kind, mode: booking.mode, host, handle: me?.handle }) === "created",
     });
   });
-  if (handle) {
+  if (me?.userId || me?.handle) {
     (bb.content.venues || []).forEach((venue) => {
       (venue.tables || []).forEach((table) => {
-        const onIt = table.hostHandle === handle || (table.participants || []).some((p) => p.handle === handle);
+        const onIt = isMe(table.hostUserId || table.hostHandle) || (table.participants || []).some((p) => isMe(p.userId || p.handle));
         if (!onIt) return;
         const kind = table.kind === "quick" ? "quick" : "table";
         add({
@@ -335,16 +336,16 @@ export function mySeats(bb, which = "upcoming") {
           venueId: venue.id,
           tableId: table.id,
           kind,
-          created: seatSide({ kind, mode: table.hostHandle === handle ? "invite" : "join", host: table.hostHandle === handle, handle }) === "created",
+          created: seatSide({ kind, mode: isMe(table.hostUserId || table.hostHandle) ? "invite" : "join", host: isMe(table.hostUserId || table.hostHandle), handle: me?.handle }) === "created",
         });
       });
     });
     (bb.content.events || []).forEach((event) => {
       if (event.kind !== "private" && event.kind !== "quick") return;
-      const onIt = event.hostName === handle || (event.participants || []).some((p) => p.handle === handle);
+      const onIt = isMe(event.hostUserId || event.hostName) || (event.participants || []).some((p) => isMe(p.userId || p.handle));
       if (!onIt) return;
       const venue = (bb.content.venues || []).find((item) => item.id === event.venueId);
-      const host = event.hostName === handle;
+      const host = isMe(event.hostUserId || event.hostName);
       add({
         name: event.name,
         date: event.dateISO,
@@ -358,7 +359,7 @@ export function mySeats(bb, which = "upcoming") {
         venueId: event.venueId || "",
         eventId: event.id,
         kind: event.kind,
-        created: seatSide({ kind: event.kind, mode: host ? "host" : "join", host, handle }) === "created",
+        created: seatSide({ kind: event.kind, mode: host ? "host" : "join", host, handle: me?.handle }) === "created",
       });
     });
   }

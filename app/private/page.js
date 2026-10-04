@@ -10,6 +10,7 @@ import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
 import { eventPhotos, eventPoster, queryHits } from "@/lib/bible";
+import { personRecord } from "@/lib/people";
 
 export default function PrivatePage() {
   const bb = useBB();
@@ -79,8 +80,8 @@ export default function PrivatePage() {
             </div>
             <p className="mt-4 flex items-center justify-between gap-3 text-sm text-paper/70">
               <span className="flex min-w-0 items-center gap-2">
-                <HostBadge handle={campaign.hostName || ""} tier={campaign.hostTier || "bronze"} />
-                <span className="truncate">{campaign.hostName || campaign.hostLabel}</span>
+                <HostBadge handle={campaign.hostName || ""} userId={campaign.hostUserId || ""} tier={campaign.hostTier || "bronze"} />
+                <span className="truncate">{personRecord(campaign.hostUserId || campaign.hostName, { session: bb.session, users: bb.users })?.handle || campaign.hostName || campaign.hostLabel}</span>
               </span>
               <span className="shrink-0 rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">{t("btn.join")}</span>
             </p>
@@ -128,8 +129,8 @@ export default function PrivatePage() {
               </div>
               <div className="mt-3 flex items-center justify-between gap-2 px-4 pb-4 text-sm">
                   <span className="flex min-w-0 items-center gap-2">
-                    <HostBadge handle={night.hostName || ""} tier={night.hostTier || "bronze"} />
-                    <span className="truncate">{night.hostName || night.hostLabel}</span>
+                    <HostBadge handle={night.hostName || ""} userId={night.hostUserId || ""} tier={night.hostTier || "bronze"} />
+                    <span className="truncate">{personRecord(night.hostUserId || night.hostName, { session: bb.session, users: bb.users })?.handle || night.hostName || night.hostLabel}</span>
                     <JoinerStack people={night.participants} host={night.hostName} cap={20} />
                   </span>
                   <span className="bb-night-copy shrink-0 font-medium">{(night.spots || 0) <= 0 ? t("priv.full") : `${night.spots} places`}</span>

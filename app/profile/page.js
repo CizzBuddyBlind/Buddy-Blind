@@ -7,12 +7,11 @@ import { useBB, peopleYouCanRate } from "@/components/Providers";
 import { usePeople } from "@/components/People";
 import { PlanWindow } from "@/components/PlanWindow";
 import { AGE_RANGES, badgePaint, discountPercent } from "@/lib/bible";
-import { personRecord, statsForHandle, TEST_PEOPLE } from "@/lib/people";
+import { personRecord, sameIdentity, statsForHandle, TEST_PEOPLE } from "@/lib/people";
 import { FinishedEvents, pastStats } from "@/components/PhoneApp";
 import { HelpMark } from "@/components/HelpMark";
 
 function historyOf(session, content) {
-  const handle = session.handle;
   const books = session.bookings || [];
   const seen = new Set();
   let joined = 0;
@@ -32,17 +31,17 @@ function historyOf(session, content) {
   });
   (content.events || []).forEach((event) => {
     if (books.some((booking) => booking.id === event.id)) return;
-    const onIt = event.hostName === handle || (event.participants || []).some((p) => p.handle === handle);
+    const onIt = sameIdentity(event.hostUserId || event.hostName, session, { session }) || (event.participants || []).some((p) => sameIdentity(p.userId || p.handle, session, { session }));
     if (!onIt) return;
-    if (event.kind === "private" && event.hostName === handle) privHost += 1;
+    if (event.kind === "private" && sameIdentity(event.hostUserId || event.hostName, session, { session })) privHost += 1;
     else if (event.kind === "private") privJoin += 1;
     else if (event.kind === "quick") quick += 1;
   });
   (content.venues || []).forEach((venue) => {
     (venue.tables || []).forEach((table) => {
       if (books.some((booking) => booking.id === table.id)) return;
-      const host = table.hostHandle === handle;
-      const guest = (table.participants || []).some((p) => p.handle === handle && p.role !== "host");
+      const host = sameIdentity(table.hostUserId || table.hostHandle, session, { session });
+      const guest = (table.participants || []).some((p) => sameIdentity(p.userId || p.handle, session, { session }) && p.role !== "host");
       if (host) invited += 1;
       else if (guest) joined += 1;
     });
@@ -50,15 +49,24 @@ function historyOf(session, content) {
   return { joined, invited, quick, privJoin, privHost };
 }
 
-function commentsAbout(handle, content) {
-  const peer = (content?.peerReviews || []).filter((review) => review.to === handle);
+function commentsAbout(who, content, ctx) {
+  const me = personRecord(who, ctx);
+  const meId = me?.userId || "";
+  const peer = (content?.peerReviews || []).filter((review) => {
+    const target = personRecord(review.toUserId || review.to, ctx);
+    if (meId && target?.userId) return target.userId === meId;
+    return review.to === who;
+  }).map((review) => {
+    const author = personRecord(review.fromUserId || review.from, ctx);
+    return { ...review, from: author?.handle || review.from };
+  });
   if (peer.length) return peer.sort((a, b) => (b.at || 0) - (a.at || 0));
   return (content?.reviews || [])
-    .filter((review) => review.handle === handle)
+    .filter((review) => review.handle === who || review.handle === me?.handle)
     .map((review, index) => ({
-      id: `note-${handle}-${index}`,
+      id: `note-${who}-${index}`,
       from: "Table",
-      to: handle,
+      to: who,
       stars: Number(review.stars) || (index % 2 ? 4 : 5),
       body: review.body,
       at: 0,
@@ -143,7 +151,7 @@ function ProfilePage() {
     showPlace: session.showPlace !== false,
   };
   const record = guest ? personRecord(guest, { session, users: bb.users }) : null;
-  const other = !!(record && record.id !== session.email);
+  const other = !!(record?.userId && record.userId !== session.userId);
   const viewed = other ? record : session;
   const profileName = viewed.handle || session.handle;
   const ownBuddies = [
@@ -157,9 +165,9 @@ function ProfilePage() {
     : ownBuddies;
   const pending = other ? [] : (social.buddies || []).filter((b) => b.status === "pending");
   const initial = String(profileName || "B").trim().slice(0, 1).toUpperCase();
-  const received = commentsAbout(profileName, bb.content);
+  const received = commentsAbout(viewed.userId || profileName, bb.content, { session, users: bb.users });
   const shown = received.slice(page * 3, page * 3 + 3);
-  const canRate = peopleYouCanRate(bb.content, session.handle);
+  const canRate = peopleYouCanRate(bb.content, session.userId || session.handle, { session, users: bb.users });
   const stats = other ? statsForHandle(bb.content, profileName) : pastStats(bb);
   const open = canSeeComments(bb);
   const locked = other && !open;
@@ -243,10 +251,12 @@ function ProfilePage() {
                   );
                 })}
                 {buddies.map((b) => {
-                  const mark = buddyMark(b.name);
+                  const person = personRecord(b.userId || b.name, { session, users: bb.users });
+                  const label = person?.handle || b.name;
+                  const mark = buddyMark(b.userId || b.name);
                   return (
-                  <button key={b.id} type="button" title={b.name} onClick={() => people.openProfile(b.name)} className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg ${mark.className}`} style={mark.style}>
-                    {b.name.slice(0, 1).toUpperCase()}
+                  <button key={b.id} type="button" title={label} onClick={() => people.openProfile(person?.userId || b.name)} className={`grid h-11 w-11 place-items-center rounded-full font-serif text-lg ${mark.className}`} style={mark.style}>
+                    {label.slice(0, 1).toUpperCase()}
                   </button>
                   );
                 })}
@@ -273,7 +283,7 @@ function ProfilePage() {
           {panel === "review" && (
             <div className="mt-3">
               {(() => {
-                const them = other && canRate.find((person) => person.handle === profileName);
+                const them = other && canRate.find((person) => person.userId === viewed.userId || person.handle === profileName);
                 if (other && !them) return null;
                 return (
                   <div className="mb-3 flex justify-end">

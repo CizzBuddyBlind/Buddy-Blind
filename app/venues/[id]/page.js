@@ -151,7 +151,7 @@ export default function VenuePage() {
               <div className="mt-3 divide-y divide-white/10 border-y border-white/10">
                 {tables.map(({ table, hold }) => {
                   const people = table.participants || [];
-                  const joined = !!(session && (people.some((p) => p.handle === session.handle) || table.hostHandle === session.handle));
+                  const joined = !!(session && (people.some((p) => p.userId === session.userId || p.handle === session.handle) || table.hostUserId === session.userId || table.hostHandle === session.handle));
                   const lines = [
                     venue.name,
                     table.address || venue.locationLabel,
