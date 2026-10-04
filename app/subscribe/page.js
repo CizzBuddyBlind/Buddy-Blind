@@ -46,10 +46,11 @@ export default function SubscribePage() {
         "Create private up to 20",
         "Industry / wine / 50+ social / hike",
         "Host badge gold",
-        "HK$5 admin fee per event",
       ].map((line) => say(bb.lang, line)),
     },
   ];
+  const extra = say(bb.lang, "Premium extra line");
+  if (extra && extra !== "Premium extra line") cards[2].perks.push(extra);
   const trialOpened = useRef(false);
 
   useEffect(() => {

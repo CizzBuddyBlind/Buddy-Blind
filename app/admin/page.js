@@ -191,6 +191,7 @@ function siteLines(content) {
     "Create private up to 20",
     "Industry / wine / 50+ social / hike",
     "Host badge gold",
+    "Premium extra line",
   ].forEach((line) => addLine(rows, seen, "PLAN", line));
   [
     "The restaurant is the setting.",
