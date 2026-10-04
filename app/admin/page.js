@@ -72,7 +72,7 @@ const SECTIONS = [
   "POPUP WINDOWS",
 ];
 
-function addLine(rows, seen, page, english) {
+function addLine(rows, seen, page, english, careful = false) {
   const text = String(english || "").replace(/\r/g, "").trim();
   if (!text || !/[A-Za-z0-9\u3400-\u9fff]/.test(text)) return;
   if (/HK\$|NZ\$|AU\$/.test(text)) return;
@@ -80,11 +80,11 @@ function addLine(rows, seen, page, english) {
   if (seen.has(id) || seen.has(text)) return;
   seen.add(id);
   seen.add(text);
-  rows.push({ page, english: text });
+  rows.push({ page, english: text, careful });
 }
 
-function fromKey(rows, seen, page, key) {
-  addLine(rows, seen, page, DICT.en?.[key] || EXTRA.en?.[key] || "");
+function fromKey(rows, seen, page, key, careful = false) {
+  addLine(rows, seen, page, DICT.en?.[key] || EXTRA.en?.[key] || "", careful);
 }
 
 function siteLines(content) {
@@ -255,8 +255,9 @@ function siteLines(content) {
     "Log in",
   ].forEach((line) => addLine(rows, seen, "BUTTONS", line));
   ["btn.invite", "btn.join", "btn.host", "btn.share", "btn.back", "btn.next", "btn.close"].forEach((key) => fromKey(rows, seen, "BUTTONS", key));
-  ["pay.admin", "pay.total", "pay.why", "pay.check", "pay.freeCheck", "pay.confirm", "pay.confirmFree", "pay.free", "empty.inviteTitle", "empty.inviteBody", "empty.inviteCta", "leave.title", "leave.body", "step.location", "step.date", "step.time", "step.type", "step.people", "step.prefs", "step.summary", "step.pay", "trial.kicker", "trial.body", "trial.note", "ping.seeYou", "ping.areYou", "ping.needJoin", "ping.wait"].forEach((key) => fromKey(rows, seen, "POPUP WINDOWS", key));
-  ["MONTHLY", "YEARLY — SAVE {n}%", "SAVE {n}% WITH AN ANNUAL PAYMENT", "/month", "/year"].forEach((line) => addLine(rows, seen, "POPUP WINDOWS", line));
+  ["pay.admin", "pay.total", "pay.why", "pay.check", "pay.confirm", "pay.free", "empty.inviteTitle", "empty.inviteBody", "empty.inviteCta", "leave.title", "leave.body", "step.location", "step.date", "step.time", "step.type", "step.people", "step.prefs", "step.summary", "step.pay", "trial.note"].forEach((key) => fromKey(rows, seen, "POPUP WINDOWS", key));
+  ["trial.kicker", "trial.body"].forEach((key) => fromKey(rows, seen, "POPUP WINDOWS", key, true));
+  ["MONTHLY", "YEARLY — SAVE {n}%", "SAVE {n}% WITH AN ANNUAL PAYMENT", "/month", "/year"].forEach((line) => addLine(rows, seen, "POPUP WINDOWS", line, true));
   return rows;
 }
 
@@ -388,7 +389,7 @@ function WordingEditor({ bb }) {
   return (
     <section data-keep>
       <h1 className="font-serif text-5xl">Wording</h1>
-      <p className="mt-2 max-w-xl text-sm text-mute">One page at a time. English, Traditional, and Simplified stay separate. Leave a box empty and save it. That line stays blank.</p>
+      <p className="mt-2 max-w-xl text-sm text-mute">One page at a time. English, Traditional, and Simplified stay separate. Leave a box empty and save it. That line stays blank. 🔒 means that line is also used in another flow. You can still change it.</p>
       <div className="mt-4 flex flex-wrap gap-2">
         {[
           ["en", "EN English"],
@@ -411,7 +412,7 @@ function WordingEditor({ bb }) {
       <div className="mt-4 grid max-w-3xl gap-3">
         {lines.map((row) => (
           <label key={`${row.page}\u0000${row.english}`} className="grid gap-1">
-            <span className="whitespace-pre-line text-xs text-white/45">{row.english}</span>
+            <span className="whitespace-pre-line text-xs text-white/45">{row.careful ? "🔒 " : ""}{row.english}</span>
             <textarea value={shown(row)} onChange={(e) => setEdits((prev) => ({ ...prev, [`${row.page}\u0000${row.english}`]: e.target.value }))} rows={row.english.includes("\n") ? 4 : 2} className="rounded-xl border border-white/15 bg-card px-4 py-2 text-sm text-fg" />
           </label>
         ))}
