@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { HostBadge } from "./Flows";
 import { peopleYouCanRate, useBB } from "./Providers";
-import { personRecord } from "@/lib/people";
+import { personRecord, samePerson } from "@/lib/people";
 import { setPeopleApi } from "./peopleNav";
 
 const PeopleCtx = createContext(null);
@@ -74,17 +74,15 @@ export function PeopleProvider({ children }) {
   function openProfile(handle) {
     const name = String(handle || "").trim();
     if (!name || name === "?" || /^host$/i.test(name)) return;
-    const record = personRecord(name, { session: bb.session, users: bb.users });
-    const target = record?.handle || name;
-    const mine = !!(bb.session && record && (record.email === bb.session.email || record.handle === bb.session.handle) && !record.test);
+    const mine = samePerson(name, bb.session);
     setGroup(null);
     setReview(null);
     if (app) {
-      setGuest(mine ? "" : target);
+      setGuest(mine ? "" : name);
       go.current?.();
       return;
     }
-    router.push(mine ? "/profile" : `/profile?u=${encodeURIComponent(target)}`);
+    router.push(mine ? "/profile" : `/profile?u=${encodeURIComponent(name)}`);
   }
 
   function openGroup(people, cap = 6) {

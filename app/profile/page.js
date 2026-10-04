@@ -7,7 +7,7 @@ import { useBB, peopleYouCanRate } from "@/components/Providers";
 import { usePeople } from "@/components/People";
 import { PlanWindow } from "@/components/PlanWindow";
 import { AGE_RANGES, badgePaint, discountPercent } from "@/lib/bible";
-import { personRecord, statsForHandle, TEST_PEOPLE } from "@/lib/people";
+import { personRecord, samePerson, statsForHandle, TEST_PEOPLE } from "@/lib/people";
 import { FinishedEvents, pastStats } from "@/components/PhoneApp";
 import { HelpMark } from "@/components/HelpMark";
 
@@ -143,7 +143,7 @@ function ProfilePage() {
     showPlace: session.showPlace !== false,
   };
   const record = guest ? personRecord(guest, { session, users: bb.users }) : null;
-  const other = !!(record && record.handle !== session.handle && record.email !== session.email);
+  const other = !!(guest && !samePerson(guest, session));
   const viewed = other ? record : session;
   const profileName = viewed.handle || session.handle;
   const ownBuddies = [

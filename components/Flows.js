@@ -38,16 +38,17 @@ export function HostBadge({ handle = "?", size = "host", quiet = false }) {
       role="button"
       tabIndex={0}
       className="inline-grid cursor-pointer"
+      onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        peopleApi().openProfile(record.handle);
+        peopleApi().openProfile(handle);
       }}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault();
           e.stopPropagation();
-          peopleApi().openProfile(record.handle);
+          peopleApi().openProfile(handle);
         }
       }}
     >

@@ -9,7 +9,7 @@ import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso
 import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
 import { HelpMark } from "./HelpMark";
-import { personRecord, seatsForHandle, statsForHandle, TEST_PEOPLE } from "@/lib/people";
+import { personRecord, samePerson, seatsForHandle, statsForHandle, TEST_PEOPLE } from "@/lib/people";
 import { MeTimeMark } from "./MeTimeMark";
 import { JoinerStack, usePeople } from "./People";
 import { mySeats, pastStats } from "./PhoneApp";
@@ -746,9 +746,9 @@ function Profile({ onOpenVenue, onOpenEvent, onLogin }) {
     );
   }
   const session = bb.session;
-  const guestName = people?.guest && people.guest !== session.handle ? people.guest : "";
+  const guestName = people?.guest && !samePerson(people.guest, session) ? people.guest : "";
   const record = guestName ? personRecord(guestName, { session, users: bb.users }) : null;
-  const other = !!(record && record.handle !== session.handle && record.email !== session.email);
+  const other = !!guestName;
   const viewed = other ? record : session;
   const paint = badgePaint(viewed?.points || 0, bb.content?.pointThresholds, "light");
   const buddies = other
