@@ -1,3 +1,5 @@
+import { headsUpText } from "@/lib/booking";
+
 function e164(phone) {
   const raw = String(phone || "").replace(/[^\d+]/g, "");
   if (!raw) return "";
@@ -7,6 +9,7 @@ function e164(phone) {
 }
 
 function message(body) {
+  if (body.action === "heads-up") return headsUpText(body);
   return [
     `Buddy Blind booking · ${body.action || "update"}`,
     body.venueName || "",
@@ -55,21 +58,25 @@ export async function POST(request) {
   const body = await request.json().catch(() => ({}));
   const text = message(body);
   const method = body.method || "email";
+  const channels = Array.isArray(body.channels) ? body.channels : null;
+  const wantEmail = channels ? channels.includes("email") : true;
+  const wantSms = channels ? channels.includes("sms") : method === "sms";
+  const wantWhatsapp = channels ? channels.includes("whatsapp") : method === "whatsapp";
   const subject = `Buddy Blind · ${body.venueName || "restaurant"} · ${body.action || "booking"}`;
   const recipients = [];
   if (body.email && !String(body.email).endsWith(".example")) recipients.push(body.email);
   if (body.userEmail && !recipients.includes(body.userEmail)) recipients.push(body.userEmail);
-  const email = recipients.length
+  const email = wantEmail && recipients.length
     ? await sendEmail({ to: recipients, subject, text })
-    : { status: process.env.RESEND_API_KEY ? "skipped" : "no-key" };
+    : { status: wantEmail ? (process.env.RESEND_API_KEY ? "skipped" : "no-key") : "skipped" };
 
   let sms = { status: "skipped" };
   let whatsapp = { status: "skipped" };
   const phone = e164(body.phone);
-  if (method === "sms") {
+  if (wantSms) {
     sms = await sendTwilio({ to: phone, from: process.env.TWILIO_SMS_FROM || "", text });
   }
-  if (method === "whatsapp") {
+  if (wantWhatsapp) {
     const from = process.env.TWILIO_WHATSAPP_FROM || "";
     const to = phone ? `whatsapp:${phone}` : "";
     whatsapp = await sendTwilio({ to, from, text });
@@ -77,7 +84,7 @@ export async function POST(request) {
 
   const missing = [];
   if (!process.env.RESEND_API_KEY) missing.push("RESEND_API_KEY");
-  if ((method === "sms" || method === "whatsapp") && !process.env.TWILIO_ACCOUNT_SID) missing.push("Twilio");
+  if ((wantSms || wantWhatsapp) && !process.env.TWILIO_ACCOUNT_SID) missing.push("Twilio");
   const hint = missing.length
     ? `Not sent yet. Add ${missing.join(" and ")} on Vercel, then redeploy.`
     : body.email && String(body.email).endsWith(".example")

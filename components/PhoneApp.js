@@ -189,7 +189,7 @@ function EventsTab() {
   bb.content.venues.forEach((venue) => {
     if (!bb.editing && venue.hidden) return;
     soonestTable(venue).forEach((row) => {
-      tables.push({ venue, table: row.table, places: row.hold.places });
+      tables.push({ venue, table: row.table, places: row.hold.places, hold: row.hold });
     });
   });
   const privates = bb.content.events.filter((event) => event.kind === "private" && (bb.editing || !event.hidden));
@@ -225,14 +225,14 @@ function EventsTab() {
             </div>
           </article>
         ))}
-        {filter !== "private" && rows.map(({ venue, table, places }) => (
+        {filter !== "private" && rows.map(({ venue, table, places, hold }) => (
           <article key={table.id} className="overflow-hidden rounded-2xl bg-white shadow-sm">
             <Photo src={venue.imageUrl} alt="" className="h-32 w-full" />
             <div className="space-y-1 p-3">
               <h2 className="font-semibold">{venue.name}</h2>
               <p className="text-xs text-neutral-500">{venue.cuisine}</p>
               <p className="text-xs text-neutral-500">{prettyDate(table.dateISO)} · {table.time}</p>
-              <p className="text-xs text-neutral-500">{places} seats left</p>
+              <p className="text-xs text-neutral-500">{hold?.status === "walk-in" ? "Walk-in · no table held" : `${places} seats left`}</p>
               <button type="button" className="mt-2 w-full rounded-full bg-black py-2 text-sm text-white" onClick={() => bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>Join</button>
             </div>
           </article>

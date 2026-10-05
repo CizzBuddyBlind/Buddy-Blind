@@ -20,6 +20,7 @@ import {
   queryHits,
   tablePrefs,
 } from "@/lib/bible";
+import { cappedCapacity } from "@/lib/booking";
 
 export function HostBadge({ handle = "?", userId = "", size = "host", quiet = false }) {
   const bb = useBB();
@@ -164,13 +165,23 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
   const [dateISO, setDateISO] = useState(todayOnly ? today : nextDays()[0]);
   const [time, setTime] = useState("7:00 PM");
   const [tableType, setTableType] = useState("meet-friends");
-  const [participants, setParticipants] = useState(4);
+  const [participants, setParticipants] = useState(todayOnly ? 2 : 4);
   const [gender, setGender] = useState("");
   const [orientation, setOrientation] = useState("");
   const [ageRange, setAgeRange] = useState("");
   const [checked, setChecked] = useState(false);
   const [done, setDone] = useState(null);
   const branch = (venue.branches || []).find((b) => b.id === branchId) || venue.branches?.[0];
+  const seatDay = todayOnly ? today : dateISO;
+  const maxSeats = cappedCapacity(6, seatDay, venue);
+  const seatCount = Math.min(participants, maxSeats);
+  const previewHold = bookingHold({
+    dateISO: seatDay,
+    time,
+    capacity: seatCount,
+    joined: 1,
+    openedAt: new Date().toISOString(),
+  });
   const fee = { base: 5, total: 5 };
   const titles = todayOnly
     ? [t("step.location"), t("step.time"), t("step.type"), t("step.people"), t("step.prefs"), t("step.summary"), t("step.pay")]
@@ -201,7 +212,7 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
         dateISO: todayOnly ? today : dateISO,
         time,
         tableType,
-        participants,
+        participants: seatCount,
         gender,
         orientation,
         ageRange,
@@ -269,10 +280,10 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
       )}
       {step === 4 && (
         <div>
-          <p className="mb-2 text-sm text-mute">Maximum 6, including you.</p>
+          <p className="mb-2 text-sm text-mute">{maxSeats === 2 ? "Today is 2 seats, including you." : "Maximum 6, including you."}</p>
           <div className="flex gap-2">
-            {[2, 3, 4, 5, 6].map((n) => (
-              <Choice key={n} on={participants === n} onClick={() => setParticipants(n)}>{n}</Choice>
+            {[2, 3, 4, 5, 6].filter((n) => n <= maxSeats).map((n) => (
+              <Choice key={n} on={seatCount === n} onClick={() => setParticipants(n)}>{n}</Choice>
             ))}
           </div>
           <button type="button" className="mt-4 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(5)}>{t("btn.next")}</button>
@@ -309,7 +320,8 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
           <p>Date · {todayOnly ? "Today" : prettyDate(dateISO, bb.lang)}</p>
           <p>Time · {time}</p>
           <p>Type · {tableType === "blind-date" ? "Blind Date" : "Meet Friends"}</p>
-          <p>Participants · {participants} · places after you sit · {participants - 1}</p>
+          <p>Participants · {seatCount} · places after you sit · {seatCount - 1}</p>
+          {previewHold.status === "walk-in" && <p className="text-ember">{previewHold.reason}</p>}
           <p>Gender · {gender || "—"}</p>
           <p>Preference · {[orientation, ageRange].filter(Boolean).join(", ") || "—"}</p>
           <button type="button" className="mt-3 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(7)}>{t("btn.next")}</button>
@@ -324,7 +336,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
   const tables = useMemo(
-    () => (venue.tables || []).map((table) => ({ table, hold: bookingHold(table) })).filter((row) => row.hold.status !== "walk-in"),
+    () => (venue.tables || []).map((table) => ({ table, hold: bookingHold(table) })).filter((row) => !row.hold.closed),
     [venue],
   );
   const openId = !tableId && tables.filter((row) => !row.hold.closed && row.hold.places > 0).length === 1
@@ -406,7 +418,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
                 <div>
                   <div>{prettyDate(table.dateISO, bb.lang)} · {table.time}</div>
                   <div className="text-mute">{hold.places} open · {tablePrefs(table) || "Meet friends"}</div>
-                  {hold.closed && <div className="text-ember">{hold.reason}</div>}
+                  {hold.status === "walk-in" && <div className="text-ember">{hold.reason}</div>}
                 </div>
               </div>
             </button>
@@ -422,6 +434,7 @@ export function JoinWizard({ venue, tableId, onClose }) {
             <p>{prettyDate(row.table.dateISO, bb.lang)} · {row.table.time}</p>
             <p>{tablePrefs(row.table) || "Meet friends"}</p>
             <p>{row.hold.places} places left</p>
+            {row.hold.status === "walk-in" && <p className="text-ember">{row.hold.reason}</p>}
           </div>
           {pay.sheet ? <div id="bb-fee" className="min-h-[420px] overflow-hidden rounded-2xl bg-white" /> : <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={pay.start} busy={pay.busy} error={bookError || pay.error} />}
         </div>

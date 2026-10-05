@@ -157,7 +157,7 @@ export default function VenuePage() {
                     table.address || venue.locationLabel,
                     `${prettyDate(table.dateISO, lang)} · ${table.time}`,
                     tablePrefs(table) || "Meet friends",
-                    `${hold.places} seats left`,
+                    hold.status === "walk-in" ? "Walk-in · no table held" : `${hold.places} seats left`,
                   ];
                   return (
                     <article key={table.id} className="bb-row py-4">
@@ -166,9 +166,10 @@ export default function VenuePage() {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm">{prettyDate(table.dateISO, lang)} · {table.time}</p>
                           <p className="mt-1 flex items-center gap-2 text-xs text-mute">
-                            <span>{tablePrefs(table) || "Meet friends"} · {hold.places} left</span>
+                            <span>{tablePrefs(table) || "Meet friends"} · {hold.status === "walk-in" ? "Walk-in · no table held" : `${hold.places} left`}</span>
                             <JoinerStack people={people} host={table.hostHandle} cap={6} />
                           </p>
+                          {hold.status === "walk-in" && <p className="mt-1 text-xs text-ember">{hold.reason}</p>}
                         </div>
                         <button
                           type="button"

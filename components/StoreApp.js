@@ -469,7 +469,7 @@ function Venues({ onOpen }) {
                     <>
                       {prettyDate(next.table.dateISO, bb.lang)} · {next.table.time}
                       <br />
-                      {saidPrefs(bb.lang, next.table)} · {next.hold.places} {say(bb.lang, "left")}
+                      {saidPrefs(bb.lang, next.table)} · {next.hold.status === "walk-in" ? say(bb.lang, "Walk-in · no table held") : `${next.hold.places} ${say(bb.lang, "left")}`}
                     </>
                   ) : "\u00a0"}
                 </p>
@@ -510,7 +510,8 @@ function VenueDetail({ id, onBack }) {
           <div key={table.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 px-3 py-3">
             <div className="min-w-0">
               <p className="text-sm">{prettyDate(table.dateISO, bb.lang)} · {table.time}</p>
-              <p className="mt-1 text-xs text-white/60">{saidPrefs(bb.lang, table)} · {hold.places} {say(bb.lang, "left")}</p>
+              <p className="mt-1 text-xs text-white/60">{saidPrefs(bb.lang, table)} · {hold.status === "walk-in" ? say(bb.lang, "Walk-in · no table held") : `${hold.places} ${say(bb.lang, "left")}`}</p>
+              {hold.status === "walk-in" && <p className="mt-1 text-xs text-ember">{say(bb.lang, hold.reason)}</p>}
             </div>
             <button type="button" className="shrink-0 rounded-full border border-ember px-3 py-1.5 text-xs font-semibold text-ember" onClick={() => bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>{translate(bb.lang, "btn.join")}</button>
           </div>

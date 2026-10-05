@@ -195,7 +195,7 @@ function Home() {
                               const wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
                               const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"][d.getMonth()];
                               return `${wd}, ${d.getDate()} ${mon}`;
-                            })()} • {preview.table.time} • {preview.hold.joined} people • {preview.hold.places} left</p>
+                            })()} • {preview.table.time} • {preview.hold.joined} people • {preview.hold.status === "walk-in" ? "Walk-in · no table held" : `${preview.hold.places} left`}</p>
                             <p className="mt-1 flex items-center gap-2 text-mute">
                               <span>{preview.table.tableType === "blind-date" ? "Blind date" : "Meet friends"}{more > 0 ? " + More" : ""}</span>
                               {(() => {
