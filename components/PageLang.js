@@ -73,8 +73,7 @@ function paint(book, lang) {
           const own = wordingFor(lang, text);
           if (own != null) value = own;
           else if (!hasSavedSource(lang, text)) {
-            const cached = mem.get(`${lang}\n${text}`) || "";
-            const hit = localLine(lang, text) || (/<x\b|<\//i.test(cached) ? "" : cached);
+            const hit = localLine(lang, text) || mem.get(`${lang}\n${text}`) || "";
             if (hit) value = hit;
           }
         }
