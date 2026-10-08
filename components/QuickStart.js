@@ -412,7 +412,7 @@ export function QuickCard({ row, onJoin, onOpen }) {
           </span>
         )}
         <div className="min-w-0 flex-1">
-          {row.post && <p className="text-sm leading-snug text-black [overflow-wrap:anywhere]">{row.post}</p>}
+          {row.post && <p className="text-base leading-snug text-black [overflow-wrap:anywhere]">{row.post}</p>}
           {when && <p className={`text-sm leading-snug text-black [overflow-wrap:anywhere] ${row.post ? "mt-1" : ""}`}>{when}</p>}
           {(prefs || area) && <p className="mt-0.5 text-xs leading-snug text-black/55 [overflow-wrap:anywhere]">{[prefs, area].filter(Boolean).join(" · ")}</p>}
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
