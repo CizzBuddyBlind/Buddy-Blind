@@ -1584,6 +1584,44 @@ export function BuddyProvider({ children }) {
     });
   }, [pushNote, ready, session, social.notesOn]);
 
+  const decideOwnQuick = useCallback(async (id, input) => {
+    if (!session) return { needLogin: true };
+    const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
+    const item = (base.events || []).find((event) => event.id === id && event.source === "own");
+    if (!item) return { error: "That meetup is gone." };
+    if (item.hostUserId && item.hostUserId !== session.userId) return { error: "Only the inviter can decide." };
+    const people = Array.isArray(item.participants) ? item.participants.length : 1;
+    if (people < 2) return { error: "Wait until someone else has joined." };
+    const start = tableStart({ dateISO: item.dateISO || iso(0), time: item.time });
+    if (start.getTime() - Date.now() > 2 * 60 * 60 * 1000) return { error: "This opens two hours before." };
+    const ceiling = Number(item.originalCapacity || item.capacity) || people;
+    if (input?.choice === "booked") {
+      const name = String(input.bookingName || "").trim();
+      if (!name) return { error: "Add the booking name." };
+      const seats = Number(input.seats);
+      if (!Number.isFinite(seats) || seats < people || seats > ceiling) return { error: "That seat count doesn't fit." };
+      item.booked = true;
+      item.walkIn = false;
+      item.bookingName = name;
+      item.meetingNote = "";
+      item.capacity = seats;
+      item.spots = Math.max(0, seats - people);
+    } else if (input?.choice === "walk") {
+      item.booked = false;
+      item.walkIn = true;
+      item.bookingName = "";
+      item.meetingNote = String(input.meetingNote || "").trim();
+    } else {
+      return { error: "Choose one." };
+    }
+    if (editing) commit(base);
+    else {
+      const saved = await pushLive(base);
+      if (!saved.ok && saved.error) return { error: saved.error };
+    }
+    return { ok: true };
+  }, [commit, editing, pushLive, session]);
+
   const value = useMemo(
     () => ({
       ready,
@@ -1662,6 +1700,7 @@ export function BuddyProvider({ children }) {
       joinPrivate,
       sendPing,
       replyPing,
+      decideOwnQuick,
     }),
     [
       ready, remote, content, session, staff, editing, preview, device, narrow, panel, dirty, toast, notify,
@@ -1670,7 +1709,7 @@ export function BuddyProvider({ children }) {
       versions, restoreVersion, act, insertEvent, removeBlock, duplicateBlock, addBlock, toggleLock,
       toggleHide, resetDraft, confirm, lang, setLang, market, trial, plan, planMeta, premium, entitlement, refreshBilling, setPlan, acceptTrial, cancelTrial,
       updateProfile, changePhone, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
-      addReview, flow, openTable, joinTable, createPrivate, updatePrivate, joinPrivate, sendPing, replyPing,
+      addReview, flow, openTable, joinTable, createPrivate, updatePrivate, joinPrivate, sendPing, replyPing, decideOwnQuick,
     ],
   );
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Photo } from "./Bits";
 import { HostBadge, PayDialog } from "./Flows";
-import { QuickCard, QuickStart } from "./QuickStart";
+import { QuickCard, QuickDetail, QuickStart } from "./QuickStart";
 import { useBB, peopleYouCanRate } from "./Providers";
 import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso, prettyDate, queryHits, soonestTable, tablePrefs, tableStart } from "@/lib/bible";
 import { translate } from "@/lib/i18n";
@@ -531,6 +531,7 @@ function Quick({ onOpen }) {
   const bb = useBB();
   const [chip, setChip] = useState("nearby");
   const [pay, setPay] = useState(null);
+  const [detail, setDetail] = useState(null);
   const [busy, setBusy] = useState(false);
   const rows = (bb.content.events || []).filter((event) => {
     if (event.kind !== "quick" || event.hidden) return false;
@@ -561,46 +562,35 @@ function Quick({ onOpen }) {
         ))}
       </div>
       <div className="mt-2 divide-y divide-black/10">
-        {rows.map((row) => {
-          if (row.source === "own" || row.quick) {
-            return <QuickCard key={row.id} row={row} onJoin={() => setPay(row)} />;
-          }
-          const venue = (bb.content.venues || []).find((item) => item.id === row.venueId || String(item.name || "").toLowerCase() === String(row.name || "").toLowerCase());
-          const branch = (venue?.branches || []).find((item) => item.address) || venue?.branches?.[0];
-          const address = branch?.address || venue?.address || venue?.locationLabel || "";
-          const cuisine = venue?.cuisine || row.typeLabel || "";
-          return (
-          <div key={row.id} className="flex w-full items-center gap-3 py-3 text-left">
-            <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-neutral-200">
-              <Photo src={row.imageUrl} alt="" />
-            </span>
-            <span className="min-w-0 flex-1" onClick={() => row.venueId && onOpen(row.venueId)}>
-              <span className="block text-[10px] uppercase tracking-[0.12em] text-black/45">{say(bb.lang, row.timeLabel)}</span>
-              <span className="mt-0.5 flex items-center gap-2">
-                <span data-keep className="truncate font-serif text-lg">{say(bb.lang, row.name, false)}</span>
-                <HostBadge handle={row.hostName || ""} userId={row.hostUserId || ""} tier={row.hostTier || "gold"} />
-              </span>
-              {address && <span className="block truncate text-xs text-black/45">{say(bb.lang, address, false)}</span>}
-              {cuisine && <span className="block truncate text-xs text-black/45">{say(bb.lang, cuisine)}</span>}
-              {venue?.petFriendly && <span className="block text-[10px] uppercase tracking-[0.08em] text-ember">{translate(bb.lang, "venue.pet")}</span>}
-              <span className="block text-xs text-black/45">{say(bb.lang, row.detail)}{row.spots != null ? ` · ${row.spots} ${say(bb.lang, "left")}` : ""}</span>
-            </span>
-            <button
-              type="button"
-              className="shrink-0 rounded-full border border-ember px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ember"
-              onClick={() => {
-                const venue = (bb.content.venues || []).find((item) => item.id === row.venueId || String(item.name || "").toLowerCase() === String(row.name || "").toLowerCase());
-                const table = venue && soonestTable(venue)[0];
-                if (venue && table) bb.setFlow({ type: "join", venueId: venue.id, tableId: table.table.id });
-                else setPay(row);
-              }}
-            >{translate(bb.lang, "btn.join")}</button>
-          </div>
-          );
-        })}
+        {rows.map((row) => (
+          <QuickCard
+            key={row.id}
+            row={row}
+            onOpen={() => setDetail(row)}
+            onJoin={() => {
+              const venue = (bb.content.venues || []).find((item) => item.id === row.venueId || String(item.name || "").toLowerCase() === String(row.name || "").toLowerCase());
+              const table = venue && soonestTable(venue)[0];
+              if (row.source !== "own" && venue && table) bb.setFlow({ type: "join", venueId: venue.id, tableId: table.table.id });
+              else setPay(row);
+            }}
+          />
+        ))}
       </div>
       <p className="mt-4 rounded-2xl bg-white px-4 py-4 text-sm leading-relaxed text-black/70">{say(bb.lang, "No one around yet? Create one. If nobody joins, fine — you were already planning to eat alone.")}</p>
       <QuickStart tone="app" />
+      {detail && (
+        <QuickDetail
+          row={detail}
+          onClose={() => setDetail(null)}
+          onJoin={() => {
+            const venue = (bb.content.venues || []).find((item) => item.id === detail.venueId || String(item.name || "").toLowerCase() === String(detail.name || "").toLowerCase());
+            const table = venue && soonestTable(venue)[0];
+            if (detail.source !== "own" && venue && table) bb.setFlow({ type: "join", venueId: venue.id, tableId: table.table.id });
+            else setPay(detail);
+            setDetail(null);
+          }}
+        />
+      )}
       <Dock>
         <PayDialog
           open={!!pay}

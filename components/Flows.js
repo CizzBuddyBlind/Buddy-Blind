@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { TimeChoices } from "./TimeChoices";
 import { fileToCover } from "./Bits";
 import { useBB } from "./Providers";
 import { translate } from "@/lib/i18n";
@@ -9,7 +10,6 @@ import { peopleApi } from "./peopleNav";
 import { personRecord } from "@/lib/people";
 import {
   AGE_RANGES,
-  TIMES,
   adminFee,
   badgePaint,
   bookingHold,
@@ -263,10 +263,10 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
         </div>
       )}
       {step === 2 && (
-        <div className="flex flex-wrap gap-2">
-          {TIMES.map((item) => (
-            <Choice key={item} on={time === item} onClick={() => setTime(item)}>{item}</Choice>
-          ))}
+        <div>
+          <TimeChoices value={time} onChange={setTime} renderChoice={(label, on, pick) => (
+            <Choice key={label} on={on} onClick={pick}>{label}</Choice>
+          )} />
           <button type="button" className="mt-2 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(3)}>{t("btn.next")}</button>
         </div>
       )}
@@ -821,11 +821,9 @@ export function PrivateWizard({ venueId = "", onClose }) {
               <Choice key={day} on={form.dateISO === day} onClick={() => set("dateISO", day)}>{prettyDate(day, bb.lang)}</Choice>
             ))}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {TIMES.map((item) => (
-              <Choice key={item} on={form.time === item} onClick={() => set("time", item)}>{item}</Choice>
-            ))}
-          </div>
+          <TimeChoices value={form.time} onChange={(item) => set("time", item)} renderChoice={(label, on, pick) => (
+            <Choice key={label} on={on} onClick={pick}>{label}</Choice>
+          )} />
           <label className="block text-sm text-mute">
             Seats, including you. Max 20.
             <input type="number" min={2} max={20} value={form.capacity} onChange={(e) => set("capacity", Math.min(20, Math.max(2, Number(e.target.value) || 2)))} className="mt-1 w-full rounded-xl border border-white/15 bg-black px-3 py-2 text-fg" />

@@ -4,8 +4,9 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { HostBadge, PayStep, useFeeCheckout } from "./Flows";
 import { HelpMark } from "./HelpMark";
+import { TimeChoices } from "./TimeChoices";
 import { useBB } from "./Providers";
-import { TIMES, queryHits } from "@/lib/bible";
+import { AGE_RANGES, bookingHold, iso, queryHits, tableStart } from "@/lib/bible";
 import { say } from "@/lib/say";
 
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
@@ -47,6 +48,10 @@ export function QuickStart({ locate, tone = "desk" }) {
   const [address, setAddress] = useState("");
   const [time, setTime] = useState("1:00 PM");
   const [capacity, setCapacity] = useState(2);
+  const [tableType, setTableType] = useState("meet-friends");
+  const [gender, setGender] = useState("");
+  const [orientation, setOrientation] = useState("");
+  const [ageRange, setAgeRange] = useState("");
   const [partnerHit, setPartnerHit] = useState(null);
   const [error, setError] = useState("");
   const [checked, setChecked] = useState(false);
@@ -86,16 +91,21 @@ export function QuickStart({ locate, tone = "desk" }) {
       typeLabel: "NOW",
       timeLabel: `TODAY · ${time}`,
       time,
+      dateISO: iso(0),
       address: address.trim(),
       detail: post.trim(),
-      spots: Math.max(1, capacity - 1),
+      spots: Math.max(0, capacity - 1),
       capacity,
+      originalCapacity: capacity,
+      tableType,
+      gender,
+      orientation,
+      ageRange,
       hidden: false,
       hostUserId: bb.session?.userId || "",
       hostHandle: bb.session?.handle || "",
       hostName: bb.session?.handle || "",
       participants: [{ userId: bb.session?.userId || "", handle: bb.session?.handle || "", role: "host" }],
-      imageUrl: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=400&q=60",
     }, 2);
     if (res?.needLogin) {
       window.location.href = "/login";
@@ -145,7 +155,22 @@ export function QuickStart({ locate, tone = "desk" }) {
       return;
     }
     setError("");
-    setStep("own-pay");
+    setStep("own-type");
+  }
+
+  function back() {
+    const prev = {
+      choose: "post",
+      area: "choose",
+      own: "choose",
+      "own-type": "own",
+      "own-prefs": "own-type",
+      "own-summary": "own-prefs",
+      "own-pay": "own-summary",
+      "partner-match": "own",
+    }[step];
+    if (!prev) close();
+    else setStep(prev);
   }
 
   const placeQuery = place.trim().toLowerCase();
@@ -167,14 +192,14 @@ export function QuickStart({ locate, tone = "desk" }) {
         <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog" aria-modal="true" onClick={close}>
           <div className="bb-sheet max-h-[92dvh] w-full max-w-lg overflow-auto rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between gap-3">
-              <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute" onClick={() => (step === "post" ? close() : setStep(step === "choose" ? "post" : step === "area" || step === "own" ? "choose" : "own"))}>Back</button>
+              <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute" onClick={back}>Back</button>
               <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute" onClick={close}>Close</button>
             </div>
             <div className="mt-4">
           {step === "post" && (
             <div>
               <p className="text-sm">What are you up for?</p>
-              <textarea value={post} maxLength={140} onChange={(e) => { setPost(e.target.value); setError(""); }} placeholder="I work in Central, looking for a lunch buddy." className="mt-3 w-full rounded-2xl border border-white/15 px-3 py-2 text-sm outline-none" rows={3} />
+              <textarea value={post} maxLength={140} onChange={(e) => { setPost(e.target.value); setError(""); }} placeholder="I work in Central, looking for a lunch buddy." className="mt-3 w-full rounded-2xl border border-white/15 bg-white px-3 py-2 text-sm text-char caret-char outline-none placeholder:text-black/40 focus:border-ember selection:bg-ember selection:text-ink" rows={3} />
               {error && <p className="mt-2 text-sm text-ember">{error}</p>}
               <button type="button" className="mt-3 rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={continuePost}>Continue</button>
             </div>
@@ -196,7 +221,7 @@ export function QuickStart({ locate, tone = "desk" }) {
           {step === "area" && (
             <div>
               <p className="text-sm">{say(bb.lang, "Where are you?")}</p>
-              <input value={place} onChange={(e) => { setPlace(e.target.value); setNote(""); }} placeholder="Central, CWB, TST…" className="mt-3 w-full rounded-full border border-white/15 px-4 py-2.5 text-sm outline-none" />
+              <input value={place} onChange={(e) => { setPlace(e.target.value); setNote(""); }} placeholder="Central, CWB, TST…" className="mt-3 w-full rounded-full border border-white/15 bg-white px-4 py-2.5 text-sm text-char caret-char outline-none placeholder:text-black/40 focus:border-ember selection:bg-ember selection:text-ink" />
               <button type="button" className="mt-3 rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => setAsk(true)}>{say(bb.lang, "Nearby")}</button>
               {ask && (
                 <div className="mt-3 rounded-xl bg-white/5 p-3">
@@ -230,19 +255,19 @@ export function QuickStart({ locate, tone = "desk" }) {
               <p className="text-sm">“{post.trim()}”</p>
               <label className="block text-sm">
                 Restaurant
-                <input value={restaurant} onChange={(e) => { setRestaurant(e.target.value); setError(""); }} placeholder="Enter a restaurant of your choice" className="mt-2 w-full rounded-full border border-white/15 px-4 py-2.5 text-sm outline-none" />
+                <input value={restaurant} onChange={(e) => { setRestaurant(e.target.value); setError(""); }} placeholder="Enter a restaurant of your choice" className="mt-2 w-full rounded-full border border-white/15 bg-white px-4 py-2.5 text-sm text-char caret-char outline-none placeholder:text-black/40 focus:border-ember selection:bg-ember selection:text-ink" />
               </label>
               <p className="text-sm font-medium">You arrange the booking yourself.</p>
               <label className="block text-sm">
                 Address (optional)
-                <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter the restaurant address" className="mt-2 w-full rounded-full border border-white/15 px-4 py-2.5 text-sm outline-none" />
+                <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter the restaurant address" className="mt-2 w-full rounded-full border border-white/15 bg-white px-4 py-2.5 text-sm text-char caret-char outline-none placeholder:text-black/40 focus:border-ember selection:bg-ember selection:text-ink" />
               </label>
               <div>
                 <p className="text-sm">Time</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {TIMES.map((item) => (
-                    <button key={item} type="button" className={`rounded-full px-3 py-1.5 text-xs ${time === item ? "bg-fg text-ink" : "border border-white/20"}`} onClick={() => setTime(item)}>{item}</button>
-                  ))}
+                <div className="mt-2">
+                  <TimeChoices value={time} onChange={setTime} renderChoice={(label, on, pick) => (
+                    <button key={label} type="button" className={`rounded-full px-3 py-1.5 text-xs ${on ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={pick}>{label}</button>
+                  )} />
                 </div>
               </div>
               <div>
@@ -256,6 +281,54 @@ export function QuickStart({ locate, tone = "desk" }) {
               {error && <p className="text-sm text-ember">{error}</p>}
               <button type="button" className="rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={reviewOwn}>Continue</button>
               <button type="button" className="ml-3 text-xs text-white/45" onClick={() => setStep("choose")}>Back</button>
+            </div>
+          )}
+          {step === "own-type" && (
+            <div>
+              <p className="text-sm">“{post.trim()}”</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" className={`rounded-full px-3 py-1.5 text-xs ${tableType === "blind-date" ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={() => setTableType("blind-date")}>Blind Date</button>
+                <button type="button" className={`rounded-full px-3 py-1.5 text-xs ${tableType === "meet-friends" ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={() => setTableType("meet-friends")}>Meet Friends</button>
+              </div>
+              <button type="button" className="mt-4 rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => setStep("own-prefs")}>Continue</button>
+              <button type="button" className="ml-3 text-xs text-white/45" onClick={() => setStep("own")}>Back</button>
+            </div>
+          )}
+          {step === "own-prefs" && (
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-widest text-white/45">Gender · optional</p>
+              <div className="flex flex-wrap gap-2">
+                {["", "Women", "Men", "Mixed"].map((item) => (
+                  <button key={item || "any"} type="button" className={`rounded-full px-3 py-1.5 text-xs ${gender === item ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={() => setGender(item)}>{item || "No preference"}</button>
+                ))}
+              </div>
+              <p className="text-xs uppercase tracking-widest text-white/45">Orientation · optional</p>
+              <div className="flex flex-wrap gap-2">
+                {["", "Gay", "Lesbian", "Dating"].map((item) => (
+                  <button key={item || "any2"} type="button" className={`rounded-full px-3 py-1.5 text-xs ${orientation === item ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={() => setOrientation(item)}>{item || "No preference"}</button>
+                ))}
+              </div>
+              <p className="text-xs uppercase tracking-widest text-white/45">Age range · optional</p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className={`rounded-full px-3 py-1.5 text-xs ${ageRange === "" ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={() => setAgeRange("")}>Any</button>
+                {AGE_RANGES.map((item) => (
+                  <button key={item} type="button" className={`rounded-full px-3 py-1.5 text-xs ${ageRange === item ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={() => setAgeRange(item)}>{item}</button>
+                ))}
+              </div>
+              <button type="button" className="rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => setStep("own-summary")}>Continue</button>
+              <button type="button" className="ml-3 text-xs text-white/45" onClick={() => setStep("own-type")}>Back</button>
+            </div>
+          )}
+          {step === "own-summary" && (
+            <div className="space-y-1 text-sm">
+              <p>“{post.trim()}”</p>
+              <p>{restaurant.trim()} · {time} · up to {capacity}</p>
+              {address.trim() && <p className="text-white/60">{address.trim()}</p>}
+              <p>{tableType === "blind-date" ? "Blind Date" : "Meet Friends"}</p>
+              <p>{[gender, orientation, ageRange].filter(Boolean).join(" · ") || "No extra preferences"}</p>
+              <p className="font-medium">You arrange the booking yourself.</p>
+              <button type="button" className="mt-3 rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => setStep("own-pay")}>Continue</button>
+              <button type="button" className="ml-3 text-xs text-white/45" onClick={() => setStep("own-prefs")}>Back</button>
             </div>
           )}
           {step === "partner-match" && partnerHit && (
@@ -288,39 +361,203 @@ export function QuickStart({ locate, tone = "desk" }) {
   );
 }
 
-export function QuickCard({ row, onJoin }) {
+function meetupPeople(row) {
+  if (Array.isArray(row.participants) && row.participants.some((person) => person?.handle)) {
+    return row.participants.filter((person) => person?.handle);
+  }
+  if (row.hostHandle || row.hostName) {
+    return [{ userId: row.hostUserId || "", handle: row.hostHandle || row.hostName, role: "host" }];
+  }
+  return [];
+}
+
+function openSeatsFor(row, people) {
+  const cap = Number(row.capacity) || 0;
+  if (cap > 0) return Math.max(0, cap - people.length);
+  return Math.max(0, Number(row.spots) || 0);
+}
+
+function preferenceLine(row) {
+  const type = row.tableType === "blind-date" ? "Blind Date" : row.tableType === "meet-friends" ? "Meet Friends" : "";
+  return [type, row.gender, row.orientation, row.ageRange ? `Age ${row.ageRange}` : ""].filter(Boolean).join(" · ");
+}
+
+function venueFor(row, venues) {
+  if (row?.source === "own") return null;
+  const key = String(row?.name || "").toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, " ").trim();
+  if (!key) return null;
+  return (venues || []).find((item) => {
+    const name = String(item?.name || "").toLowerCase();
+    return name === key || name.startsWith(key) || key.startsWith(name);
+  }) || null;
+}
+
+function stopControl(event) {
+  event.stopPropagation();
+}
+
+export function QuickCard({ row, onJoin, onOpen }) {
   const bb = useBB();
-  const people = Array.isArray(row.participants) && row.participants.length
-    ? row.participants
-    : [{ userId: row.hostUserId || "", handle: row.hostHandle || row.hostName || "?", role: "host" }];
-  const cap = Math.max(people.length, Number(row.capacity) || people.length + Number(row.spots || 0));
-  const openSeats = Math.max(0, cap - people.length);
-  const closed = openSeats === 0;
+  const people = meetupPeople(row);
+  const cap = Number(row.capacity) || 0;
+  const openSeats = openSeatsFor(row, people);
+  const closed = cap > 0 ? openSeats === 0 : row.spots === 0;
   const joined = !!bb.session && people.some((person) => person.userId && person.userId === bb.session.userId);
-  const time = row.time || "";
-  const place = row.area || "";
+  const when = row.time ? [row.name, row.time].filter(Boolean).join(" · ") : [row.name, row.timeLabel].filter(Boolean).join(" · ");
+  const prefs = preferenceLine(row);
+  const area = row.area || "";
   return (
-    <article className="rounded-2xl border border-black/10 bg-white p-4 text-black">
-      <div className="flex items-center gap-2">
-        <HostBadge handle={people[0].handle} userId={people[0].userId || ""} size="feature" />
-        <span className="text-sm font-semibold">{people[0].handle}</span>
-        {closed && <span className="ml-auto text-[10px] font-semibold uppercase tracking-[0.14em] text-black/45">CLOSED</span>}
+    <article
+      className="cursor-pointer rounded-2xl border border-black/10 bg-white px-3 py-2.5 text-black"
+      onClick={(event) => {
+        if (event.target.closest("button, a, input, textarea")) return;
+        onOpen?.();
+      }}
+    >
+      <div className="flex items-start gap-2">
+        {people[0] && (
+          <span className="mt-0.5 shrink-0" onClick={stopControl} onMouseDown={stopControl}>
+            <HostBadge handle={people[0].handle} userId={people[0].userId || ""} />
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          {row.post && <p className="text-sm leading-snug text-black [overflow-wrap:anywhere]">{row.post}</p>}
+          {when && <p className={`text-sm leading-snug text-black [overflow-wrap:anywhere] ${row.post ? "mt-1" : ""}`}>{when}</p>}
+          {(prefs || area) && <p className="mt-0.5 text-xs leading-snug text-black/55 [overflow-wrap:anywhere]">{[prefs, area].filter(Boolean).join(" · ")}</p>}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+            {(people.length > 0 || cap > 0) && (
+              <span className="flex items-center gap-1">
+                {people.map((person, index) => (
+                  <span key={`${person.userId || person.handle}-${index}`} onClick={stopControl} onMouseDown={stopControl}>
+                    <HostBadge handle={person.handle} userId={person.userId || ""} />
+                  </span>
+                ))}
+                {cap > 0 && Array.from({ length: openSeats }, (_, index) => (
+                  <span key={`empty-${index}`} className="h-5 w-5 rounded-full border border-black/20" aria-hidden="true" />
+                ))}
+              </span>
+            )}
+            {!closed && openSeats > 0 && (
+              <span className="text-xs text-black/55">{openSeats === 1 ? "1 available seat" : `${openSeats} available seats`}</span>
+            )}
+            {closed && <span className="text-[10px] font-semibold tracking-[0.14em] text-black/45">CLOSED</span>}
+            {!closed && !joined && (
+              <button type="button" className="ml-auto rounded-full border border-black px-3 py-1 text-[11px] font-semibold text-black" onClick={(event) => { stopControl(event); onJoin?.(); }}>JOIN</button>
+            )}
+          </div>
+        </div>
       </div>
-      {row.post && <p className="mt-3 text-sm leading-relaxed">{row.post}</p>}
-      <p className="mt-2 text-sm">{row.name}{time ? ` · ${time}` : ""}</p>
-      {place && <p className="text-xs text-black/50">{place}</p>}
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        {people.map((person, index) => (
-          <HostBadge key={`${person.userId || person.handle}-${index}`} handle={person.handle} userId={person.userId || ""} size="feature" />
-        ))}
-        {Array.from({ length: openSeats }, (_, index) => (
-          <span key={`empty-${index}`} className="h-9 w-9 rounded-full border border-black/15" aria-hidden="true" />
-        ))}
-      </div>
-      {!closed && <p className="mt-2 text-xs text-black/50">{openSeats === 1 ? "1 available seat" : `${openSeats} available seats`}</p>}
-      {!closed && !joined && (
-        <button type="button" className="mt-3 rounded-full border border-black px-4 py-1.5 text-xs font-semibold" onClick={onJoin}>Join</button>
-      )}
     </article>
   );
+}
+
+export function QuickDetail({ row, onClose, onJoin }) {
+  const bb = useBB();
+  const live = (bb.content?.events || []).find((event) => event.id === row?.id) || row;
+  const people = meetupPeople(live);
+  const cap = Number(live.capacity) || 0;
+  const openSeats = openSeatsFor(live, people);
+  const closed = cap > 0 ? openSeats === 0 : live.spots === 0;
+  const joined = !!bb.session && (people.some((person) => person.userId && person.userId === bb.session.userId) || live.hostUserId === bb.session.userId);
+  const host = joined && live.hostUserId && live.hostUserId === bb.session?.userId;
+  const venue = venueFor(live, bb.content?.venues);
+  const photo = live.source === "own" ? "" : (venue?.imageUrl || "");
+  const prefs = preferenceLine(live);
+  const partnerLine = partnerBookedLine(live, venue, bb.session);
+  const ownLine = live.source === "own" && live.booked && live.bookingName ? `Table booked under ${live.bookingName} at ${live.time || "the arranged time"} at ${live.name}.` : "";
+  const hoursLeft = live.time ? (tableStart({ dateISO: live.dateISO || iso(0), time: live.time }).getTime() - Date.now()) / 3600000 : 99;
+  const canDecide = live.source === "own" && host && people.length >= 2 && hoursLeft <= 2 && !live.booked && !live.walkIn;
+  const ceiling = Number(live.originalCapacity || live.capacity) || people.length;
+  const [seats, setSeats] = useState(Math.max(people.length, Math.min(ceiling, people.length)));
+  const [bookingName, setBookingName] = useState("");
+  const [meetingNote, setMeetingNote] = useState("");
+  const [error, setError] = useState("");
+  if (!row || typeof document === "undefined") return null;
+  const seatChoices = [];
+  for (let n = people.length; n <= ceiling; n += 1) seatChoices.push(n);
+  async function save(choice) {
+    if (choice === "walk" && contactBlocked(meetingNote)) {
+      setError("Keep contact details off the meeting note. You'll meet in person.");
+      return;
+    }
+    const res = await bb.decideOwnQuick?.(row.id, { choice, bookingName, seats, meetingNote });
+    if (res?.needLogin) {
+      window.location.href = "/login";
+      return;
+    }
+    if (res?.error) setError(res.error);
+    else setError("");
+  }
+  return createPortal(
+    <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="bb-sheet max-h-[92dvh] w-full max-w-lg overflow-auto rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl" onClick={(event) => event.stopPropagation()}>
+        <div className="flex justify-end">
+          <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute" onClick={onClose}>Close</button>
+        </div>
+        {photo && <img src={photo} alt="" className="mt-3 h-36 w-full rounded-2xl object-cover" />}
+        {live.post && <p className="mt-4 text-sm leading-snug [overflow-wrap:anywhere]">{live.post}</p>}
+        <p className="mt-2 text-sm [overflow-wrap:anywhere]">{[live.name, live.time || live.timeLabel].filter(Boolean).join(" · ")}</p>
+        {live.source === "own" && live.address && <p className="mt-1 text-sm text-white/60 [overflow-wrap:anywhere]">{live.address}</p>}
+        {live.source !== "own" && venue?.locationLabel && <p className="mt-1 text-sm text-white/60">{venue.locationLabel}</p>}
+        {prefs && <p className="mt-1 text-sm text-white/70">{prefs}</p>}
+        <div className="mt-3 flex flex-wrap items-center gap-1">
+          {people.map((person, index) => (
+            <HostBadge key={`${person.userId || person.handle}-${index}`} handle={person.handle} userId={person.userId || ""} />
+          ))}
+          {cap > 0 && Array.from({ length: openSeats }, (_, index) => (
+            <span key={`empty-${index}`} className="h-5 w-5 rounded-full border border-white/25" aria-hidden="true" />
+          ))}
+        </div>
+        {!closed && openSeats > 0 && <p className="mt-2 text-xs text-white/55">{openSeats === 1 ? "1 available seat" : `${openSeats} available seats`}</p>}
+        {closed && <p className="mt-2 text-[10px] font-semibold tracking-[0.14em] text-white/55">CLOSED</p>}
+        {live.source === "own" && <p className="mt-3 text-sm text-white/70">You arrange the restaurant yourself. Buddy Blind does not book this table.</p>}
+        {joined && ownLine && (
+          <div className="mt-4 text-sm">
+            <p className="font-semibold">TABLE BOOKED</p>
+            <p>{ownLine}</p>
+          </div>
+        )}
+        {joined && !ownLine && partnerLine && (
+          <div className="mt-4 text-sm">
+            <p className="font-semibold">TABLE BOOKED</p>
+            <p>{partnerLine}</p>
+          </div>
+        )}
+        {joined && live.source === "own" && live.meetingNote && <p className="mt-3 text-sm text-white/70">{live.meetingNote}</p>}
+        {canDecide && (
+          <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
+            <p className="text-sm">Two hours out. Is the table booked, or is this a walk-in?</p>
+            <label className="block text-sm">
+              Booking name
+              <input value={bookingName} onChange={(event) => setBookingName(event.target.value)} className="mt-2 w-full rounded-full border border-white/15 bg-white px-4 py-2.5 text-sm text-char caret-char outline-none placeholder:text-black/40" placeholder="Name the restaurant has" />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {seatChoices.map((n) => (
+                <button key={n} type="button" className={`rounded-full px-3 py-1.5 text-xs ${seats === n ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={() => setSeats(n)}>{n}</button>
+              ))}
+            </div>
+            <button type="button" className="rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => save("booked")}>Table booked</button>
+            <label className="block text-sm">
+              Meeting details
+              <textarea value={meetingNote} onChange={(event) => setMeetingNote(event.target.value)} rows={2} className="mt-2 w-full rounded-2xl border border-white/15 bg-white px-3 py-2 text-sm text-char caret-char outline-none placeholder:text-black/40" placeholder="Where to meet, if you are walking in" />
+            </label>
+            <button type="button" className="rounded-full border border-white/20 px-4 py-2 text-xs text-fg" onClick={() => save("walk")}>Walk in</button>
+            {error && <p className="text-sm text-ember">{error}</p>}
+          </div>
+        )}
+        {!closed && !joined && (
+          <button type="button" className="mt-4 rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={onJoin}>JOIN</button>
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function partnerBookedLine(row, venue, session) {
+  if (!venue || row?.source === "own" || !session?.userId) return "";
+  const mine = (table) => table.hostUserId === session.userId || (table.participants || []).some((person) => person.userId === session.userId);
+  const table = (venue.tables || []).find((item) => item && !item.auto && mine(item) && bookingHold(item).status === "reserved");
+  if (!table?.hostHandle) return "";
+  return `Table booked under ${table.hostHandle} at ${table.time} at ${venue.name}.`;
 }

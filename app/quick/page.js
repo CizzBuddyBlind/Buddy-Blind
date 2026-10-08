@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Copy, Editable, Photo } from "@/components/Bits";
-import { HostBadge, PayDialog } from "@/components/Flows";
-import { QuickCard, QuickStart } from "@/components/QuickStart";
-import { JoinerStack } from "@/components/People";
+import { Copy } from "@/components/Bits";
+import { PayDialog } from "@/components/Flows";
+import { QuickCard, QuickDetail, QuickStart } from "@/components/QuickStart";
 import { useBB } from "@/components/Providers";
 import { queryHits } from "@/lib/bible";
 import { say } from "@/lib/say";
@@ -16,21 +14,6 @@ const NEAR = [
   { q: "tst", lat: 22.298, lng: 114.172 },
   { q: "sai kung", lat: 22.382, lng: 114.273 },
 ];
-
-function placeOf(row, venues) {
-  const key = String(row.name || "").toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, " ").trim();
-  const venue = (venues || []).find((item) => {
-    const name = String(item.name || "").toLowerCase();
-    return name === key || name.startsWith(key) || key.startsWith(name) || name.includes(key);
-  });
-  const branch = (venue?.branches || []).find((item) => item.address) || venue?.branches?.[0];
-  return {
-    id: venue?.id || "",
-    name: venue?.name || row.name,
-    address: branch?.address || venue?.address || venue?.locationLabel || "",
-    cuisine: venue?.cuisine || row.typeLabel || "",
-  };
-}
 
 function nearestArea(lat, lng) {
   let best = NEAR[0];
@@ -46,9 +29,9 @@ function nearestArea(lat, lng) {
 }
 
 export default function QuickPage() {
-  const router = useRouter();
-  const { content, editing, update, act, notify, setSelectedId, selectedId, lang, market } = useBB();
+  const { content, editing, act, notify, setSelectedId, lang, market } = useBB();
   const [sheet, setSheet] = useState(null);
+  const [detail, setDetail] = useState(null);
   const [area, setArea] = useState("");
   const copy = content.copy.quick;
   const query = area.trim().toLowerCase();
@@ -57,7 +40,6 @@ export default function QuickPage() {
     const blob = `${row.name} ${row.timeLabel} ${row.area || ""} ${row.detail || ""} ${row.typeLabel || ""} quick now tonight 今晚`;
     return queryHits(blob, query);
   });
-  const venues = (content.venues || []).filter((venue) => !venue.hidden || editing);
 
   async function confirmSheet() {
     const res = await act("event", sheet.id, sheet.mode);
@@ -91,53 +73,26 @@ export default function QuickPage() {
         <section>
           <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Tonight, Central, 中環, café…" className="w-full rounded-full border border-black/10 bg-white px-4 py-3 text-sm outline-none transition focus:border-ember" />
           <div className="mt-4 space-y-3">
-        {rows.map((row) => {
-          if (row.source === "own" || row.quick) {
-            return (
-              <QuickCard
-                key={row.id}
-                row={row}
-                onJoin={() => setSheet({ id: row.id, name: row.name, mode: "join", detail: row.time || row.timeLabel || "" })}
-              />
-            );
-          }
-          const placeInfo = placeOf(row, venues);
-          return (
-          <article
+        {rows.map((row) => (
+          <QuickCard
             key={row.id}
-            onClick={(e) => {
-              if (e.target.closest("button, input, textarea, a")) return;
-              if (editing) setSelectedId(row.id);
-              if (placeInfo.id) router.push(`/venues/${placeInfo.id}`);
-            }}
-            className={`bb-lift flex cursor-pointer items-center gap-3 rounded-2xl border border-black/10 bg-white p-3 ${selectedId === row.id ? "ring-2 ring-ember" : ""} ${row.hidden ? "opacity-40" : ""}`}
-          >
-            <div className="bb-zoom-wrap h-16 w-16 shrink-0 overflow-hidden rounded-xl">
-              <Photo src={row.imageUrl} alt={row.name} onChange={(imageUrl) => update((d) => { const item = d.events.find((x) => x.id === row.id); if (item) item.imageUrl = imageUrl; })} />
-            </div>
-            <div className="min-w-0 flex-1 text-left">
-              <div className="flex items-center gap-2">
-                <div data-keep className="min-w-0 font-medium">
-                  <Editable locked={row.locked} value={placeInfo.name} onChange={(name) => update((d) => { const item = d.events.find((x) => x.id === row.id); if (item) item.name = name; })} />
-                </div>
-                <HostBadge handle={row.hostName || ""} userId={row.hostUserId || ""} tier={row.hostTier || "gold"} />
-                <JoinerStack people={row.participants} host={row.hostName} cap={6} />
-              </div>
-              <div className="text-xs text-mute">{say(lang, placeInfo.address)}</div>
-              <div className="text-xs text-mute">{say(lang, placeInfo.cuisine)}</div>
-              <div className="text-xs text-mute">{say(lang, row.timeLabel)} · {row.spots} {say(lang, "left")}</div>
-            </div>
-            <button type="button" className="shrink-0 rounded-full bg-char px-4 py-2 text-xs font-semibold text-paper" onClick={() => setSheet({ id: row.id, name: placeInfo.name, mode: "join", detail: `${placeInfo.address} · ${placeInfo.cuisine}` })}>
-              JOIN
-            </button>
-          </article>
-          );
-        })}
+            row={row}
+            onOpen={() => { if (editing) setSelectedId(row.id); setDetail(row); }}
+            onJoin={() => setSheet({ id: row.id, name: row.name, mode: "join", detail: row.time || row.timeLabel || "" })}
+          />
+        ))}
           </div>
           <Copy as="p" k="quick.note" legacy={copy.note} className="mt-6 text-sm leading-relaxed text-mute" onEnglish={(d, next) => { d.copy.quick.note = next; }} />
           <QuickStart locate={nearestArea} />
         </section>
       </div>
+      {detail && (
+        <QuickDetail
+          row={detail}
+          onClose={() => setDetail(null)}
+          onJoin={() => { setSheet({ id: detail.id, name: detail.name, mode: "join", detail: detail.time || detail.timeLabel || "" }); setDetail(null); }}
+        />
+      )}
       <PayDialog
         open={sheet?.mode === "join"}
         title={`Join · ${sheet?.name || ""}`}
