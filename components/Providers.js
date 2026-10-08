@@ -9,7 +9,7 @@ import { cappedCapacity, noticeBody, planVenueNotices } from "@/lib/booking";
 import { notifyRestaurant } from "@/lib/notify";
 import { putMedia } from "@/lib/media";
 import { pageFromPath, setWording, setWordingPage } from "@/lib/say";
-import { accountByEmail, castForFounder, fixtureAccountId, personRecord, planPhoneChange, sameIdentity, stampContent } from "@/lib/people";
+import { accountByEmail, fixtureAccountId, personRecord, planPhoneChange, sameIdentity, stampContent } from "@/lib/people";
 import { marketFromCode, marketFromTimezone } from "@/lib/market";
 import { APP_BREAKPOINT } from "@/lib/layoutMode";
 import { effectiveAccess, isInternalRole } from "@/lib/entitlement";
@@ -1633,7 +1633,7 @@ export function BuddyProvider({ children }) {
     () => ({
       ready,
       remote,
-      content: castForFounder(content, session),
+      content,
       session,
       staff,
       editing,
