@@ -22,6 +22,7 @@ import {
   tablePrefs,
 } from "@/lib/bible";
 import { cappedCapacity } from "@/lib/booking";
+import { isPartnerQuick, joinableVenueTables, venueTableState } from "@/lib/venueEvents";
 
 export function HostBadge({ handle = "?", userId = "", size = "host", quiet = false }) {
   const bb = useBB();
@@ -322,10 +323,7 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
 export function JoinWizard({ venue, tableId, onClose }) {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
-  const tables = useMemo(
-    () => (venue.tables || []).map((table) => ({ table, hold: bookingHold(table) })).filter((row) => !row.hold.closed),
-    [venue],
-  );
+  const tables = useMemo(() => joinableVenueTables(venue), [venue]);
   const openId = !tableId && tables.filter((row) => !row.hold.closed && row.hold.places > 0).length === 1
     ? tables.find((row) => !row.hold.closed && row.hold.places > 0).table.id
     : "";
@@ -447,9 +445,10 @@ export function TodayPopup({ onJoin, onBrowse, onDismiss }) {
     bb.content.venues.forEach((venue) => {
       if (venue.hidden && !bb.editing) return;
       (venue.tables || []).forEach((table) => {
-        const hold = bookingHold(table);
-        if (table.dateISO === key && hold.places > 0 && hold.places <= 2) {
-          list.push({ venue, table, hold });
+        if (isPartnerQuick(table)) return;
+        const state = venueTableState(table);
+        if (table.dateISO === key && state.joinable && state.places <= 2) {
+          list.push({ venue, table, hold: state.hold });
         }
       });
     });

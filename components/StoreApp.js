@@ -17,6 +17,7 @@ import { JoinerStack, usePeople } from "./People";
 import { mySeats, pastStats } from "./PhoneApp";
 import { usePhoneEdit } from "./EditPhone";
 import { appToPath, pathToApp } from "@/lib/layoutMode";
+import { joinableVenueTables, normalVenueTables } from "@/lib/venueEvents";
 import { quickRows } from "@/lib/quickFeed";
 import { navigateAppPage } from "@/lib/appScroll";
 
@@ -407,7 +408,7 @@ function Venues({ onOpen }) {
   const today = iso(0);
   const venues = bb.content.venues.filter((venue) => {
     if (venue.hidden) return false;
-    const rows = soonestTable(venue);
+    const rows = joinableVenueTables(venue);
     const tonight = venue.tonight || rows.some((row) => row.table.dateISO === today);
     if (filter === "tonight") return tonight;
     if (filter !== "all" && venue.area !== filter) return false;
@@ -442,15 +443,15 @@ function Venues({ onOpen }) {
       </div>
       <div className="mt-4 grid grid-cols-2 items-stretch gap-x-3 gap-y-5">
         {venues.map((venue) => {
-          const next = soonestTable(venue)[0];
+          const next = joinableVenueTables(venue)[0];
           return (
             <button key={venue.id} type="button" onClick={() => onOpen(venue.id)} className="flex h-full flex-col text-left">
               <div className="relative w-full overflow-hidden rounded-2xl bg-black" style={{ paddingBottom: "133%" }}>
                 <div className="absolute inset-0">
                   <Photo src={venue.imageUrl} alt="" />
                 </div>
-                <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-white">{venue.spots || next?.hold.places || 0} spots</span>
-                <span className="absolute bottom-2 left-2 rounded-full bg-white px-2.5 py-1 text-[9px] font-semibold uppercase text-black">{next?.table.time || venue.timeLabel}</span>
+                <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-white">{next ? next.places : (venue.spots || 0)} spots</span>
+                <span className="absolute bottom-2 left-2 rounded-full bg-white px-2.5 py-1 text-[9px] font-semibold uppercase text-black">{next?.time || next?.table.time || venue.timeLabel}</span>
               </div>
               <h2 data-keep className="mt-2 line-clamp-2 min-h-[2.4em] font-serif text-[clamp(1rem,4.2vw,1.2rem)] leading-tight">{say(bb.lang, venue.name, false)}</h2>
               <p className="mt-1 line-clamp-2 min-h-[2em] text-[10px] uppercase tracking-[0.08em] text-white/55">{say(bb.lang, venue.cuisine || venue.typeLabel)}</p>
@@ -471,7 +472,7 @@ function Venues({ onOpen }) {
                     <>
                       {prettyDate(next.table.dateISO, bb.lang)} · {next.table.time}
                       <br />
-                      {saidPrefs(bb.lang, next.table)} · {next.hold.status === "walk-in" ? say(bb.lang, "Walk-in · no table held") : `${next.hold.places} ${say(bb.lang, "left")}`}
+                      {saidPrefs(bb.lang, next.table)} · {next.status === "walk-in" ? say(bb.lang, "Walk-in · no table held") : `${next.places} ${say(bb.lang, "left")}`}
                     </>
                   ) : "\u00a0"}
                 </p>
@@ -488,7 +489,7 @@ function VenueDetail({ id, onBack }) {
   const bb = useBB();
   const venue = bb.content.venues.find((v) => v.id === id);
   if (!venue) return <button type="button" className="px-5 py-4 text-sm" onClick={onBack}>Back</button>;
-  const rows = soonestTable(venue);
+  const rows = normalVenueTables(venue);
   return (
     <section className="px-[4.5vw] pb-8 pt-3">
       <button type="button" onClick={onBack} className="text-xs uppercase tracking-[0.14em] text-white/45">{say(bb.lang, "Back")}</button>
@@ -515,7 +516,7 @@ function VenueDetail({ id, onBack }) {
               <p className="mt-1 text-xs text-white/60">{saidPrefs(bb.lang, table)} · {hold.status === "walk-in" ? say(bb.lang, "Walk-in · no table held") : `${hold.places} ${say(bb.lang, "left")}`}</p>
               {hold.status === "walk-in" && <p className="mt-1 text-xs text-ember">{say(bb.lang, hold.reason)}</p>}
             </div>
-            <button type="button" className="shrink-0 rounded-full border border-ember px-3 py-1.5 text-xs font-semibold text-ember" onClick={() => bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>{translate(bb.lang, "btn.join")}</button>
+            <button type="button" disabled={hold.closed} className="shrink-0 rounded-full border border-ember px-3 py-1.5 text-xs font-semibold text-ember disabled:opacity-40" onClick={() => bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>{hold.closed ? "Full" : translate(bb.lang, "btn.join")}</button>
           </div>
         ))}
       </div>

@@ -9,7 +9,8 @@ import { JoinerStack } from "@/components/People";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
-import { bookingHold, prettyDate, tablePrefs } from "@/lib/bible";
+import { prettyDate, tablePrefs } from "@/lib/bible";
+import { normalVenueTables } from "@/lib/venueEvents";
 
 export default function VenuePage() {
   const { id } = useParams();
@@ -31,9 +32,7 @@ export default function VenuePage() {
     );
   }
   const gallery = venue.gallery?.length ? venue.gallery : [venue.imageUrl];
-  const tables = (venue.tables || [])
-    .map((table) => ({ table, hold: bookingHold(table) }))
-    .filter(({ table, hold }) => table.dateISO >= new Date().toISOString().slice(0, 10) || !hold.closed);
+  const tables = normalVenueTables(venue);
   const shot = Math.min(photo, Math.max(0, gallery.length - 1));
 
   function patch(partial) {

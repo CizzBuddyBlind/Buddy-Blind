@@ -11,7 +11,8 @@ import { JoinerStack } from "@/components/People";
 import { useBB } from "@/components/Providers";
 import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
-import { CUISINES, iso, queryHits, soonestTable, tablePrefs } from "@/lib/bible";
+import { CUISINES, iso, queryHits, tablePrefs } from "@/lib/bible";
+import { joinableVenueTables } from "@/lib/venueEvents";
 
 const FILTERS = [
   { id: "all", key: "filter.all" },
@@ -40,7 +41,7 @@ function Home() {
   const shown = useMemo(() => {
     const today = iso(0);
     return venues.filter((venue) => {
-      const rows = soonestTable(venue);
+      const rows = joinableVenueTables(venue);
       const hasToday = rows.some((row) => row.table.dateISO === today) || /today|tonight/i.test(venue.timeLabel || "");
       const hasTonight = venue.tonight || /today|tonight|now/i.test(venue.timeLabel || "") || rows.some((row) => row.table.dateISO === today);
       if (filter === "tonight" && !hasTonight) return false;
@@ -149,7 +150,7 @@ function Home() {
 
       <div className="mb-8 grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((venue) => {
-          const rows = soonestTable(venue);
+          const rows = joinableVenueTables(venue);
           const preview = rows[0];
           const more = Math.max(0, rows.length - 1);
           return (
@@ -169,8 +170,8 @@ function Home() {
                     alt={venue.imageAlt}
                     onChange={(imageUrl) => update((d) => { const v = d.venues.find((x) => x.id === venue.id); if (v) { v.imageUrl = imageUrl; v.galleryVersion = 2; } })}
                   />
-                  <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[0.7rem] font-semibold text-white">{venue.spots} {t("spots")}</span>
-                  <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-[0.7rem] font-semibold text-char">{venue.timeLabel}</span>
+                  <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[0.7rem] font-semibold text-white">{preview ? preview.places : venue.spots} {t("spots")}</span>
+                  <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-[0.7rem] font-semibold text-char">{preview ? preview.time : venue.timeLabel}</span>
                 </div>
                 <div className="flex flex-1 flex-col px-4 pb-2 pt-4">
                   <h3 data-keep className="font-serif text-[1.2rem] text-ember-soft">

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useBB } from "./Providers";
 import { Photo as Cover } from "./Bits";
-import { eventPoster, iso, prettyDate, queryHits, soonestTable, tableStart } from "@/lib/bible";
+import { eventPoster, iso, prettyDate, queryHits, tableStart } from "@/lib/bible";
+import { joinableVenueTables } from "@/lib/venueEvents";
 import { sameIdentity, seatsForHandle } from "@/lib/people";
 
 function hourOf(time) {
@@ -76,7 +77,7 @@ function HomeTab() {
       return privates.filter((event) => queryHits(`${event.name} ${event.location} ${event.description} ${event.timeLabel}`, query));
     }
     return venues.filter((venue) => {
-      const rows = soonestTable(venue).filter((row) => {
+      const rows = joinableVenueTables(venue).filter((row) => {
         if (date && row.table.dateISO !== date) return false;
         if (meal && mealOf(row.table.time) !== meal) return false;
         return true;
@@ -188,7 +189,7 @@ function EventsTab() {
   const tables = [];
   bb.content.venues.forEach((venue) => {
     if (!bb.editing && venue.hidden) return;
-    soonestTable(venue).forEach((row) => {
+    joinableVenueTables(venue).forEach((row) => {
       tables.push({ venue, table: row.table, places: row.hold.places, hold: row.hold });
     });
   });

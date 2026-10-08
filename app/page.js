@@ -6,6 +6,7 @@ import { DoneShare, HostBadge, PayDialog, ShareSheet, rememberReturn } from "@/c
 import { HelpMark } from "@/components/HelpMark";
 import { useBB } from "@/components/Providers";
 import { bookingHold, iso, tableStart } from "@/lib/bible";
+import { isPartnerQuick, isSyntheticTable } from "@/lib/venueEvents";
 import { say } from "@/lib/say";
 
 function upcoming(content) {
@@ -14,7 +15,7 @@ function upcoming(content) {
   (content.venues || []).forEach((venue) => {
     if (!venue || venue.hidden) return;
     (venue.tables || []).forEach((table) => {
-      if (!table?.dateISO || table.dateISO < today) return;
+      if (!table?.dateISO || table.dateISO < today || isPartnerQuick(table)) return;
       const hold = bookingHold(table);
       if (hold.status === "walk-in" || hold.closed) return;
       rows.push({
@@ -73,7 +74,12 @@ function upcoming(content) {
       href: `/private/${event.id}`,
     });
   });
-  rows.sort((a, b) => b.joined - a.joined || a.when - b.when);
+  rows.sort((a, b) => {
+    const demoA = a.kind === "table" && isSyntheticTable(a.table) ? 1 : 0;
+    const demoB = b.kind === "table" && isSyntheticTable(b.table) ? 1 : 0;
+    if (demoA !== demoB) return demoA - demoB;
+    return b.joined - a.joined || a.when - b.when;
+  });
   return rows;
 }
 
