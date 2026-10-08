@@ -6,6 +6,7 @@ import { PayDialog } from "@/components/Flows";
 import { QuickCard, QuickDetail, QuickStart } from "@/components/QuickStart";
 import { useBB } from "@/components/Providers";
 import { queryHits } from "@/lib/bible";
+import { quickRows } from "@/lib/quickFeed";
 import { say } from "@/lib/say";
 
 const NEAR = [
@@ -29,20 +30,22 @@ function nearestArea(lat, lng) {
 }
 
 export default function QuickPage() {
-  const { content, editing, act, notify, setSelectedId, lang, market } = useBB();
+  const { content, editing, act, joinTable, notify, setSelectedId, lang, market } = useBB();
   const [sheet, setSheet] = useState(null);
   const [detail, setDetail] = useState(null);
   const [area, setArea] = useState("");
   const copy = content.copy.quick;
   const query = area.trim().toLowerCase();
-  const rows = content.events.filter((e) => e.kind === "quick" && (editing || !e.hidden)).filter((row) => {
+  const rows = quickRows(content).filter((e) => editing || !e.hidden).filter((row) => {
     if (!query) return true;
     const blob = `${row.name} ${row.timeLabel} ${row.area || ""} ${row.detail || ""} ${row.typeLabel || ""} quick now tonight 今晚`;
     return queryHits(blob, query);
   });
 
   async function confirmSheet() {
-    const res = await act("event", sheet.id, sheet.mode);
+    const res = sheet.source === "partner"
+      ? await joinTable({ venueId: sheet.venueId, tableId: sheet.tableId })
+      : await act("event", sheet.id, sheet.mode);
     if (res.needLogin) {
       try { sessionStorage.setItem("bb_next", "/quick"); } catch { /* ignore */ }
       window.location.href = "/login";
@@ -78,7 +81,7 @@ export default function QuickPage() {
             key={row.id}
             row={row}
             onOpen={() => { if (editing) setSelectedId(row.id); setDetail(row); }}
-            onJoin={() => setSheet({ id: row.id, name: row.name, mode: "join", detail: row.time || row.timeLabel || "" })}
+            onJoin={() => setSheet({ id: row.id, name: row.name, mode: "join", detail: row.time || row.timeLabel || "", source: row.source, venueId: row.venueId, tableId: row.tableId })}
           />
         ))}
           </div>
@@ -90,7 +93,7 @@ export default function QuickPage() {
         <QuickDetail
           row={detail}
           onClose={() => setDetail(null)}
-          onJoin={() => { setSheet({ id: detail.id, name: detail.name, mode: "join", detail: detail.time || detail.timeLabel || "" }); setDetail(null); }}
+          onJoin={() => { setSheet({ id: detail.id, name: detail.name, mode: "join", detail: detail.time || detail.timeLabel || "", source: detail.source, venueId: detail.venueId, tableId: detail.tableId }); setDetail(null); }}
         />
       )}
       <PayDialog

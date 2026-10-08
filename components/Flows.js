@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { WizardDialog, WizardSummary } from "./Wizard";
 import { TimeChoices } from "./TimeChoices";
 import { fileToCover } from "./Bits";
 import { useBB } from "./Providers";
@@ -59,25 +60,10 @@ export function HostBadge({ handle = "?", userId = "", size = "host", quiet = fa
 }
 
 function Frame({ title, step, total, onBack, onClose, backdropClose = false, children }) {
-  const { lang } = useBB();
-  const t = (key) => translate(lang, key);
   return (
-    <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog" onClick={backdropClose ? onClose : undefined}>
-      <div className="bb-sheet max-h-[92dvh] w-full max-w-lg overflow-auto rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 h-px w-full bg-white/10">
-          <div className="h-px bg-ember" style={{ width: `${Math.max(8, (step / total) * 100)}%` }} />
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute hover:text-fg" onClick={onBack || onClose}>
-            {t("btn.back")}
-          </button>
-          <span className="text-[10px] uppercase tracking-[0.16em] text-mute">{step}/{total}</span>
-          <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute hover:text-fg" onClick={onClose}>{t("btn.close")}</button>
-        </div>
-        <h2 className="mt-4 font-serif text-3xl leading-tight">{title}</h2>
-        <div className="mt-5">{children}</div>
-      </div>
-    </div>
+    <WizardDialog title={title} step={step} total={total} onBack={onBack} onClose={onClose} progress backdropClose={backdropClose}>
+      {children}
+    </WizardDialog>
   );
 }
 
@@ -316,7 +302,7 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
         </div>
       )}
       {step === 6 && (
-        <div className="space-y-1 text-sm text-mute">
+        <WizardSummary actions={<button type="button" className="w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(7)}>{t("btn.next")}</button>}>
           <p>Restaurant · <span data-keep>{venue.name}</span></p>
           <p>Location · {branch?.label} · {branch?.address}</p>
           <p>Date · {todayOnly ? "Today" : prettyDate(dateISO, bb.lang)}</p>
@@ -326,8 +312,7 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
           {previewHold.status === "walk-in" && <p className="text-ember">{previewHold.reason}</p>}
           <p>Gender · {gender || "—"}</p>
           <p>Preference · {[orientation, ageRange].filter(Boolean).join(", ") || "—"}</p>
-          <button type="button" className="mt-3 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(7)}>{t("btn.next")}</button>
-        </div>
+        </WizardSummary>
       )}
       {step === 7 && (pay.sheet ? <div id="bb-fee" className="min-h-[420px] overflow-hidden rounded-2xl bg-white" /> : <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={pay.start} busy={pay.busy} error={bookError || pay.error} />)}
     </Frame>
@@ -394,16 +379,12 @@ export function JoinWizard({ venue, tableId, onClose }) {
 
   if (none) {
     return (
-      <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog" onClick={onClose}>
-        <div className="bb-sheet w-full max-w-sm rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg" onClick={(e) => e.stopPropagation()}>
-          <h2 className="font-serif text-3xl">{t("empty.inviteTitle")}</h2>
-          <p className="mt-2 text-sm text-mute">{t("empty.inviteBody")}</p>
-          <button type="button" className="mt-6 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => bb.setFlow({ type: "invite", venueId: venue.id })}>
-            {t("empty.inviteCta")}
-          </button>
-          <button type="button" className="mt-3 w-full py-2 text-sm text-mute" onClick={onClose}>{t("btn.close")}</button>
-        </div>
-      </div>
+      <WizardDialog title={t("empty.inviteTitle")} onBack={onClose} onClose={onClose}>
+        <p>{t("empty.inviteBody")}</p>
+        <button type="button" className="mt-4 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => bb.setFlow({ type: "invite", venueId: venue.id })}>
+          {t("empty.inviteCta")}
+        </button>
+      </WizardDialog>
     );
   }
 
@@ -429,17 +410,14 @@ export function JoinWizard({ venue, tableId, onClose }) {
         </div>
       )}
       {step === 1 && row && (
-        <div className="space-y-3">
-          <div className="space-y-1 text-sm text-mute">
-            <p data-keep className="font-serif text-2xl text-fg">{venue.name}</p>
-            <p>{row.table.address || venue.locationLabel}</p>
-            <p>{prettyDate(row.table.dateISO, bb.lang)} · {row.table.time}</p>
-            <p>{tablePrefs(row.table) || "Meet friends"}</p>
-            <p>{row.hold.places} places left</p>
-            {row.hold.status === "walk-in" && <p className="text-ember">{row.hold.reason}</p>}
-          </div>
-          {pay.sheet ? <div id="bb-fee" className="min-h-[420px] overflow-hidden rounded-2xl bg-white" /> : <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={pay.start} busy={pay.busy} error={bookError || pay.error} />}
-        </div>
+        <WizardSummary actions={pay.sheet ? <div id="bb-fee" className="min-h-[420px] overflow-hidden rounded-2xl bg-white" /> : <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={pay.start} busy={pay.busy} error={bookError || pay.error} />}>
+          <p data-keep className="text-fg">{venue.name}</p>
+          <p>{row.table.address || venue.locationLabel}</p>
+          <p>{prettyDate(row.table.dateISO, bb.lang)} · {row.table.time}</p>
+          <p>{tablePrefs(row.table) || "Meet friends"}</p>
+          <p>{row.hold.places} places left</p>
+          {row.hold.status === "walk-in" && <p className="text-ember">{row.hold.reason}</p>}
+        </WizardSummary>
       )}
       {step === 1 && !row && <p className="text-sm text-mute">That table is gone. Go back and pick another.</p>}
     </Frame>
@@ -850,15 +828,14 @@ export function PrivateWizard({ venueId = "", onClose }) {
         </div>
       )}
       {phase === "pay" && (
-        <div className="space-y-3 text-sm text-mute">
-          <p className="font-serif text-2xl text-fg">{form.name || venue?.name}</p>
+        <WizardSummary actions={<PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={publish} busy={busy} />}>
+          <p className="text-fg">{form.name || venue?.name}</p>
           <p>{location}</p>
           <p>{prettyDate(form.dateISO, bb.lang)} · {form.time}</p>
           <p>{Math.min(20, Math.max(2, Number(form.capacity) || 2))} seats</p>
           <p>{[form.orientation, form.gender, form.ageRange].filter(Boolean).join(" · ") || "Anyone"}</p>
           <p>{form.description}</p>
-          <PayStep fee={fee} checked={checked} setChecked={setChecked} onConfirm={publish} busy={busy} />
-        </div>
+        </WizardSummary>
       )}
     </Frame>
   );

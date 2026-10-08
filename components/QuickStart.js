@@ -5,8 +5,10 @@ import { createPortal } from "react-dom";
 import { HostBadge, PayStep, useFeeCheckout } from "./Flows";
 import { HelpMark } from "./HelpMark";
 import { TimeChoices } from "./TimeChoices";
+import { WizardDialog, WizardSummary } from "./Wizard";
 import { useBB } from "./Providers";
 import { AGE_RANGES, bookingHold, iso, queryHits, tableStart } from "@/lib/bible";
+import { quickJoinState, resolveQuick } from "@/lib/quickFeed";
 import { say } from "@/lib/say";
 
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
@@ -187,13 +189,7 @@ export function QuickStart({ locate, tone = "desk" }) {
         <HelpMark section="03" />
       </div>
       {step !== "idle" && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog" aria-modal="true" onClick={close}>
-          <div className="bb-sheet max-h-[92dvh] w-full max-w-lg overflow-auto rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between gap-3">
-              <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute" onClick={back}>Back</button>
-              <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute" onClick={close}>Close</button>
-            </div>
-            <div className="mt-4">
+        <WizardDialog onBack={back} onClose={close} backdropClose>
           {step === "post" && (
             <div>
               <p className="text-sm">What are you up for?</p>
@@ -307,20 +303,19 @@ export function QuickStart({ locate, tone = "desk" }) {
             </div>
           )}
           {step === "own-summary" && (
-            <div className="text-sm">
-              <div className="space-y-1">
-                <p>“{post.trim()}”</p>
-                <p>{restaurant.trim()} · {time} · up to {capacity}</p>
-                {address.trim() && <p className="text-white/60">{address.trim()}</p>}
-                <p>Meet Friends</p>
-                <p>{[gender, orientation, ageRange].filter(Boolean).join(" · ") || "No extra preferences"}</p>
-                <p className="font-medium">You arrange the booking yourself.</p>
-              </div>
-              <div className="mt-4">
+            <WizardSummary actions={(
+              <>
                 <button type="button" className="rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => setStep("own-pay")}>Continue</button>
                 <button type="button" className="ml-3 text-xs text-white/45" onClick={() => setStep("own-prefs")}>Back</button>
-              </div>
-            </div>
+              </>
+            )}>
+              <p className="text-fg">“{post.trim()}”</p>
+              <p>{restaurant.trim()} · {time} · up to {capacity}</p>
+              {address.trim() && <p>{address.trim()}</p>}
+              <p>Meet Friends</p>
+              <p>{[gender, orientation, ageRange].filter(Boolean).join(" · ") || "No extra preferences"}</p>
+              <p className="font-medium text-fg">You arrange the booking yourself.</p>
+            </WizardSummary>
           )}
           {step === "partner-match" && partnerHit && (
             <div>
@@ -343,29 +338,11 @@ export function QuickStart({ locate, tone = "desk" }) {
               <button type="button" className="mt-3 text-xs text-white/45" onClick={() => setStep("own")}>Back</button>
             </div>
           )}
-            </div>
-          </div>
-        </div>,
+        </WizardDialog>,
         document.body,
       )}
     </div>
   );
-}
-
-function meetupPeople(row) {
-  if (Array.isArray(row.participants) && row.participants.some((person) => person?.handle)) {
-    return row.participants.filter((person) => person?.handle);
-  }
-  if (row.hostHandle || row.hostName) {
-    return [{ userId: row.hostUserId || "", handle: row.hostHandle || row.hostName, role: "host" }];
-  }
-  return [];
-}
-
-function openSeatsFor(row, people) {
-  const cap = Number(row.capacity) || 0;
-  if (cap > 0) return Math.max(0, cap - people.length);
-  return Math.max(0, Number(row.spots) || 0);
 }
 
 function preferenceLine(row) {
@@ -389,14 +366,12 @@ function stopControl(event) {
 
 export function QuickCard({ row, onJoin, onOpen }) {
   const bb = useBB();
-  const people = meetupPeople(row);
-  const cap = Number(row.capacity) || 0;
-  const openSeats = openSeatsFor(row, people);
-  const closed = cap > 0 ? openSeats === 0 : row.spots === 0;
-  const joined = !!bb.session && people.some((person) => person.userId && person.userId === bb.session.userId);
-  const when = row.time ? [row.name, row.time].filter(Boolean).join(" · ") : [row.name, row.timeLabel].filter(Boolean).join(" · ");
-  const prefs = preferenceLine(row);
-  const area = row.area || "";
+  const live = resolveQuick(row, bb.content);
+  const seat = quickJoinState(live, bb.session);
+  const { people, openSeats, closed } = seat;
+  const when = live.time ? [live.name, live.time].filter(Boolean).join(" · ") : [live.name, live.timeLabel].filter(Boolean).join(" · ");
+  const prefs = preferenceLine(live);
+  const area = live.area || "";
   return (
     <article
       className="cursor-pointer rounded-2xl border border-black/10 bg-white px-3 py-2.5 text-black"
@@ -412,8 +387,8 @@ export function QuickCard({ row, onJoin, onOpen }) {
           </span>
         )}
         <div className="min-w-0 flex-1">
-          {row.post && <p className="text-base leading-snug text-black [overflow-wrap:anywhere]">{row.post}</p>}
-          {when && <p className={`text-sm leading-snug text-black [overflow-wrap:anywhere] ${row.post ? "mt-1" : ""}`}>{when}</p>}
+          {live.post && <p className="text-base leading-snug text-black [overflow-wrap:anywhere]">{live.post}</p>}
+          {when && <p className={`text-sm leading-snug text-black [overflow-wrap:anywhere] ${live.post ? "mt-1" : ""}`}>{when}</p>}
           {(prefs || area) && <p className="mt-0.5 text-xs leading-snug text-black/55 [overflow-wrap:anywhere]">{[prefs, area].filter(Boolean).join(" · ")}</p>}
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
             {people.length > 0 && (
@@ -429,7 +404,7 @@ export function QuickCard({ row, onJoin, onOpen }) {
               <span className="text-xs text-black/55">{openSeats === 1 ? "1 available seat" : `${openSeats} available seats`}</span>
             )}
             {closed && <span className="text-[10px] font-semibold tracking-[0.14em] text-black/45">CLOSED</span>}
-            {!closed && !joined && (
+            {seat.canJoin && (
               <button type="button" className="ml-auto rounded-full border border-black px-3 py-1 text-[11px] font-semibold text-black" onClick={(event) => { stopControl(event); onJoin?.(); }}>JOIN</button>
             )}
           </div>
@@ -441,12 +416,9 @@ export function QuickCard({ row, onJoin, onOpen }) {
 
 export function QuickDetail({ row, onClose, onJoin }) {
   const bb = useBB();
-  const live = (bb.content?.events || []).find((event) => event.id === row?.id) || row;
-  const people = meetupPeople(live);
-  const cap = Number(live.capacity) || 0;
-  const openSeats = openSeatsFor(live, people);
-  const closed = cap > 0 ? openSeats === 0 : live.spots === 0;
-  const joined = !!bb.session && (people.some((person) => person.userId && person.userId === bb.session.userId) || live.hostUserId === bb.session.userId);
+  const live = resolveQuick(row, bb.content);
+  const seat = quickJoinState(live, bb.session);
+  const { people, openSeats, closed, joined } = seat;
   const host = joined && live.hostUserId && live.hostUserId === bb.session?.userId;
   const venue = venueFor(live, bb.content?.venues);
   const photo = live.source === "own" ? "" : (venue?.imageUrl || "");
@@ -477,12 +449,8 @@ export function QuickDetail({ row, onClose, onJoin }) {
     else setError("");
   }
   return createPortal(
-    <div className="fixed inset-0 z-[85] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="bb-sheet max-h-[92dvh] w-full max-w-lg overflow-auto rounded-3xl border border-white/10 bg-[#101010] p-6 text-fg shadow-2xl" onClick={(event) => event.stopPropagation()}>
-        <div className="flex justify-end">
-          <button type="button" className="text-xs uppercase tracking-[0.14em] text-mute" onClick={onClose}>Close</button>
-        </div>
-        {photo && <img src={photo} alt="" className="mt-3 h-36 w-full rounded-2xl object-cover" />}
+    <WizardDialog onClose={onClose} backdropClose>
+        {photo && <img src={photo} alt="" className="h-36 w-full rounded-2xl object-cover" />}
         {live.post && <p className="mt-4 text-sm leading-snug [overflow-wrap:anywhere]">{live.post}</p>}
         <p className="mt-2 text-sm [overflow-wrap:anywhere]">{[live.name, live.time || live.timeLabel].filter(Boolean).join(" · ")}</p>
         {live.source === "own" && live.address && <p className="mt-1 text-sm text-white/60 [overflow-wrap:anywhere]">{live.address}</p>}
@@ -492,7 +460,7 @@ export function QuickDetail({ row, onClose, onJoin }) {
           {people.map((person, index) => (
             <HostBadge key={`${person.userId || person.handle}-${index}`} handle={person.handle} userId={person.userId || ""} />
           ))}
-          {cap > 0 && Array.from({ length: openSeats }, (_, index) => (
+          {seat.cap > 0 && Array.from({ length: openSeats }, (_, index) => (
             <span key={`empty-${index}`} className="h-5 w-5 rounded-full border border-white/25" aria-hidden="true" />
           ))}
         </div>
@@ -533,11 +501,10 @@ export function QuickDetail({ row, onClose, onJoin }) {
             {error && <p className="text-sm text-ember">{error}</p>}
           </div>
         )}
-        {!closed && !joined && (
+        {seat.canJoin && (
           <button type="button" className="mt-4 rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={onJoin}>JOIN</button>
         )}
-      </div>
-    </div>,
+    </WizardDialog>,
     document.body,
   );
 }

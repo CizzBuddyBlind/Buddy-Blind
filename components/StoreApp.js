@@ -17,6 +17,7 @@ import { JoinerStack, usePeople } from "./People";
 import { mySeats, pastStats } from "./PhoneApp";
 import { usePhoneEdit } from "./EditPhone";
 import { appToPath, pathToApp } from "@/lib/layoutMode";
+import { quickRows } from "@/lib/quickFeed";
 import { navigateAppPage } from "@/lib/appScroll";
 
 const APP_HEAD = "font-serif font-normal text-[clamp(2rem,8vw,2.4rem)] leading-[1.05]";
@@ -533,9 +534,9 @@ function Quick({ onOpen }) {
   const [pay, setPay] = useState(null);
   const [detail, setDetail] = useState(null);
   const [busy, setBusy] = useState(false);
-  const rows = (bb.content.events || []).filter((event) => {
-    if (event.kind !== "quick" || event.hidden) return false;
-    const blob = `${event.typeLabel || ""} ${event.timeLabel || ""} ${event.detail || ""}`.toLowerCase();
+  const rows = quickRows(bb.content).filter((event) => {
+    if (event.hidden) return false;
+    const blob = `${event.typeLabel || ""} ${event.timeLabel || ""} ${event.detail || ""} ${event.post || ""}`.toLowerCase();
     if (chip === "lunch") return /lunch/.test(blob);
     if (chip === "drinks") return /drink|wine|bar/.test(blob);
     if (chip === "coffee") return /coffee|tea/.test(blob);
@@ -568,6 +569,10 @@ function Quick({ onOpen }) {
             row={row}
             onOpen={() => setDetail(row)}
             onJoin={() => {
+              if (row.source === "partner") {
+                setPay(row);
+                return;
+              }
               const venue = (bb.content.venues || []).find((item) => item.id === row.venueId || String(item.name || "").toLowerCase() === String(row.name || "").toLowerCase());
               const table = venue && soonestTable(venue)[0];
               if (row.source !== "own" && venue && table) bb.setFlow({ type: "join", venueId: venue.id, tableId: table.table.id });
@@ -583,6 +588,11 @@ function Quick({ onOpen }) {
           row={detail}
           onClose={() => setDetail(null)}
           onJoin={() => {
+            if (detail.source === "partner") {
+              setPay(detail);
+              setDetail(null);
+              return;
+            }
             const venue = (bb.content.venues || []).find((item) => item.id === detail.venueId || String(item.name || "").toLowerCase() === String(detail.name || "").toLowerCase());
             const table = venue && soonestTable(venue)[0];
             if (detail.source !== "own" && venue && table) bb.setFlow({ type: "join", venueId: venue.id, tableId: table.table.id });
@@ -600,7 +610,9 @@ function Quick({ onOpen }) {
           onClose={() => setPay(null)}
           onConfirm={async () => {
             setBusy(true);
-            const res = await bb.act("event", pay.id, "join");
+            const res = pay.source === "partner"
+              ? await bb.joinTable({ venueId: pay.venueId, tableId: pay.tableId })
+              : await bb.act("event", pay.id, "join");
             setBusy(false);
             setPay(null);
             if (res?.needLogin) bb.notify("Log in first.");

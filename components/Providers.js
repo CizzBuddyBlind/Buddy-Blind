@@ -13,6 +13,7 @@ import { accountByEmail, castForFounder, fixtureAccountId, personRecord, planPho
 import { marketFromCode, marketFromTimezone } from "@/lib/market";
 import { APP_BREAKPOINT } from "@/lib/layoutMode";
 import { effectiveAccess, isInternalRole } from "@/lib/entitlement";
+import { joinOwnQuick } from "@/lib/quickFeed";
 
 const Ctx = createContext(null);
 
@@ -695,14 +696,11 @@ export function BuddyProvider({ children }) {
       if (!item) return { error: "That seat is gone." };
       if (item.locked && editing) return { error: "This block is locked." };
       if (item.kind === "quick" && item.source === "own") {
-        const already = (item.participants || []).some((p) => sameIdentity(p.userId || p.handle, session, { session, users }));
-        if (already) return { error: "You're already in." };
-      }
-      if ((item.spots || 0) <= 0) return { error: "No spots left." };
-      item.spots -= 1;
-      if (item.kind === "quick" && item.source === "own") {
-        if (!Array.isArray(item.participants)) item.participants = [];
-        item.participants.push({ userId: session.userId || "", handle: session.handle, role: "guest" });
+        const joined = joinOwnQuick(item, session);
+        if (!joined.ok) return joined;
+      } else {
+        if ((item.spots || 0) <= 0) return { error: "No spots left." };
+        item.spots -= 1;
       }
       if (editing) commit(base);
       else {
@@ -722,7 +720,7 @@ export function BuddyProvider({ children }) {
       persistSession({ ...session, points, bookings: books[session.email] });
       return { ok: true, name: item.name };
     },
-    [session, users, editing, commit, pushLive, notify],
+    [session, editing, commit, pushLive, notify],
   );
 
   const removeBlock = useCallback(
