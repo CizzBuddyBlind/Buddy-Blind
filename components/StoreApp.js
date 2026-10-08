@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Photo } from "./Bits";
 import { HostBadge, PayDialog } from "./Flows";
-import { QuickStart } from "./QuickStart";
+import { QuickCard, QuickStart } from "./QuickStart";
 import { useBB, peopleYouCanRate } from "./Providers";
 import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso, prettyDate, queryHits, soonestTable, tablePrefs, tableStart } from "@/lib/bible";
 import { translate } from "@/lib/i18n";
@@ -562,6 +562,9 @@ function Quick({ onOpen }) {
       </div>
       <div className="mt-2 divide-y divide-black/10">
         {rows.map((row) => {
+          if (row.source === "own" || row.quick) {
+            return <QuickCard key={row.id} row={row} onJoin={() => setPay(row)} />;
+          }
           const venue = (bb.content.venues || []).find((item) => item.id === row.venueId || String(item.name || "").toLowerCase() === String(row.name || "").toLowerCase());
           const branch = (venue?.branches || []).find((item) => item.address) || venue?.branches?.[0];
           const address = branch?.address || venue?.address || venue?.locationLabel || "";

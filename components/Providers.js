@@ -694,8 +694,16 @@ export function BuddyProvider({ children }) {
       const item = list.find((x) => x.id === id);
       if (!item) return { error: "That seat is gone." };
       if (item.locked && editing) return { error: "This block is locked." };
+      if (item.kind === "quick" && item.source === "own") {
+        const already = (item.participants || []).some((p) => sameIdentity(p.userId || p.handle, session, { session, users }));
+        if (already) return { error: "You're already in." };
+      }
       if ((item.spots || 0) <= 0) return { error: "No spots left." };
       item.spots -= 1;
+      if (item.kind === "quick" && item.source === "own") {
+        if (!Array.isArray(item.participants)) item.participants = [];
+        item.participants.push({ userId: session.userId || "", handle: session.handle, role: "guest" });
+      }
       if (editing) commit(base);
       else {
         const saved = await pushLive(base);
@@ -714,7 +722,7 @@ export function BuddyProvider({ children }) {
       persistSession({ ...session, points, bookings: books[session.email] });
       return { ok: true, name: item.name };
     },
-    [session, editing, commit, pushLive, notify],
+    [session, users, editing, commit, pushLive, notify],
   );
 
   const removeBlock = useCallback(

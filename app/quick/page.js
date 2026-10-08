@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Editable, Photo } from "@/components/Bits";
 import { HostBadge, PayDialog } from "@/components/Flows";
-import { QuickStart } from "@/components/QuickStart";
+import { QuickCard, QuickStart } from "@/components/QuickStart";
 import { JoinerStack } from "@/components/People";
 import { useBB } from "@/components/Providers";
 import { queryHits } from "@/lib/bible";
@@ -92,6 +92,15 @@ export default function QuickPage() {
           <input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Tonight, Central, 中環, café…" className="w-full rounded-full border border-black/10 bg-white px-4 py-3 text-sm outline-none transition focus:border-ember" />
           <div className="mt-4 space-y-3">
         {rows.map((row) => {
+          if (row.source === "own" || row.quick) {
+            return (
+              <QuickCard
+                key={row.id}
+                row={row}
+                onJoin={() => setSheet({ id: row.id, name: row.name, mode: "join", detail: row.time || row.timeLabel || "" })}
+              />
+            );
+          }
           const placeInfo = placeOf(row, venues);
           return (
           <article
