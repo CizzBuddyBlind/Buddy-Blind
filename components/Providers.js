@@ -1186,6 +1186,7 @@ export function BuddyProvider({ children }) {
       inviteText: `${session.handle} invites you to join a dinner and meet new friends.`,
       participants: [{ userId: session.userId || "", handle: session.handle, role: "host" }],
       pings: [],
+      ...(input.quick ? { quick: true, post: String(input.post || "").trim() } : {}),
     };
     const existing = Array.isArray(found.tables) ? found.tables.filter(Boolean) : [];
     const notices = planVenueNotices(table, found);

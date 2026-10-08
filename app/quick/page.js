@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Editable, Photo } from "@/components/Bits";
 import { HostBadge, PayDialog } from "@/components/Flows";
-import { HelpMark } from "@/components/HelpMark";
+import { QuickStart } from "@/components/QuickStart";
 import { JoinerStack } from "@/components/People";
 import { useBB } from "@/components/Providers";
 import { queryHits } from "@/lib/bible";
@@ -47,13 +47,9 @@ function nearestArea(lat, lng) {
 
 export default function QuickPage() {
   const router = useRouter();
-  const { content, editing, update, act, notify, setSelectedId, selectedId, setFlow, lang, market } = useBB();
+  const { content, editing, update, act, notify, setSelectedId, selectedId, lang, market } = useBB();
   const [sheet, setSheet] = useState(null);
   const [area, setArea] = useState("");
-  const [free, setFree] = useState(false);
-  const [ask, setAsk] = useState(false);
-  const [place, setPlace] = useState("");
-  const [note, setNote] = useState("");
   const copy = content.copy.quick;
   const query = area.trim().toLowerCase();
   const rows = content.events.filter((e) => e.kind === "quick" && (editing || !e.hidden)).filter((row) => {
@@ -62,27 +58,6 @@ export default function QuickPage() {
     return queryHits(blob, query);
   });
   const venues = (content.venues || []).filter((venue) => !venue.hidden || editing);
-  const placeQuery = place.trim().toLowerCase();
-  const matches = placeQuery
-    ? venues.filter((venue) => queryHits(`${venue.name} ${venue.area || ""} ${venue.locationLabel || ""} ${venue.address || ""} ${(venue.branches || []).map((b) => `${b.label} ${b.address} ${b.area}`).join(" ")}`, placeQuery))
-    : [];
-
-  function shareLocation() {
-    setAsk(false);
-    if (!navigator.geolocation) {
-      setNote("Location isn't available here. Type an area.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const found = nearestArea(pos.coords.latitude, pos.coords.longitude);
-        setPlace(found);
-        setNote("");
-      },
-      () => setNote("Couldn't get your location. Type an area."),
-      { enableHighAccuracy: false, timeout: 8000 },
-    );
-  }
 
   async function confirmSheet() {
     const res = await act("event", sheet.id, sheet.mode);
@@ -151,43 +126,7 @@ export default function QuickPage() {
         })}
           </div>
           <Copy as="p" k="quick.note" legacy={copy.note} className="mt-6 text-sm leading-relaxed text-mute" onEnglish={(d, next) => { d.copy.quick.note = next; }} />
-          <div className="mt-4 flex items-center gap-3">
-            <button type="button" className="rounded-full border border-char px-5 py-2 text-sm" onClick={() => { setFree((v) => !v); setAsk(false); }}>
-              {say(lang, "I'm free now")}
-            </button>
-            <HelpMark section="03" />
-          </div>
-          {free && (
-            <div className="mt-4 rounded-2xl border border-black/10 bg-white p-4">
-              <p className="text-sm">{say(lang, "Where are you?")}</p>
-              <input value={place} onChange={(e) => { setPlace(e.target.value); setNote(""); }} placeholder="Central, CWB, TST…" className="mt-3 w-full rounded-full border border-black/10 px-4 py-2.5 text-sm outline-none focus:border-ember" />
-              <button type="button" className="mt-3 rounded-full bg-char px-4 py-2 text-xs font-semibold text-paper" onClick={() => setAsk(true)}>{say(lang, "Nearby")}</button>
-              {ask && (
-                <div className="mt-3 rounded-xl bg-black/[0.03] p-3">
-                  <p className="text-sm">{say(lang, "Share your location? We only use it to show places near you.")}</p>
-                  <div className="mt-3 flex gap-2">
-                    <button type="button" className="rounded-full bg-char px-4 py-2 text-xs font-semibold text-paper" onClick={shareLocation}>{say(lang, "Share")}</button>
-                    <button type="button" className="rounded-full border border-black/15 px-4 py-2 text-xs" onClick={() => setAsk(false)}>{say(lang, "Not now")}</button>
-                  </div>
-                </div>
-              )}
-              {note && <p className="mt-3 text-sm text-mute">{note}</p>}
-              {placeQuery && (
-                <div className="mt-4 space-y-2">
-                  {!matches.length && <p className="text-sm text-mute">Nothing there. Try another area.</p>}
-                  {matches.map((venue) => (
-                    <button key={venue.id} type="button" className="flex w-full items-center gap-3 rounded-xl border border-black/10 p-2 text-left" onClick={() => { setFlow({ type: "quick-invite", venueId: venue.id }); setFree(false); }}>
-                      <img src={venue.imageUrl} alt="" className="h-12 w-12 rounded-lg object-cover" />
-                      <span>
-                        <span data-keep className="block text-sm font-medium">{venue.name}</span>
-                        <span className="block text-xs text-mute">{venue.locationLabel}</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          <QuickStart locate={nearestArea} />
         </section>
       </div>
       <PayDialog

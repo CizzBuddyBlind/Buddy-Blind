@@ -89,7 +89,7 @@ function Choice({ on, children, onClick }) {
   );
 }
 
-function useFeeCheckout(onPaid) {
+export function useFeeCheckout(onPaid) {
   const bb = useBB();
   const paid = useRef(onPaid);
   paid.current = onPaid;
@@ -131,7 +131,7 @@ function useFeeCheckout(onPaid) {
   return { busy, error, sheet: null, start };
 }
 
-function PayStep({ checked, setChecked, onConfirm, busy, error }) {
+export function PayStep({ checked, setChecked, onConfirm, busy, error }) {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
   const label = bb.market?.fee || "HK$5";
@@ -216,6 +216,7 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
         gender,
         orientation,
         ageRange,
+        ...(todayOnly ? { quick: true, post: bb.flow?.post || "" } : {}),
       });
       if (res?.needLogin) {
         rememberReturn();

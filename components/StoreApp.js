@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Photo } from "./Bits";
 import { HostBadge, PayDialog } from "./Flows";
+import { QuickStart } from "./QuickStart";
 import { useBB, peopleYouCanRate } from "./Providers";
 import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso, prettyDate, queryHits, soonestTable, tablePrefs, tableStart } from "@/lib/bible";
 import { translate } from "@/lib/i18n";
@@ -531,10 +532,6 @@ function Quick({ onOpen }) {
   const [chip, setChip] = useState("nearby");
   const [pay, setPay] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [free, setFree] = useState(false);
-  const [ask, setAsk] = useState(false);
-  const [place, setPlace] = useState("");
-  const [note, setNote] = useState("");
   const rows = (bb.content.events || []).filter((event) => {
     if (event.kind !== "quick" || event.hidden) return false;
     const blob = `${event.typeLabel || ""} ${event.timeLabel || ""} ${event.detail || ""}`.toLowerCase();
@@ -544,22 +541,6 @@ function Quick({ onOpen }) {
     return true;
   });
   const copy = bb.content.copy?.quick || {};
-  const placeQuery = place.trim().toLowerCase();
-  const matches = placeQuery
-    ? (bb.content.venues || []).filter((venue) => !venue.hidden && queryHits(`${venue.name} ${venue.area || ""} ${venue.locationLabel || ""} ${venue.address || ""}`, placeQuery))
-    : [];
-  function shareLocation() {
-    setAsk(false);
-    if (!navigator.geolocation) {
-      setNote(say(bb.lang, "Location isn't available here. Type an area."));
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      () => { setPlace("Central"); setNote(""); },
-      () => setNote(say(bb.lang, "Couldn't get your location. Type an area.")),
-      { enableHighAccuracy: false, timeout: 8000 },
-    );
-  }
   return (
     <section className="px-[4.5vw] pb-4 pt-3">
       <h1 className={`mt-4 text-center ${APP_HEAD}`}>
@@ -616,41 +597,7 @@ function Quick({ onOpen }) {
         })}
       </div>
       <p className="mt-4 rounded-2xl bg-white px-4 py-4 text-sm leading-relaxed text-black/70">{say(bb.lang, "No one around yet? Create one. If nobody joins, fine — you were already planning to eat alone.")}</p>
-      <div className="mt-4 flex items-center gap-3">
-        <button type="button" className="rounded-full border border-black/20 px-5 py-2 text-sm" onClick={() => { setFree((v) => !v); setAsk(false); }}>{say(bb.lang, "I'm free now")}</button>
-        <HelpMark section="03" />
-      </div>
-      {free && (
-        <div className="mt-4 rounded-2xl bg-white p-4 text-black">
-          <p className="text-sm">{say(bb.lang, "Where are you?")}</p>
-          <input value={place} onChange={(e) => { setPlace(e.target.value); setNote(""); }} placeholder="Central, CWB, TST…" className="mt-3 w-full rounded-full border border-black/10 px-4 py-2.5 text-sm outline-none" />
-          <button type="button" className="mt-3 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white" onClick={() => setAsk(true)}>{say(bb.lang, "Nearby")}</button>
-          {ask && (
-            <div className="mt-3 rounded-xl bg-black/[0.03] p-3">
-              <p className="text-sm">{say(bb.lang, "Share your location? We only use it to show places near you.")}</p>
-              <div className="mt-3 flex gap-2">
-                <button type="button" className="rounded-full bg-black px-4 py-2 text-xs font-semibold text-white" onClick={shareLocation}>{say(bb.lang, "Share")}</button>
-                <button type="button" className="rounded-full border border-black/15 px-4 py-2 text-xs" onClick={() => setAsk(false)}>{say(bb.lang, "Not now")}</button>
-              </div>
-            </div>
-          )}
-          {note && <p className="mt-3 text-sm text-black/50">{note}</p>}
-          {placeQuery && (
-            <div className="mt-4 space-y-2">
-              {!matches.length && <p className="text-sm text-black/50">{say(bb.lang, "Nothing there. Try another area.")}</p>}
-              {matches.map((venue) => (
-                <button key={venue.id} type="button" className="flex w-full items-center gap-3 rounded-xl border border-black/10 p-2 text-left" onClick={() => { bb.setFlow({ type: "quick-invite", venueId: venue.id }); setFree(false); }}>
-                  <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg"><Photo src={venue.imageUrl} alt="" /></span>
-                  <span>
-                    <span data-keep className="block text-sm">{venue.name}</span>
-                    <span className="block text-xs text-black/50">{say(bb.lang, venue.locationLabel)}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      <QuickStart tone="app" />
       <Dock>
         <PayDialog
           open={!!pay}
