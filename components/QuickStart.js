@@ -48,7 +48,6 @@ export function QuickStart({ locate, tone = "desk" }) {
   const [address, setAddress] = useState("");
   const [time, setTime] = useState("1:00 PM");
   const [capacity, setCapacity] = useState(2);
-  const [tableType, setTableType] = useState("meet-friends");
   const [gender, setGender] = useState("");
   const [orientation, setOrientation] = useState("");
   const [ageRange, setAgeRange] = useState("");
@@ -97,7 +96,7 @@ export function QuickStart({ locate, tone = "desk" }) {
       spots: Math.max(0, capacity - 1),
       capacity,
       originalCapacity: capacity,
-      tableType,
+      tableType: "meet-friends",
       gender,
       orientation,
       ageRange,
@@ -155,7 +154,7 @@ export function QuickStart({ locate, tone = "desk" }) {
       return;
     }
     setError("");
-    setStep("own-type");
+    setStep("own-prefs");
   }
 
   function back() {
@@ -163,8 +162,7 @@ export function QuickStart({ locate, tone = "desk" }) {
       choose: "post",
       area: "choose",
       own: "choose",
-      "own-type": "own",
-      "own-prefs": "own-type",
+      "own-prefs": "own",
       "own-summary": "own-prefs",
       "own-pay": "own-summary",
       "partner-match": "own",
@@ -283,28 +281,17 @@ export function QuickStart({ locate, tone = "desk" }) {
               <button type="button" className="ml-3 text-xs text-white/45" onClick={() => setStep("choose")}>Back</button>
             </div>
           )}
-          {step === "own-type" && (
-            <div>
-              <p className="text-sm">“{post.trim()}”</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button type="button" className={`rounded-full px-3 py-1.5 text-xs ${tableType === "blind-date" ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={() => setTableType("blind-date")}>Blind Date</button>
-                <button type="button" className={`rounded-full px-3 py-1.5 text-xs ${tableType === "meet-friends" ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={() => setTableType("meet-friends")}>Meet Friends</button>
-              </div>
-              <button type="button" className="mt-4 rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => setStep("own-prefs")}>Continue</button>
-              <button type="button" className="ml-3 text-xs text-white/45" onClick={() => setStep("own")}>Back</button>
-            </div>
-          )}
           {step === "own-prefs" && (
             <div className="space-y-3">
               <p className="text-xs uppercase tracking-widest text-white/45">Gender · optional</p>
               <div className="flex flex-wrap gap-2">
-                {["", "Women", "Men", "Mixed"].map((item) => (
+                {["", "Women", "Men"].map((item) => (
                   <button key={item || "any"} type="button" className={`rounded-full px-3 py-1.5 text-xs ${gender === item ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={() => setGender(item)}>{item || "No preference"}</button>
                 ))}
               </div>
               <p className="text-xs uppercase tracking-widest text-white/45">Orientation · optional</p>
               <div className="flex flex-wrap gap-2">
-                {["", "Gay", "Lesbian", "Dating"].map((item) => (
+                {["", "Gay", "Lesbian", "LGBTQ+", "Straight"].map((item) => (
                   <button key={item || "any2"} type="button" className={`rounded-full px-3 py-1.5 text-xs ${orientation === item ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={() => setOrientation(item)}>{item || "No preference"}</button>
                 ))}
               </div>
@@ -316,19 +303,23 @@ export function QuickStart({ locate, tone = "desk" }) {
                 ))}
               </div>
               <button type="button" className="rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => setStep("own-summary")}>Continue</button>
-              <button type="button" className="ml-3 text-xs text-white/45" onClick={() => setStep("own-type")}>Back</button>
+              <button type="button" className="ml-3 text-xs text-white/45" onClick={() => setStep("own")}>Back</button>
             </div>
           )}
           {step === "own-summary" && (
-            <div className="space-y-1 text-sm">
-              <p>“{post.trim()}”</p>
-              <p>{restaurant.trim()} · {time} · up to {capacity}</p>
-              {address.trim() && <p className="text-white/60">{address.trim()}</p>}
-              <p>{tableType === "blind-date" ? "Blind Date" : "Meet Friends"}</p>
-              <p>{[gender, orientation, ageRange].filter(Boolean).join(" · ") || "No extra preferences"}</p>
-              <p className="font-medium">You arrange the booking yourself.</p>
-              <button type="button" className="mt-3 rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => setStep("own-pay")}>Continue</button>
-              <button type="button" className="ml-3 text-xs text-white/45" onClick={() => setStep("own-prefs")}>Back</button>
+            <div className="text-sm">
+              <div className="space-y-1">
+                <p>“{post.trim()}”</p>
+                <p>{restaurant.trim()} · {time} · up to {capacity}</p>
+                {address.trim() && <p className="text-white/60">{address.trim()}</p>}
+                <p>Meet Friends</p>
+                <p>{[gender, orientation, ageRange].filter(Boolean).join(" · ") || "No extra preferences"}</p>
+                <p className="font-medium">You arrange the booking yourself.</p>
+              </div>
+              <div className="mt-4">
+                <button type="button" className="rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => setStep("own-pay")}>Continue</button>
+                <button type="button" className="ml-3 text-xs text-white/45" onClick={() => setStep("own-prefs")}>Back</button>
+              </div>
             </div>
           )}
           {step === "partner-match" && partnerHit && (
@@ -425,15 +416,12 @@ export function QuickCard({ row, onJoin, onOpen }) {
           {when && <p className={`text-sm leading-snug text-black [overflow-wrap:anywhere] ${row.post ? "mt-1" : ""}`}>{when}</p>}
           {(prefs || area) && <p className="mt-0.5 text-xs leading-snug text-black/55 [overflow-wrap:anywhere]">{[prefs, area].filter(Boolean).join(" · ")}</p>}
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-            {(people.length > 0 || cap > 0) && (
+            {people.length > 0 && (
               <span className="flex items-center gap-1">
                 {people.map((person, index) => (
                   <span key={`${person.userId || person.handle}-${index}`} onClick={stopControl} onMouseDown={stopControl}>
                     <HostBadge handle={person.handle} userId={person.userId || ""} />
                   </span>
-                ))}
-                {cap > 0 && Array.from({ length: openSeats }, (_, index) => (
-                  <span key={`empty-${index}`} className="h-5 w-5 rounded-full border border-black/20" aria-hidden="true" />
                 ))}
               </span>
             )}

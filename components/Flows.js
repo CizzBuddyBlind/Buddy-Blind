@@ -184,15 +184,16 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
   });
   const fee = { base: 5, total: 5 };
   const titles = todayOnly
-    ? [t("step.location"), t("step.time"), t("step.type"), t("step.people"), t("step.prefs"), t("step.summary"), t("step.pay")]
+    ? [t("step.location"), t("step.time"), t("step.people"), t("step.prefs"), t("step.summary"), t("step.pay")]
     : [t("step.location"), t("step.date"), t("step.time"), t("step.type"), t("step.people"), t("step.prefs"), t("step.summary"), t("step.pay")];
-  const title = todayOnly && step > 1 ? titles[step - 1] : titles[step];
-  const shown = todayOnly && step > 0 ? step : step + 1;
+  const quickIndex = step <= 0 ? 0 : step === 2 ? 1 : step - 2;
+  const title = todayOnly ? titles[quickIndex] : titles[step];
+  const shown = todayOnly ? quickIndex + 1 : step + 1;
   const pay = useFeeCheckout(finish);
   const [bookError, setBookError] = useState("");
 
   useEffect(() => {
-    if (todayOnly && step === 1) setStep(2);
+    if (todayOnly && (step === 1 || step === 3)) setStep(step === 1 ? 2 : 4);
   }, [todayOnly, step]);
 
   async function close() {
@@ -211,7 +212,7 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
         branchId: branch?.id,
         dateISO: todayOnly ? today : dateISO,
         time,
-        tableType,
+        tableType: todayOnly ? "meet-friends" : tableType,
         participants: seatCount,
         gender,
         orientation,
@@ -243,7 +244,7 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
   }
 
   return (
-    <Frame title={<><span>{title}</span>{" · "}<span data-keep>{venue.name}</span></>} step={shown} total={todayOnly ? 7 : 8} onBack={step === 0 ? close : () => setStep(todayOnly && step === 2 ? 0 : step - 1)} onClose={close}>
+    <Frame title={<><span>{title}</span>{" · "}<span data-keep>{venue.name}</span></>} step={shown} total={todayOnly ? 6 : 8} onBack={step === 0 ? close : () => setStep(todayOnly && step === 2 ? 0 : todayOnly && step === 4 ? 2 : step - 1)} onClose={close}>
       {step === 0 && (
         <div className="space-y-2">
           {(venue.branches || []).map((b) => (
@@ -267,10 +268,10 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
           <TimeChoices value={time} onChange={setTime} renderChoice={(label, on, pick) => (
             <Choice key={label} on={on} onClick={pick}>{label}</Choice>
           )} />
-          <button type="button" className="mt-2 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(3)}>{t("btn.next")}</button>
+          <button type="button" className="mt-2 w-full rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setStep(todayOnly ? 4 : 3)}>{t("btn.next")}</button>
         </div>
       )}
-      {step === 3 && (
+      {step === 3 && !todayOnly && (
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <Choice on={tableType === "blind-date"} onClick={() => setTableType("blind-date")}>Blind Date</Choice>
@@ -294,13 +295,13 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
         <div className="space-y-3">
           <p className="text-xs uppercase tracking-widest text-mute">Gender · optional</p>
           <div className="flex flex-wrap gap-2">
-            {["", "Women", "Men", "Mixed"].map((g) => (
+            {(todayOnly ? ["", "Women", "Men"] : ["", "Women", "Men", "Mixed"]).map((g) => (
               <Choice key={g || "any"} on={gender === g} onClick={() => setGender(g)}>{g || "No preference"}</Choice>
             ))}
           </div>
           <p className="text-xs uppercase tracking-widest text-mute">Orientation · optional</p>
           <div className="flex flex-wrap gap-2">
-            {["", "Gay", "Lesbian", "Dating"].map((g) => (
+            {(todayOnly ? ["", "Gay", "Lesbian", "LGBTQ+", "Straight"] : ["", "Gay", "Lesbian", "Dating"]).map((g) => (
               <Choice key={g || "any2"} on={orientation === g} onClick={() => setOrientation(g)}>{g || "No preference"}</Choice>
             ))}
           </div>
