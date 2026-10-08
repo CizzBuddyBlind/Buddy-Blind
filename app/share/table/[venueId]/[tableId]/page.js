@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useBB } from "@/components/Providers";
 import { rememberReturn } from "@/components/Flows";
 import { bookingHold, prettyDate, tablePrefs } from "@/lib/bible";
+import { canOfferJoin } from "@/lib/joinOffer";
 
 export default function ShareTablePage() {
   const { venueId, tableId } = useParams();
@@ -22,7 +23,9 @@ export default function ShareTablePage() {
   }
   const hold = bookingHold(table);
   const kind = table.tableType === "blind-date" ? "Blind date" : "Meet friends";
+  const offer = canOfferJoin({ record: table, session: bb.session, places: hold.places, closed: hold.closed || hold.places <= 0 });
   function enter() {
+    if (!offer.canJoin) return;
     if (!bb.session) {
       rememberReturn();
       window.location.href = "/login";
@@ -47,9 +50,13 @@ export default function ShareTablePage() {
           <p className="mt-2 text-sm leading-relaxed text-mute">No store app yet. This page is the way in. Make a seat, then join this table.</p>
         </div>
       )}
-      <button type="button" className="mt-8 rounded-full bg-fg px-6 py-3 text-sm font-semibold text-ink" onClick={enter}>
-        {bb.session ? "Join" : "Make a seat"}
-      </button>
+      {offer.canJoin ? (
+        <button type="button" className="mt-8 rounded-full bg-fg px-6 py-3 text-sm font-semibold text-ink" onClick={enter}>
+          {bb.session ? "Join" : "Make a seat"}
+        </button>
+      ) : (
+        <p className="mt-8 text-sm text-mute">{offer.reason === "full" || offer.reason === "expired" ? "Full" : "You're in"}</p>
+      )}
     </main>
   );
 }

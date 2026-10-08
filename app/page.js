@@ -7,6 +7,7 @@ import { HelpMark } from "@/components/HelpMark";
 import { useBB } from "@/components/Providers";
 import { bookingHold, iso, tableStart } from "@/lib/bible";
 import { isPartnerQuick, isSyntheticTable } from "@/lib/venueEvents";
+import { canOfferJoin } from "@/lib/joinOffer";
 import { say } from "@/lib/say";
 
 function upcoming(content) {
@@ -115,8 +116,14 @@ export default function HomePage() {
     }
   }
 
+  const featuredOffer = featured
+    ? featured.kind === "private"
+      ? canOfferJoin({ record: featured.event, session: bb.session, places: featured.event.spots, closed: (featured.event.spots || 0) <= 0 })
+      : canOfferJoin({ record: featured.table, session: bb.session, places: bookingHold(featured.table).places, closed: bookingHold(featured.table).closed })
+    : null;
+
   function joinFeatured() {
-    if (!featured) return;
+    if (!featured || !featuredOffer?.canJoin) return;
     if (featured.kind === "private") {
       setPay(featured.event);
       return;
@@ -188,7 +195,11 @@ export default function HomePage() {
                 <button type="button" onClick={() => setShare(true)} className="mt-4 rounded-full border border-white/25 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">{say(bb.lang, "Share")}</button>
                 <p className="mt-4 text-sm leading-relaxed text-white/75">{say(bb.lang, featured.home?.about || featured.hostAbout)}</p>
                 <div className="mt-5 flex items-center gap-3">
-                  <button type="button" onClick={joinFeatured} className="flex-1 rounded-full bg-white px-4 py-3.5 text-[13px] font-semibold text-ink">{say(bb.lang, "Love it. Let's do this.")}</button>
+                  {featuredOffer?.canJoin ? (
+                    <button type="button" onClick={joinFeatured} className="flex-1 rounded-full bg-white px-4 py-3.5 text-[13px] font-semibold text-ink">{say(bb.lang, "Love it. Let's do this.")}</button>
+                  ) : (
+                    <p className="flex-1 rounded-full border border-white/20 px-4 py-3.5 text-center text-[13px] font-semibold text-white/70">{featuredOffer?.reason === "full" || featuredOffer?.reason === "expired" ? "Full" : "You're in"}</p>
+                  )}
                   <Link href="/venues" className="rounded-full border border-white/25 px-5 py-3.5 text-[13px] font-semibold text-white">{say(bb.lang, "Explore more")}</Link>
                 </div>
                 {featured.home?.foot && <p className="mt-4 text-[10px] uppercase leading-relaxed tracking-[0.08em] text-white/35">{featured.home.foot}</p>}

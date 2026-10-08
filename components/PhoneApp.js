@@ -6,6 +6,7 @@ import { useBB } from "./Providers";
 import { Photo as Cover } from "./Bits";
 import { eventPoster, iso, prettyDate, queryHits, tableStart } from "@/lib/bible";
 import { joinableVenueTables } from "@/lib/venueEvents";
+import { canOfferJoin } from "@/lib/joinOffer";
 import { sameIdentity, seatsForHandle } from "@/lib/people";
 
 function hourOf(time) {
@@ -123,7 +124,7 @@ function HomeTab() {
               <h2 className="font-semibold">{event.name}</h2>
               <p className="text-xs text-neutral-500">{prettyDate(event.dateISO)} · {event.timeLabel} · {event.location}</p>
               <p className="line-clamp-2 text-sm text-neutral-600">{event.description}</p>
-              <Link href={`/private/${event.id}`} className="block rounded-full bg-black py-2 text-center text-sm text-white">Join</Link>
+              <Link href={`/private/${event.id}`} className="block rounded-full bg-black py-2 text-center text-sm text-white">{canOfferJoin({ record: event, session: bb.session, places: event.spots, closed: (event.spots || 0) <= 0 }).canJoin ? "Join" : (event.spots || 0) <= 0 ? "Full" : "You're in"}</Link>
             </div>
           </article>
         ))}
@@ -138,7 +139,7 @@ function HomeTab() {
               <p className="line-clamp-2 text-sm text-neutral-600">{venue.about}</p>
               <div className="grid grid-cols-2 gap-2">
                 <button type="button" className="rounded-full border border-black/20 py-2 text-sm" onClick={() => bb.setFlow({ type: "invite", venueId: venue.id })}>Invite</button>
-                <button type="button" className="rounded-full border border-black/20 py-2 text-sm" onClick={() => bb.setFlow({ type: "join", venueId: venue.id })}>Join</button>
+                {joinableVenueTables(venue).some((row) => canOfferJoin({ record: row.table, session: bb.session, places: row.places, closed: row.closed }).canJoin) && <button type="button" className="rounded-full border border-black/20 py-2 text-sm" onClick={() => bb.setFlow({ type: "join", venueId: venue.id })}>Join</button>}
               </div>
             </div>
           </article>
@@ -222,7 +223,7 @@ function EventsTab() {
             <div className="space-y-1 p-3">
               <h2 className="font-semibold">{event.name}</h2>
               <p className="text-xs text-neutral-500">{prettyDate(event.dateISO)} · {event.timeLabel}</p>
-              <Link href={`/private/${event.id}`} className="mt-2 block rounded-full bg-black py-2 text-center text-sm text-white">Join</Link>
+              <Link href={`/private/${event.id}`} className="mt-2 block rounded-full bg-black py-2 text-center text-sm text-white">{canOfferJoin({ record: event, session: bb.session, places: event.spots, closed: (event.spots || 0) <= 0 }).canJoin ? "Join" : (event.spots || 0) <= 0 ? "Full" : "You're in"}</Link>
             </div>
           </article>
         ))}
@@ -234,7 +235,9 @@ function EventsTab() {
               <p className="text-xs text-neutral-500">{venue.cuisine}</p>
               <p className="text-xs text-neutral-500">{prettyDate(table.dateISO)} · {table.time}</p>
               <p className="text-xs text-neutral-500">{hold?.status === "walk-in" ? "Walk-in · no table held" : `${places} seats left`}</p>
-              <button type="button" className="mt-2 w-full rounded-full bg-black py-2 text-sm text-white" onClick={() => bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>Join</button>
+              {canOfferJoin({ record: table, session: bb.session, places, closed: hold.closed || places <= 0 }).canJoin
+                ? <button type="button" className="mt-2 w-full rounded-full bg-black py-2 text-sm text-white" onClick={() => bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>Join</button>
+                : <p className="mt-2 text-center text-sm text-neutral-500">{hold.closed || places <= 0 ? "Full" : "You're in"}</p>}
             </div>
           </article>
         ))}

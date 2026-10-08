@@ -11,6 +11,7 @@ import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
 import { prettyDate, tablePrefs } from "@/lib/bible";
 import { normalVenueTables } from "@/lib/venueEvents";
+import { canOfferJoin } from "@/lib/joinOffer";
 
 export default function VenuePage() {
   const { id } = useParams();
@@ -150,7 +151,7 @@ export default function VenuePage() {
               <div className="mt-3 divide-y divide-white/10 border-y border-white/10">
                 {tables.map(({ table, hold }) => {
                   const people = table.participants || [];
-                  const joined = !!(session && (people.some((p) => p.userId === session.userId) || table.hostUserId === session.userId));
+                  const offer = canOfferJoin({ record: table, session, places: hold.places, closed: hold.closed });
                   const lines = [
                     venue.name,
                     table.address || venue.locationLabel,
@@ -172,13 +173,13 @@ export default function VenuePage() {
                         </div>
                         <button
                           type="button"
-                          disabled={hold.closed || joined}
+                          disabled={!offer.canJoin}
                           className="rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink disabled:opacity-40"
-                          onClick={() => setFlow({ type: "join", venueId: venue.id, tableId: table.id })}
+                          onClick={() => offer.canJoin && setFlow({ type: "join", venueId: venue.id, tableId: table.id })}
                         >
-                          {joined ? "You're in" : hold.closed ? "Full" : t("btn.join")}
+                          {offer.canJoin ? t("btn.join") : offer.reason === "full" || offer.reason === "expired" ? "Full" : "You're in"}
                         </button>
-                        <button type="button" className="rounded-full border border-white/15 px-4 py-2 text-xs" onClick={() => setShare({ joined, lines, path: `/share/table/${venue.id}/${table.id}` })}>{t("btn.share")}</button>
+                        <button type="button" className="rounded-full border border-white/15 px-4 py-2 text-xs" onClick={() => setShare({ joined: offer.reason === "host" || offer.reason === "member", lines, path: `/share/table/${venue.id}/${table.id}` })}>{t("btn.share")}</button>
                       </div>
                     </article>
                   );
@@ -189,7 +190,7 @@ export default function VenuePage() {
 
           <div className="mt-6 flex gap-3">
             <button type="button" className="flex-1 rounded-full border border-white/15 py-3 text-sm" onClick={() => setFlow({ type: "invite", venueId: venue.id })}>{t("btn.invite")}</button>
-            <button type="button" className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setFlow({ type: "join", venueId: venue.id })}>{t("btn.join")}</button>
+            {tables.some((row) => canOfferJoin({ record: row.table, session, places: row.places, closed: row.closed }).canJoin) && <button type="button" className="flex-1 rounded-full bg-fg py-3 text-sm font-semibold text-ink" onClick={() => setFlow({ type: "join", venueId: venue.id })}>{t("btn.join")}</button>}
             <button
               type="button"
               className="flex-1 rounded-full border border-ember py-3 text-sm text-ember"

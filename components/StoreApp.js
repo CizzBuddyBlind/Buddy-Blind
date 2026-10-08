@@ -18,6 +18,7 @@ import { mySeats, pastStats } from "./PhoneApp";
 import { usePhoneEdit } from "./EditPhone";
 import { appToPath, pathToApp } from "@/lib/layoutMode";
 import { joinableVenueTables, normalVenueTables } from "@/lib/venueEvents";
+import { canOfferJoin } from "@/lib/joinOffer";
 import { quickRows } from "@/lib/quickFeed";
 import { navigateAppPage } from "@/lib/appScroll";
 
@@ -321,8 +322,14 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
   const [pay, setPay] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const featuredOffer = featured
+    ? featured.kind === "private"
+      ? canOfferJoin({ record: featured.event, session: bb.session, places: featured.event.spots, closed: (featured.event.spots || 0) <= 0 })
+      : canOfferJoin({ record: featured.table, session: bb.session, places: bookingHold(featured.table).places, closed: bookingHold(featured.table).closed })
+    : null;
+
   function join() {
-    if (!featured) return;
+    if (!featured || !featuredOffer?.canJoin) return;
     if (!bb.session) { bb.notify("Log in first."); return; }
     if (featured.kind === "private") setPay(true);
     else bb.setFlow({ type: "join", venueId: featured.venue.id, tableId: featured.table.id });
@@ -374,7 +381,11 @@ function Home({ onVenues, onOpenVenue, onOpenEvent }) {
             )}
             {featured.kind === "table" && featured.venue.petFriendly && <p className="mt-2 text-[11px] uppercase tracking-[0.12em] text-ember">{translate(bb.lang, "venue.pet")}</p>}
             <div className="mt-4 flex items-center gap-2">
-              <button type="button" onClick={join} className="flex-1 rounded-full bg-white px-3 py-3 text-[13px] font-semibold text-black">{say(bb.lang, "Love it. Let's do this.")}</button>
+              {featuredOffer?.canJoin ? (
+                <button type="button" onClick={join} className="flex-1 rounded-full bg-white px-3 py-3 text-[13px] font-semibold text-black">{say(bb.lang, "Love it. Let's do this.")}</button>
+              ) : (
+                <p className="flex-1 rounded-full border border-white/20 px-3 py-3 text-center text-[13px] font-semibold text-white/70">{featuredOffer?.reason === "full" || featuredOffer?.reason === "expired" ? "Full" : "You're in"}</p>
+              )}
               <button type="button" onClick={onVenues} className="rounded-full border border-white/25 px-4 py-3 text-[13px] font-semibold">{say(bb.lang, "Explore more")}</button>
               <HelpMark section="01" />
             </div>
@@ -509,20 +520,23 @@ function VenueDetail({ id, onBack }) {
       )}
       <div className="mt-4 space-y-2">
         {rows.length > 0 && <h2 className="font-serif text-xl">{translate(bb.lang, "venue.events")}</h2>}
-        {rows.slice(0, 5).map(({ table, hold }) => (
+        {rows.slice(0, 5).map(({ table, hold }) => {
+          const offer = canOfferJoin({ record: table, session: bb.session, places: hold.places, closed: hold.closed });
+          return (
           <div key={table.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 px-3 py-3">
             <div className="min-w-0">
               <p className="text-sm">{prettyDate(table.dateISO, bb.lang)} · {table.time}</p>
               <p className="mt-1 text-xs text-white/60">{saidPrefs(bb.lang, table)} · {hold.status === "walk-in" ? say(bb.lang, "Walk-in · no table held") : `${hold.places} ${say(bb.lang, "left")}`}</p>
               {hold.status === "walk-in" && <p className="mt-1 text-xs text-ember">{say(bb.lang, hold.reason)}</p>}
             </div>
-            <button type="button" disabled={hold.closed} className="shrink-0 rounded-full border border-ember px-3 py-1.5 text-xs font-semibold text-ember disabled:opacity-40" onClick={() => bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>{hold.closed ? "Full" : translate(bb.lang, "btn.join")}</button>
+            <button type="button" disabled={!offer.canJoin} className="shrink-0 rounded-full border border-ember px-3 py-1.5 text-xs font-semibold text-ember disabled:opacity-40" onClick={() => offer.canJoin && bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>{offer.canJoin ? translate(bb.lang, "btn.join") : offer.reason === "full" || offer.reason === "expired" ? "Full" : "You're in"}</button>
           </div>
-        ))}
+          );
+        })}
       </div>
       <div className="mt-5 grid grid-cols-3 gap-2">
         <button type="button" className="rounded-full border border-white/20 py-3 text-xs font-semibold" onClick={() => bb.setFlow({ type: "invite", venueId: venue.id })}>{translate(bb.lang, "btn.invite")}</button>
-        <button type="button" className="rounded-full bg-white py-3 text-xs font-semibold text-black" onClick={() => bb.setFlow({ type: "join", venueId: venue.id })}>{translate(bb.lang, "btn.join")}</button>
+        {normalVenueTables(venue).some((row) => canOfferJoin({ record: row.table, session: bb.session, places: row.places, closed: row.closed }).canJoin) && <button type="button" className="rounded-full bg-white py-3 text-xs font-semibold text-black" onClick={() => bb.setFlow({ type: "join", venueId: venue.id })}>{translate(bb.lang, "btn.join")}</button>}
         <button type="button" className="rounded-full border border-ember py-3 text-xs font-semibold text-ember" onClick={() => bb.setFlow({ type: "private-create", venueId: venue.id })}>{translate(bb.lang, "btn.host")}</button>
       </div>
     </section>
@@ -727,7 +741,7 @@ function Private({ onOpen }) {
                   <HostBadge handle={night.hostName || ""} userId={night.hostUserId || ""} tier={night.hostTier || "bronze"} />
                   <Joiners people={night.participants} host={night.hostName} cap={20} />
                 </span>
-                <span className="shrink-0 rounded-full bg-black px-3 py-1.5 text-[10px] font-semibold text-white">{translate(bb.lang, "btn.join")}</span>
+                <span className="shrink-0 rounded-full bg-black px-3 py-1.5 text-[10px] font-semibold text-white">{canOfferJoin({ record: night, session: bb.session, places: night.spots, closed: (night.spots || 0) <= 0 }).canJoin ? translate(bb.lang, "btn.join") : (night.spots || 0) <= 0 ? "Full" : "You're in"}</span>
               </span>
             </div>
           </button>
@@ -743,6 +757,7 @@ function PrivateDetail({ id, onBack }) {
   const [pay, setPay] = useState(false);
   const event = (bb.content.events || []).find((item) => item.id === id);
   if (!event) return <button type="button" className="px-5 py-4" onClick={onBack}>Back</button>;
+  const offer = canOfferJoin({ record: event, session: bb.session, places: event.spots, closed: (event.spots || 0) <= 0 });
   const trialOn = !!(bb.trial?.at && !bb.trial.cancelled && Date.now() - bb.trial.at < 90 * 86400000);
   const premium = bb.plan === "premium" || trialOn;
   return (
@@ -758,7 +773,8 @@ function PrivateDetail({ id, onBack }) {
       <p className="mt-3 text-sm leading-relaxed text-black/70">{say(bb.lang, event.description || "")}</p>
       {event.aboutHost && <p className="mt-3 text-sm leading-relaxed text-black/70">{say(bb.lang, event.aboutHost)}</p>}
       <p className="mt-4 flex items-center gap-2 text-sm"><HostBadge handle={event.hostName || ""} userId={event.hostUserId || ""} tier={event.hostTier || "bronze"} /> {personRecord(event.hostUserId, { session: bb.session, users: bb.users })?.handle || event.hostName}</p>
-      <button type="button" className="mt-5 w-full rounded-full bg-black py-3 text-sm font-semibold text-white" onClick={() => { if (!bb.session) { bb.notify("Log in first."); return; } setPay(true); }}>{translate(bb.lang, "btn.join")}</button>
+      {offer.canJoin && <button type="button" className="mt-5 w-full rounded-full bg-black py-3 text-sm font-semibold text-white" onClick={() => { if (!bb.session) { bb.notify("Log in first."); return; } setPay(true); }}>{translate(bb.lang, "btn.join")}</button>}
+      {!offer.canJoin && <p className="mt-5 text-sm text-black/55">{offer.reason === "full" || offer.reason === "expired" ? "Full" : "You're in"}</p>}
       {premium && <button type="button" className="mt-2 w-full rounded-full border border-black/15 py-3 text-sm" onClick={() => bb.setFlow({ type: "private-create", venueId: event.venueId || "" })}>{translate(bb.lang, "btn.host")}</button>}
       <Dock>
         <PayDialog open={pay} title={event.name} lines={[event.location, `${event.dateISO} · ${event.timeLabel}`]} busy={busy} onClose={() => setPay(false)} onConfirm={async () => {

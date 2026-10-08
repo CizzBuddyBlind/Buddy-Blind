@@ -10,6 +10,7 @@ import { eventPhotos, eventPoster, privateEditOpen, privateLockDate } from "@/li
 import { getMedia } from "@/lib/media";
 import { say } from "@/lib/say";
 import { personRecord } from "@/lib/people";
+import { canOfferJoin } from "@/lib/joinOffer";
 
 export default function PrivateDetailPage() {
   const { id } = useParams();
@@ -57,6 +58,7 @@ export default function PrivateDetailPage() {
   const hostName = hostRecord?.handle || event.hostName || host.handle;
   const buddyLabel = Number(host.buddies) >= 15 ? "15+" : host.buddies != null ? String(host.buddies) : "";
   const full = (event.spots || 0) <= 0;
+  const offer = canOfferJoin({ record: event, session: bb.session, places: event.spots, closed: full });
   const isHost = !!(bb.session?.userId && hostRecord?.userId && bb.session.userId === hostRecord.userId);
   const canEdit = privateEditOpen(event.dateISO);
   const lockOn = privateLockDate(event.dateISO);
@@ -238,9 +240,8 @@ export default function PrivateDetailPage() {
             )}
           </div>
           <div className="mt-6 flex flex-wrap gap-2">
-            <button type="button" disabled={busy || full} onClick={() => setPay(true)} className="rounded-full bg-char px-5 py-3 text-sm font-semibold text-paper disabled:opacity-40">
-              {full ? "Full" : "Join"}
-            </button>
+            {offer.canJoin && <button type="button" disabled={busy} onClick={() => setPay(true)} className="rounded-full bg-char px-5 py-3 text-sm font-semibold text-paper disabled:opacity-40">Join</button>}
+            {!offer.canJoin && <p className="self-center text-sm text-mute">{offer.reason === "full" || offer.reason === "expired" ? "Full" : "You're in"}</p>}
             <button type="button" className="rounded-full border border-char/20 px-5 py-3 text-sm" onClick={() => setShare(true)}>Share</button>
             {isHost && (
               <button type="button" disabled={!canEdit} onClick={openEdit} className="rounded-full border border-char/20 px-5 py-3 text-sm disabled:opacity-40">

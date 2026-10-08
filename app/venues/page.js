@@ -13,6 +13,7 @@ import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
 import { CUISINES, iso, queryHits, tablePrefs } from "@/lib/bible";
 import { joinableVenueTables } from "@/lib/venueEvents";
+import { canOfferJoin } from "@/lib/joinOffer";
 
 const FILTERS = [
   { id: "all", key: "filter.all" },
@@ -153,6 +154,7 @@ function Home() {
           const rows = joinableVenueTables(venue);
           const preview = rows[0];
           const more = Math.max(0, rows.length - 1);
+          const canJoinVenue = rows.some((row) => canOfferJoin({ record: row.table, session: bb.session, places: row.places, closed: row.closed }).canJoin);
           return (
             <article
               key={venue.id}
@@ -215,7 +217,7 @@ function Home() {
               </Link>
               <div className="mt-auto flex gap-2.5 px-4 pb-[18px] pt-2">
                 <button type="button" className="flex-1 rounded-full border border-white/15 py-2.5 text-[0.8rem] font-semibold" onClick={(e) => { e.stopPropagation(); setFlow({ type: "invite", venueId: venue.id }); }}>{t("btn.invite")}</button>
-                <button type="button" className="flex-1 rounded-full bg-fg py-2.5 text-[0.8rem] font-semibold text-ink" onClick={(e) => { e.stopPropagation(); setFlow({ type: "join", venueId: venue.id }); }}>{t("btn.join")}</button>
+                {canJoinVenue && <button type="button" className="flex-1 rounded-full bg-fg py-2.5 text-[0.8rem] font-semibold text-ink" onClick={(e) => { e.stopPropagation(); setFlow({ type: "join", venueId: venue.id }); }}>{t("btn.join")}</button>}
               </div>
             </article>
           );

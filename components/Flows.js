@@ -23,6 +23,7 @@ import {
 } from "@/lib/bible";
 import { cappedCapacity } from "@/lib/booking";
 import { isPartnerQuick, joinableVenueTables, venueTableState } from "@/lib/venueEvents";
+import { canOfferJoin } from "@/lib/joinOffer";
 
 export function HostBadge({ handle = "?", userId = "", size = "host", quiet = false }) {
   const bb = useBB();
@@ -323,7 +324,21 @@ export function OpenTableWizard({ venue, onClose, todayOnly: todayOnlyProp = fal
 export function JoinWizard({ venue, tableId, onClose }) {
   const bb = useBB();
   const t = (key) => translate(bb.lang, key);
-  const tables = useMemo(() => joinableVenueTables(venue), [venue]);
+  const tables = useMemo(() => {
+    const open = joinableVenueTables(venue).filter((row) => canOfferJoin({
+      record: row.table,
+      session: bb.session,
+      places: row.places,
+      closed: row.closed,
+    }).canJoin);
+    if (!tableId || open.some((row) => row.table.id === tableId)) return open;
+    const table = (venue?.tables || []).find((item) => item?.id === tableId);
+    if (!table) return open;
+    const state = venueTableState(table);
+    const offer = canOfferJoin({ record: table, session: bb.session, places: state.places, closed: state.closed });
+    if (!offer.canJoin) return open;
+    return [...open, { table, ...state }];
+  }, [venue, tableId, bb.session]);
   const openId = !tableId && tables.filter((row) => !row.hold.closed && row.hold.places > 0).length === 1
     ? tables.find((row) => !row.hold.closed && row.hold.places > 0).table.id
     : "";
@@ -373,6 +388,22 @@ export function JoinWizard({ venue, tableId, onClose }) {
 
   if (done) {
     return <DoneShare title={done.title} lines={done.lines} path={done.path} invite={done.invite} onClose={onClose} />;
+  }
+
+  if (tableId && !tables.some((item) => item.table.id === tableId)) {
+    const asked = (venue?.tables || []).find((item) => item?.id === tableId);
+    const state = asked ? venueTableState(asked) : null;
+    const offer = asked ? canOfferJoin({ record: asked, session: bb.session, places: state.places, closed: state.closed }) : null;
+    const line = !asked
+      ? "That table is gone."
+      : offer?.reason === "full" || offer?.reason === "expired" || state?.closed
+        ? "That table is full."
+        : "You're already in.";
+    return (
+      <WizardDialog title={venue.name} onBack={onClose} onClose={onClose}>
+        <p>{line}</p>
+      </WizardDialog>
+    );
   }
 
   if (none) {
@@ -447,13 +478,14 @@ export function TodayPopup({ onJoin, onBrowse, onDismiss }) {
       (venue.tables || []).forEach((table) => {
         if (isPartnerQuick(table)) return;
         const state = venueTableState(table);
-        if (table.dateISO === key && state.joinable && state.places <= 2) {
-          list.push({ venue, table, hold: state.hold });
-        }
+        if (table.dateISO !== key || !state.joinable || state.places > 2) return;
+        const offer = canOfferJoin({ record: table, session: bb.session, places: state.places, closed: state.closed });
+        if (!offer.canJoin) return;
+        list.push({ venue, table, hold: state.hold });
       });
     });
     return list.sort((a, b) => a.hold.places - b.hold.places);
-  }, [bb.content.venues, bb.editing]);
+  }, [bb.content.venues, bb.editing, bb.session]);
   if (!rows.length) return null;
   return (
     <div className="fixed inset-0 z-[75] grid place-items-end bg-black/70 p-3 backdrop-blur-sm sm:place-items-center" onClick={onDismiss}>

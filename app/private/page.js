@@ -11,6 +11,7 @@ import { translate } from "@/lib/i18n";
 import { say } from "@/lib/say";
 import { eventPhotos, eventPoster, queryHits } from "@/lib/bible";
 import { personRecord } from "@/lib/people";
+import { canOfferJoin } from "@/lib/joinOffer";
 
 export default function PrivatePage() {
   const bb = useBB();
@@ -83,7 +84,7 @@ export default function PrivatePage() {
                 <HostBadge handle={campaign.hostName || ""} userId={campaign.hostUserId || ""} tier={campaign.hostTier || "bronze"} />
                 <span className="truncate">{personRecord(campaign.hostUserId, { session: bb.session, users: bb.users })?.handle || campaign.hostName || campaign.hostLabel}</span>
               </span>
-              <span className="shrink-0 rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">{t("btn.join")}</span>
+              <span className="shrink-0 rounded-full bg-paper px-4 py-2 text-xs font-semibold text-char">{canOfferJoin({ record: campaign, session: bb.session, places: campaign.spots, closed: (campaign.spots || 0) <= 0 }).canJoin ? t("btn.join") : (campaign.spots || 0) <= 0 ? t("priv.full") : "You're in"}</span>
             </p>
           </div>
         </Link>
@@ -137,19 +138,19 @@ export default function PrivatePage() {
               </div>
             </Link>
             <div className="px-4 pb-4">
+              {(() => {
+                const offer = canOfferJoin({ record: night, session: bb.session, places: night.spots, closed: (night.spots || 0) <= 0 });
+                if (!offer.canJoin) return <p className="mt-4 text-sm text-mute">{offer.reason === "full" || offer.reason === "expired" ? t("priv.full") : "You're in"}</p>;
+                return (
               <button
                 type="button"
                 className="mt-4 w-full rounded-full bg-char py-2.5 text-sm font-semibold tracking-wide text-paper"
-                onClick={() => {
-                  if ((night.spots || 0) <= 0) {
-                    bb.notify("FULL. No more places.");
-                    return;
-                  }
-                  setPay(night);
-                }}
+                onClick={() => setPay(night)}
               >
-                {(night.spots || 0) <= 0 ? t("priv.full") : "JOIN"}
+                JOIN
               </button>
+                );
+              })()}
             </div>
           </article>
         ))}

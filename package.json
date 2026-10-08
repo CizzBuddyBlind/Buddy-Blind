@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --experimental-loader ./scripts/ext-loader.mjs --test lib/appScroll.test.mjs lib/booking.test.mjs lib/venueEvents.test.mjs"
+    "test": "node --experimental-loader ./scripts/ext-loader.mjs --test lib/appScroll.test.mjs lib/booking.test.mjs lib/venueEvents.test.mjs lib/joinOffer.test.mjs lib/quickFeed.test.mjs"
   },
   "dependencies": {
     "@stripe/stripe-js": "^9.17.0",

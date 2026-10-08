@@ -14,6 +14,7 @@ import { marketFromCode, marketFromTimezone } from "@/lib/market";
 import { APP_BREAKPOINT } from "@/lib/layoutMode";
 import { effectiveAccess, isInternalRole } from "@/lib/entitlement";
 import { joinOwnQuick } from "@/lib/quickFeed";
+import { canOfferJoin } from "@/lib/joinOffer";
 
 const Ctx = createContext(null);
 
@@ -699,8 +700,14 @@ export function BuddyProvider({ children }) {
         const joined = joinOwnQuick(item, session);
         if (!joined.ok) return joined;
       } else {
-        if ((item.spots || 0) <= 0) return { error: "No spots left." };
-        item.spots -= 1;
+        const places = Number(item.spots) || 0;
+        const offer = canOfferJoin({ record: item, session, places, closed: places <= 0, dateISO: item.dateISO });
+        if (!offer.canJoin) return { error: offer.reason === "full" || offer.reason === "expired" ? "No spots left." : "You're already in." };
+        if (!Array.isArray(item.participants)) item.participants = [];
+        if (!item.participants.some((person) => sameIdentity(person.userId || person.handle, session, { session, users }))) {
+          item.participants.push({ userId: session.userId || "", handle: session.handle, role: "guest" });
+        }
+        item.spots = Math.max(0, places - 1);
       }
       if (editing) commit(base);
       else {
@@ -720,7 +727,7 @@ export function BuddyProvider({ children }) {
       persistSession({ ...session, points, bookings: books[session.email] });
       return { ok: true, name: item.name };
     },
-    [session, editing, commit, pushLive, notify],
+    [session, users, editing, commit, pushLive, notify],
   );
 
   const removeBlock = useCallback(
@@ -1238,7 +1245,8 @@ export function BuddyProvider({ children }) {
     const current = tables.find((t) => t.id === tableId);
     if (!current) return { error: "That table is gone." };
     const before = bookingHold(current);
-    if (before.closed || before.places <= 0) return { error: before.reason || "That table is full." };
+    const offer = canOfferJoin({ record: current, session, places: before.places, closed: before.closed || before.places <= 0 });
+    if (!offer.canJoin) return { error: offer.reason === "host" || offer.reason === "member" ? "You're already in." : (before.reason || "That table is full.") };
     const people = [...(current.participants || [])];
     if (!people.some((p) => sameIdentity(p.userId || p.handle, session, { session, users }))) people.push({ userId: session.userId || "", handle: session.handle, role: "guest" });
     const table = {
@@ -1413,7 +1421,8 @@ export function BuddyProvider({ children }) {
     const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
     const item = base.events.find((e) => e.id === id && e.kind === "private");
     if (!item) return { error: "That event is gone." };
-    if ((item.spots || 0) <= 0) return { error: "FULL" };
+    const offer = canOfferJoin({ record: item, session, places: item.spots, closed: (item.spots || 0) <= 0 });
+    if (!offer.canJoin) return { error: offer.reason === "full" ? "FULL" : offer.reason === "expired" ? "That night is over." : "You're already in." };
     item.spots -= 1;
     item.joined = (item.joined || 1) + 1;
     if (!Array.isArray(item.participants)) item.participants = [];
