@@ -13,6 +13,22 @@ function stopControl(event) {
   event.stopPropagation();
 }
 
+function HeartIcon({ filled }) {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" aria-hidden="true" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? 0 : 1.7} strokeLinejoin="round">
+      <path d="M19.5 12.57 12 20.25l-7.5-7.68a4.5 4.5 0 1 1 6.36-6.36L12 7.35l1.14-1.14a4.5 4.5 0 1 1 6.36 6.36Z" />
+    </svg>
+  );
+}
+
+function CommentIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12a8.4 8.4 0 0 1-1 4 8.5 8.5 0 0 1-7.5 4.5 8.4 8.4 0 0 1-4-.9L3 21l1.5-5.5A8.4 8.4 0 0 1 3.6 11 8.5 8.5 0 0 1 8.1 3.5 8.4 8.4 0 0 1 12.1 2.6h.5A8.5 8.5 0 0 1 21 11.1Z" />
+    </svg>
+  );
+}
+
 function resolveSocial(row, content) {
   const found = locateSocial(content, row);
   if (!found || !row) return row;
@@ -48,7 +64,6 @@ export function SocialBar({ target, people, tone = "light" }) {
   const likes = Array.isArray(live?.likes) ? live.likes : [];
   const mine = !!(bb.session?.userId && likes.includes(bb.session.userId));
   const count = commentCount(live, people || live?.participants);
-  const on = tone === "light" ? "text-black" : "text-white";
   const off = tone === "light" ? "text-black/55" : "text-white/55";
   async function like(event) {
     stopControl(event);
@@ -61,11 +76,11 @@ export function SocialBar({ target, people, tone = "light" }) {
   }
   return (
     <span className="inline-flex items-center gap-3" onClick={stopControl} onMouseDown={stopControl}>
-      <button type="button" aria-pressed={mine} aria-label={mine ? "Unlike" : "Like"} className={`text-sm ${mine ? on : off}`} onClick={like}>
-        {mine ? "♥" : "♡"} {likes.length}
+      <button type="button" aria-pressed={mine} aria-label={mine ? "Unlike" : "Like"} className={`inline-flex items-center gap-1 text-sm ${mine ? "text-red-600" : off}`} onClick={like}>
+        <HeartIcon filled={mine} /> {likes.length}
       </button>
-      <button type="button" aria-label="Presets" className={`text-sm ${off}`} onClick={(event) => { stopControl(event); setOpen(true); }}>
-        💬 {count}
+      <button type="button" aria-label="Presets" className={`inline-flex items-center gap-1 text-sm ${off}`} onClick={(event) => { stopControl(event); setOpen(true); }}>
+        <CommentIcon /> {count}
       </button>
       {open && <PresetDialog record={live} people={people || live?.participants} onClose={() => setOpen(false)} />}
     </span>
