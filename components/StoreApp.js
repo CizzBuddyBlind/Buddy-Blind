@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { Photo } from "./Bits";
 import { HostBadge, PayDialog } from "./Flows";
 import { QuickCard, QuickDetail, QuickStart } from "./QuickStart";
+import { BookingDetails } from "./BookingNote";
 import { useBB, peopleYouCanRate } from "./Providers";
 import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso, prettyDate, queryHits, soonestTable, tablePrefs, tableStart } from "@/lib/bible";
 import { translate } from "@/lib/i18n";
@@ -109,6 +110,7 @@ export function StoreApp({ embedded = false }) {
   const [eventId, setEventId] = useState("");
   const [menu, setMenu] = useState(false);
   const [notes, setNotes] = useState(false);
+  const [bookingNote, setBookingNote] = useState("");
   const [auth, setAuth] = useState(false);
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
@@ -236,10 +238,20 @@ export function StoreApp({ embedded = false }) {
             </div>
           )}
           {(bb.social?.notes || []).slice(0, 12).map((note) => (
-            <button key={note.id} type="button" className="block w-full rounded-xl px-2 py-2 text-left" onClick={() => { bb.markNotesRead?.(); setNotes(false); }}>
-              <p className="text-sm">{note.title}</p>
-              <p className="text-xs text-neutral-500">{note.body}</p>
-            </button>
+            note.quickBooking ? (
+              <div key={note.id} className="rounded-xl px-2 py-2">
+                <button type="button" className="block w-full text-left" onClick={() => setBookingNote((id) => id === note.id ? "" : note.id)}>
+                  <p className="text-sm">{note.title}</p>
+                  <p className="whitespace-pre-line text-xs text-neutral-500">{note.body}</p>
+                </button>
+                {bookingNote === note.id && <BookingDetails booking={note.quickBooking} />}
+              </div>
+            ) : (
+              <button key={note.id} type="button" className="block w-full rounded-xl px-2 py-2 text-left" onClick={() => { bb.markNotesRead?.(); setNotes(false); }}>
+                <p className="text-sm">{note.title}</p>
+                <p className="text-xs text-neutral-500">{note.body}</p>
+              </button>
+            )
           ))}
         </div>
       )}

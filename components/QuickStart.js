@@ -8,7 +8,9 @@ import { TimeChoices } from "./TimeChoices";
 import { WizardDialog, WizardSummary } from "./Wizard";
 import { useBB } from "./Providers";
 import { AGE_RANGES, bookingHold, iso, queryHits, tableStart } from "@/lib/bible";
+import { viewerSeat } from "@/lib/joinOffer";
 import { quickJoinState, resolveQuick } from "@/lib/quickFeed";
+import { HOST_LINES, JOINER_LINES, signalRows, suggestedTableSize } from "@/lib/quickSocial";
 import { say } from "@/lib/say";
 
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
@@ -97,7 +99,6 @@ export function QuickStart({ locate, tone = "desk" }) {
       detail: post.trim(),
       spots: Math.max(0, capacity - 1),
       capacity,
-      originalCapacity: capacity,
       tableType: "meet-friends",
       gender,
       orientation,
@@ -390,6 +391,7 @@ export function QuickCard({ row, onJoin, onOpen }) {
           {live.post && <p className="text-base leading-snug text-black [overflow-wrap:anywhere]">{live.post}</p>}
           {when && <p className={`text-sm leading-snug text-black [overflow-wrap:anywhere] ${live.post ? "mt-1" : ""}`}>{when}</p>}
           {(prefs || area) && <p className="mt-0.5 text-xs leading-snug text-black/55 [overflow-wrap:anywhere]">{[prefs, area].filter(Boolean).join(" · ")}</p>}
+          <QuickSignals row={live} people={people} />
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
             {people.length > 0 && (
               <span className="flex items-center gap-1">
@@ -404,6 +406,7 @@ export function QuickCard({ row, onJoin, onOpen }) {
               <span className="text-xs text-black/55">{openSeats === 1 ? "1 available seat" : `${openSeats} available seats`}</span>
             )}
             {closed && <span className="text-[10px] font-semibold tracking-[0.14em] text-black/45">CLOSED</span>}
+            <LikeMark row={live} />
             {seat.canJoin && (
               <button type="button" className="ml-auto rounded-full border border-black px-3 py-1 text-[11px] font-semibold text-black" onClick={(event) => { stopControl(event); onJoin?.(); }}>JOIN</button>
             )}
@@ -426,21 +429,63 @@ export function QuickDetail({ row, onClose, onJoin }) {
   const partnerLine = partnerBookedLine(live, venue, bb.session);
   const ownLine = live.source === "own" && live.booked && live.bookingName ? `Table booked under ${live.bookingName} at ${live.time || "the arranged time"} at ${live.name}.` : "";
   const hoursLeft = live.time ? (tableStart({ dateISO: live.dateISO || iso(0), time: live.time }).getTime() - Date.now()) / 3600000 : 99;
-  const canDecide = live.source === "own" && host && people.length >= 2 && hoursLeft <= 2 && !live.booked && !live.walkIn;
-  const ceiling = Number(live.originalCapacity || live.capacity) || people.length;
-  const [seats, setSeats] = useState(Math.max(people.length, Math.min(ceiling, people.length)));
-  const [bookingName, setBookingName] = useState("");
+  const canDecide = live.source === "own" && host && people.length >= 2 && hoursLeft <= 2 && !live.booked && !live.walkIn && !live.booking?.booked;
+  const role = viewerSeat(live, bb.session);
   const [meetingNote, setMeetingNote] = useState("");
   const [error, setError] = useState("");
+  const [showBook, setShowBook] = useState(false);
+  const [venueName, setVenueName] = useState("");
+  const [bookAddress, setBookAddress] = useState("");
+  const [bookTime, setBookTime] = useState(live.time || "");
+  const [tableSize, setTableSize] = useState("");
+  const [reserveName, setReserveName] = useState("");
   if (!row || typeof document === "undefined") return null;
-  const seatChoices = [];
-  for (let n = people.length; n <= ceiling; n += 1) seatChoices.push(n);
-  async function save(choice) {
-    if (choice === "walk" && contactBlocked(meetingNote)) {
+  const activeCode = role === "host"
+    ? live.hostSignal?.code
+    : (live.signals || []).find((item) => item.userId && item.userId === bb.session?.userId)?.code;
+  async function saveWalk() {
+    if (contactBlocked(meetingNote)) {
       setError("Keep contact details off the meeting note. You'll meet in person.");
       return;
     }
-    const res = await bb.decideOwnQuick?.(row.id, { choice, bookingName, seats, meetingNote });
+    const res = await bb.decideOwnQuick?.(row.id, { choice: "walk", meetingNote });
+    if (res?.needLogin) {
+      window.location.href = "/login";
+      return;
+    }
+    if (res?.error) setError(res.error);
+    else setError("");
+  }
+  function openBook() {
+    const saved = live.booking?.booked ? live.booking : null;
+    setVenueName(saved?.venueName || live.name || "");
+    setBookAddress(saved ? (saved.address || "") : (live.address || ""));
+    setBookTime(saved?.time || live.time || "");
+    setTableSize(String(saved?.tableSize || suggestedTableSize(live)));
+    setReserveName(saved?.bookingName || "");
+    setError("");
+    setShowBook(true);
+  }
+  async function confirmBook() {
+    const res = await bb.confirmOwnQuickBooking?.(live.id, {
+      venueName,
+      address: bookAddress,
+      time: bookTime,
+      tableSize: Number(tableSize),
+      bookingName: reserveName,
+    });
+    if (res?.needLogin) {
+      window.location.href = "/login";
+      return;
+    }
+    if (res?.error) setError(res.error);
+    else {
+      setError("");
+      setShowBook(false);
+    }
+  }
+  async function pickLine(code) {
+    const res = await bb.setQuickSignal?.(live, code);
     if (res?.needLogin) {
       window.location.href = "/login";
       return;
@@ -466,8 +511,10 @@ export function QuickDetail({ row, onClose, onJoin }) {
         </div>
         {!closed && openSeats > 0 && <p className="mt-2 text-xs text-white/55">{openSeats === 1 ? "1 available seat" : `${openSeats} available seats`}</p>}
         {closed && <p className="mt-2 text-[10px] font-semibold tracking-[0.14em] text-white/55">CLOSED</p>}
-        {live.source === "own" && <p className="mt-3 text-sm text-white/70">You arrange the restaurant yourself. Buddy Blind does not book this table.</p>}
-        {joined && ownLine && (
+        <div className="mt-3"><LikeMark row={live} tone="detail" /></div>
+        <QuickSignals row={live} people={people} tone="detail" />
+        {live.source === "own" && !live.booking?.booked && <p className="mt-3 text-sm text-white/70">You arrange the restaurant yourself. Buddy Blind does not book this table.</p>}
+        {joined && ownLine && !live.booking?.booked && (
           <div className="mt-4 text-sm">
             <p className="font-semibold">TABLE BOOKED</p>
             <p>{ownLine}</p>
@@ -480,32 +527,132 @@ export function QuickDetail({ row, onClose, onJoin }) {
           </div>
         )}
         {joined && live.source === "own" && live.meetingNote && <p className="mt-3 text-sm text-white/70">{live.meetingNote}</p>}
-        {canDecide && (
+        {showBook ? (
           <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
-            <p className="text-sm">Two hours out. Is the table booked, or is this a walk-in?</p>
+            <p className="text-sm font-semibold">Table booked</p>
             <label className="block text-sm">
-              Booking name
-              <input value={bookingName} onChange={(event) => setBookingName(event.target.value)} className="mt-2 w-full rounded-full border border-white/15 bg-white px-4 py-2.5 text-sm text-char caret-char outline-none placeholder:text-black/40" placeholder="Name the restaurant has" />
+              Restaurant
+              <input value={venueName} onChange={(event) => setVenueName(event.target.value)} className="mt-2 w-full rounded-full border border-white/15 bg-white px-4 py-2.5 text-sm text-char caret-char outline-none placeholder:text-black/40" />
             </label>
-            <div className="flex flex-wrap gap-2">
-              {seatChoices.map((n) => (
-                <button key={n} type="button" className={`rounded-full px-3 py-1.5 text-xs ${seats === n ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={() => setSeats(n)}>{n}</button>
-              ))}
+            <label className="block text-sm">
+              Address
+              <input value={bookAddress} onChange={(event) => setBookAddress(event.target.value)} placeholder="Optional" className="mt-2 w-full rounded-full border border-white/15 bg-white px-4 py-2.5 text-sm text-char caret-char outline-none placeholder:text-black/40" />
+            </label>
+            <div>
+              <p className="text-sm">Time</p>
+              <div className="mt-2">
+                <TimeChoices value={bookTime} onChange={setBookTime} renderChoice={(label, on, pick) => (
+                  <button key={label} type="button" className={`rounded-full px-3 py-1.5 text-xs ${on ? "bg-fg text-ink" : "border border-white/20 text-fg"}`} onClick={pick}>{label}</button>
+                )} />
+              </div>
             </div>
-            <button type="button" className="rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={() => save("booked")}>Table booked</button>
             <label className="block text-sm">
-              Meeting details
-              <textarea value={meetingNote} onChange={(event) => setMeetingNote(event.target.value)} rows={2} className="mt-2 w-full rounded-2xl border border-white/15 bg-white px-3 py-2 text-sm text-char caret-char outline-none placeholder:text-black/40" placeholder="Where to meet, if you are walking in" />
+              Table size
+              <input value={tableSize} inputMode="numeric" onChange={(event) => setTableSize(event.target.value.replace(/[^\d]/g, ""))} className="mt-2 w-full rounded-full border border-white/15 bg-white px-4 py-2.5 text-sm text-char caret-char outline-none placeholder:text-black/40" />
             </label>
-            <button type="button" className="rounded-full border border-white/20 px-4 py-2 text-xs text-fg" onClick={() => save("walk")}>Walk in</button>
+            <label className="block text-sm">
+              What name should everyone ask for when they arrive?
+              <input value={reserveName} onChange={(event) => setReserveName(event.target.value)} className="mt-2 w-full rounded-full border border-white/15 bg-white px-4 py-2.5 text-sm text-char caret-char outline-none placeholder:text-black/40" />
+            </label>
             {error && <p className="text-sm text-ember">{error}</p>}
+            <button type="button" className="rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={confirmBook}>Confirm table booked</button>
+            <button type="button" className="ml-3 text-xs text-white/45" onClick={() => { setError(""); setShowBook(false); }}>Back</button>
           </div>
+        ) : (
+          <>
+            {role === "member" && <LinePicker lines={JOINER_LINES} active={activeCode} onPick={pickLine} />}
+            {role === "host" && <LinePicker lines={HOST_LINES} active={activeCode} onPick={pickLine} />}
+            {role === "host" && live.source === "own" && (
+              <button type="button" className="mt-4 rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={openBook}>Table booked</button>
+            )}
+            {error && !canDecide && <p className="mt-3 text-sm text-ember">{error}</p>}
+            {canDecide && (
+              <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
+                <p className="text-sm">Two hours out. Walking in?</p>
+                <label className="block text-sm">
+                  Meeting details
+                  <textarea value={meetingNote} onChange={(event) => setMeetingNote(event.target.value)} rows={2} className="mt-2 w-full rounded-2xl border border-white/15 bg-white px-3 py-2 text-sm text-char caret-char outline-none placeholder:text-black/40" placeholder="Where to meet, if you are walking in" />
+                </label>
+                <button type="button" className="rounded-full border border-white/20 px-4 py-2 text-xs text-fg" onClick={saveWalk}>Walk in</button>
+                {error && <p className="text-sm text-ember">{error}</p>}
+              </div>
+            )}
+          </>
         )}
         {seat.canJoin && (
           <button type="button" className="mt-4 rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={onJoin}>JOIN</button>
         )}
     </WizardDialog>,
     document.body,
+  );
+}
+
+function socialQuick(row) {
+  return row?.source === "partner" || row?.source === "own";
+}
+
+function LikeMark({ row, tone = "card" }) {
+  const bb = useBB();
+  if (!socialQuick(row)) return null;
+  const likes = Array.isArray(row.likes) ? row.likes : [];
+  const mine = !!(bb.session?.userId && likes.includes(bb.session.userId));
+  const dark = tone === "detail";
+  return (
+    <button
+      type="button"
+      aria-pressed={mine}
+      aria-label={mine ? "Unlike" : "Like"}
+      className={`text-sm ${mine ? (dark ? "text-fg" : "text-black") : (dark ? "text-white/70" : "text-black/55")}`}
+      onClick={async (event) => {
+        stopControl(event);
+        const res = await bb.likeQuick?.(row);
+        if (res?.needLogin) {
+          window.location.href = "/login";
+          return;
+        }
+        if (res?.error) bb.notify?.(res.error);
+      }}
+    >
+      {mine ? "♥" : "♡"} {likes.length}
+    </button>
+  );
+}
+
+function QuickSignals({ row, people, tone = "card" }) {
+  if (!socialQuick(row)) return null;
+  const lines = signalRows(row, people);
+  if (!lines.length) return null;
+  const dark = tone === "detail";
+  return (
+    <div className={dark ? "mt-4 space-y-2" : "mt-2 space-y-1.5"}>
+      {lines.map((item) => item.system ? (
+        <p key={item.key} className={`text-sm ${dark ? "text-fg" : "text-black"}`}>{item.text}</p>
+      ) : (
+        <div key={item.key} className="flex items-start gap-2">
+          <span className="mt-0.5 shrink-0" onClick={stopControl} onMouseDown={stopControl}>
+            <HostBadge handle={item.person.handle} userId={item.person.userId || ""} />
+          </span>
+          <p className={`text-sm leading-snug [overflow-wrap:anywhere] ${dark ? "text-white/80" : "text-black/75"}`}>{item.text}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LinePicker({ lines, active, onPick }) {
+  return (
+    <div className="mt-4 flex flex-col gap-2">
+      {lines.map((line) => (
+        <button
+          key={line.code}
+          type="button"
+          className={`rounded-2xl px-3 py-2 text-left text-sm ${active === line.code ? "bg-fg text-ink" : "border border-white/20 text-fg"}`}
+          onClick={() => onPick(line.code)}
+        >
+          {line.text}
+        </button>
+      ))}
+    </div>
   );
 }
 

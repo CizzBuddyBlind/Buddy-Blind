@@ -8,6 +8,7 @@ import { eventPoster, iso, prettyDate, queryHits, tableStart } from "@/lib/bible
 import { joinableVenueTables } from "@/lib/venueEvents";
 import { canOfferJoin } from "@/lib/joinOffer";
 import { sameIdentity, seatsForHandle } from "@/lib/people";
+import { BookingDetails } from "./BookingNote";
 
 function hourOf(time) {
   const match = String(time || "").toUpperCase().match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/);
@@ -442,7 +443,7 @@ function ChatTab() {
   const [choice, setChoice] = useState("see-ya");
   const [note, setNote] = useState("");
   const [query, setQuery] = useState("");
-  const notes = (bb.social?.notes || []).filter((item) => item.ping || item.title === "Sent" || item.title === "You're booked" || item.title === "Table opened" || item.title === "2-hour reminder" || item.title === "Private event").filter((item) => queryHits(`${item.title} ${item.body}`, query));
+  const notes = (bb.social?.notes || []).filter((item) => item.quickBooking || item.ping || item.title === "Sent" || item.title === "You're booked" || item.title === "Table opened" || item.title === "2-hour reminder" || item.title === "Private event").filter((item) => queryHits(`${item.title} ${item.body}`, query));
   const current = notes.find((item) => item.id === open);
   if (current) {
     const canReply = current.ping && !current.ping.replyOnly && !current.replied;
@@ -460,7 +461,8 @@ function ChatTab() {
       <div className="space-y-3">
         <button type="button" className="text-sm text-neutral-500" onClick={() => { setOpen(null); setNote(""); }}>Back</button>
         <h2 className="font-semibold">{current.title}</h2>
-        <p className="text-sm">{current.body}</p>
+        <p className="whitespace-pre-line text-sm">{current.body}</p>
+        {current.quickBooking && <BookingDetails booking={current.quickBooking} />}
         {canReply && (
           <div className="space-y-2">
             {options.map(([id, label]) => (

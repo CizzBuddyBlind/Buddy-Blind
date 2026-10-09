@@ -13,6 +13,7 @@ import { usePeople } from "./People";
 import { iso, badgePaint } from "@/lib/bible";
 import { say } from "@/lib/say";
 import { StoreApp } from "./StoreApp";
+import { BookingDetails } from "./BookingNote";
 import { MobileHello } from "./MobileHello";
 import { appToPath, pathToApp } from "@/lib/layoutMode";
 
@@ -89,6 +90,7 @@ export function Shell({ children }) {
   const t = (key) => translate(bb.lang, key);
   const [menu, setMenu] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [bookingNote, setBookingNote] = useState("");
   const [link, setLink] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [showToday, setShowToday] = useState(false);
@@ -294,8 +296,18 @@ export function Shell({ children }) {
                       {(bb.social?.notes || []).length === 0 && !reviewDue && <p className="px-4 py-6 text-sm text-mute">Nothing yet.</p>}
                       {(bb.social?.notes || []).slice(0, 12).map((note) => (
                         <div key={note.id} className="border-b border-white/5 px-4 py-3">
-                          <p className="text-sm">{note.title}</p>
-                          <p className="mt-1 text-xs text-mute">{note.body}</p>
+                          {note.quickBooking ? (
+                            <button type="button" className="block w-full text-left" onClick={() => setBookingNote((id) => id === note.id ? "" : note.id)}>
+                              <p className="text-sm">{note.title}</p>
+                              <p className="mt-1 whitespace-pre-line text-xs text-mute">{note.body}</p>
+                            </button>
+                          ) : (
+                            <>
+                              <p className="text-sm">{note.title}</p>
+                              <p className="mt-1 text-xs text-mute">{note.body}</p>
+                            </>
+                          )}
+                          {note.quickBooking && bookingNote === note.id && <BookingDetails booking={note.quickBooking} />}
                           {note.invite && (
                             <button
                               type="button"

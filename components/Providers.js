@@ -13,8 +13,9 @@ import { accountByEmail, fixtureAccountId, personRecord, planPhoneChange, sameId
 import { marketFromCode, marketFromTimezone } from "@/lib/market";
 import { APP_BREAKPOINT } from "@/lib/layoutMode";
 import { effectiveAccess, isInternalRole } from "@/lib/entitlement";
-import { joinOwnQuick } from "@/lib/quickFeed";
-import { canOfferJoin } from "@/lib/joinOffer";
+import { joinOwnQuick, ownQuickDecision } from "@/lib/quickFeed";
+import { canOfferJoin, viewerSeat } from "@/lib/joinOffer";
+import { applySignal, placeBooking, syncBookingNotes, toggleLike } from "@/lib/quickSocial";
 
 const Ctx = createContext(null);
 
@@ -140,6 +141,18 @@ export function peopleYouCanRate(content, accountId, ctx = {}) {
 function clone(value) {
   stripHeavy(value);
   return JSON.parse(JSON.stringify(value));
+}
+
+function locateQuick(base, row) {
+  if (!base || !row) return null;
+  if (row.source === "partner") {
+    const venue = (base.venues || []).find((item) => item?.id === row.venueId);
+    return (venue?.tables || []).find((item) => item?.id === row.tableId && item.quick && !item.auto) || null;
+  }
+  if (row.source === "own") {
+    return (base.events || []).find((event) => event?.id === row.id && event.kind === "quick" && event.source === "own") || null;
+  }
+  return null;
 }
 function read(key, fallback) {
   if (typeof window === "undefined") return fallback;
@@ -1573,8 +1586,12 @@ export function BuddyProvider({ children }) {
       if (!joined) return;
       (event.pings || []).forEach((ping) => collect(ping, { eventId: event.id }, event.name));
     });
-    if (!additions.length) return;
-    saveSocial({ ...emptySocial(), ...read(SOCIAL, {}), notes: [...additions, ...(read(SOCIAL, {}).notes || [])].slice(0, 40) });
+    const bookingSync = syncBookingNotes(read(SOCIAL, {}).notes, content.events, me);
+    if (!additions.length && !bookingSync.changed) return;
+    const merged = [...additions, ...bookingSync.notes]
+      .filter((item, index, list) => list.findIndex((other) => other.id === item.id) === index)
+      .slice(0, 40);
+    saveSocial({ ...emptySocial(), ...read(SOCIAL, {}), notes: merged });
   }, [content, ready, session, social.notes, users]);
 
   useEffect(() => {
@@ -1601,26 +1618,8 @@ export function BuddyProvider({ children }) {
     if (people < 2) return { error: "Wait until someone else has joined." };
     const start = tableStart({ dateISO: item.dateISO || iso(0), time: item.time });
     if (start.getTime() - Date.now() > 2 * 60 * 60 * 1000) return { error: "This opens two hours before." };
-    const ceiling = Number(item.originalCapacity || item.capacity) || people;
-    if (input?.choice === "booked") {
-      const name = String(input.bookingName || "").trim();
-      if (!name) return { error: "Add the booking name." };
-      const seats = Number(input.seats);
-      if (!Number.isFinite(seats) || seats < people || seats > ceiling) return { error: "That seat count doesn't fit." };
-      item.booked = true;
-      item.walkIn = false;
-      item.bookingName = name;
-      item.meetingNote = "";
-      item.capacity = seats;
-      item.spots = Math.max(0, seats - people);
-    } else if (input?.choice === "walk") {
-      item.booked = false;
-      item.walkIn = true;
-      item.bookingName = "";
-      item.meetingNote = String(input.meetingNote || "").trim();
-    } else {
-      return { error: "Choose one." };
-    }
+    const decided = ownQuickDecision(item, input);
+    if (!decided.ok) return decided;
     if (editing) commit(base);
     else {
       const saved = await pushLive(base);
@@ -1628,6 +1627,37 @@ export function BuddyProvider({ children }) {
     }
     return { ok: true };
   }, [commit, editing, pushLive, session]);
+
+  const mutateQuick = useCallback(async (row, change) => {
+    if (!session) return { needLogin: true };
+    const base = clone(editing ? draftRef.current || publishedRef.current : publishedRef.current);
+    const target = locateQuick(base, row);
+    if (!target) return { error: "That meetup is gone." };
+    const result = change(target);
+    if (result?.error) return result;
+    const saved = await applyLive(base);
+    if (!saved.ok && saved.error) return { error: saved.error };
+    return { ok: true };
+  }, [applyLive, editing, session]);
+
+  const likeQuick = useCallback((row) => mutateQuick(row, (target) => {
+    if (!session?.userId) return { error: "Log in first." };
+    target.likes = toggleLike(target.likes, session.userId);
+  }), [mutateQuick, session]);
+
+  const setQuickSignal = useCallback((row, code) => mutateQuick(row, (target) => {
+    const result = applySignal(target, session, code);
+    if (!result.ok) return result;
+    target.signals = result.record.signals;
+    target.hostSignal = result.record.hostSignal ?? null;
+  }), [mutateQuick, session]);
+
+  const confirmOwnQuickBooking = useCallback((id, input) => mutateQuick({ source: "own", id }, (target) => {
+    if (viewerSeat(target, session) !== "host") return { error: "Only the inviter can book." };
+    const built = placeBooking(target, input);
+    if (!built.ok) return built;
+    target.booking = built.booking;
+  }), [mutateQuick, session]);
 
   const value = useMemo(
     () => ({
@@ -1708,6 +1738,9 @@ export function BuddyProvider({ children }) {
       sendPing,
       replyPing,
       decideOwnQuick,
+      likeQuick,
+      setQuickSignal,
+      confirmOwnQuickBooking,
     }),
     [
       ready, remote, content, session, staff, editing, preview, device, narrow, panel, dirty, toast, notify,
@@ -1717,6 +1750,7 @@ export function BuddyProvider({ children }) {
       toggleHide, resetDraft, confirm, lang, setLang, market, trial, plan, planMeta, premium, entitlement, refreshBilling, setPlan, acceptTrial, cancelTrial,
       updateProfile, changePhone, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
       addReview, flow, openTable, joinTable, createPrivate, updatePrivate, joinPrivate, sendPing, replyPing, decideOwnQuick,
+      likeQuick, setQuickSignal, confirmOwnQuickBooking,
     ],
   );
 
