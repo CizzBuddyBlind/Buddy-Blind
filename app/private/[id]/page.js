@@ -11,6 +11,7 @@ import { getMedia } from "@/lib/media";
 import { say } from "@/lib/say";
 import { personRecord } from "@/lib/people";
 import { canOfferJoin } from "@/lib/joinOffer";
+import { SocialBar } from "@/components/SocialMarks";
 
 export default function PrivateDetailPage() {
   const { id } = useParams();
@@ -239,7 +240,8 @@ export default function PrivateDetailPage() {
               <Editable as="p" className="mt-4 text-sm leading-relaxed" value={say(bb.lang, event.aboutHost || "")} onChange={(aboutHost) => bb.update((d) => { const item = d.events.find((x) => x.id === event.id); if (item) item.aboutHost = aboutHost; })} />
             )}
           </div>
-          <div className="mt-6 flex flex-wrap gap-2">
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <SocialBar target={{ ...event, source: "private" }} people={event.participants} tone="light" />
             {offer.canJoin && <button type="button" disabled={busy} onClick={() => setPay(true)} className="rounded-full bg-char px-5 py-3 text-sm font-semibold text-paper disabled:opacity-40">Join</button>}
             {!offer.canJoin && <p className="self-center text-sm text-mute">{offer.reason === "full" || offer.reason === "expired" ? "Full" : "You're in"}</p>}
             <button type="button" className="rounded-full border border-char/20 px-5 py-3 text-sm" onClick={() => setShare(true)}>Share</button>

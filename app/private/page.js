@@ -12,6 +12,7 @@ import { say } from "@/lib/say";
 import { eventPhotos, eventPoster, queryHits } from "@/lib/bible";
 import { personRecord } from "@/lib/people";
 import { canOfferJoin } from "@/lib/joinOffer";
+import { SocialBar } from "@/components/SocialMarks";
 
 export default function PrivatePage() {
   const bb = useBB();
@@ -138,6 +139,7 @@ export default function PrivatePage() {
               </div>
             </Link>
             <div className="px-4 pb-4">
+              <SocialBar target={{ ...night, source: "private" }} people={night.participants} tone="light" />
               {(() => {
                 const offer = canOfferJoin({ record: night, session: bb.session, places: night.spots, closed: (night.spots || 0) <= 0 });
                 if (!offer.canJoin) return <p className="mt-4 text-sm text-mute">{offer.reason === "full" || offer.reason === "expired" ? t("priv.full") : "You're in"}</p>;

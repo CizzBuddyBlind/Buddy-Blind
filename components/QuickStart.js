@@ -11,6 +11,7 @@ import { AGE_RANGES, bookingHold, iso, queryHits, tableStart } from "@/lib/bible
 import { viewerSeat } from "@/lib/joinOffer";
 import { quickJoinState, resolveQuick } from "@/lib/quickFeed";
 import { HOST_LINES, JOINER_LINES, signalRows, suggestedTableSize } from "@/lib/quickSocial";
+import { SocialBar } from "./SocialMarks";
 import { say } from "@/lib/say";
 
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
@@ -373,6 +374,7 @@ export function QuickCard({ row, onJoin, onOpen }) {
   const when = live.time ? [live.name, live.time].filter(Boolean).join(" · ") : [live.name, live.timeLabel].filter(Boolean).join(" · ");
   const prefs = preferenceLine(live);
   const area = live.area || "";
+  const bookedText = signalRows(live, people).find((item) => item.system)?.text || "";
   return (
     <article
       className="cursor-pointer rounded-2xl border border-black/10 bg-white px-3 py-2.5 text-black"
@@ -391,7 +393,7 @@ export function QuickCard({ row, onJoin, onOpen }) {
           {live.post && <p className="text-base leading-snug text-black [overflow-wrap:anywhere]">{live.post}</p>}
           {when && <p className={`text-sm leading-snug text-black [overflow-wrap:anywhere] ${live.post ? "mt-1" : ""}`}>{when}</p>}
           {(prefs || area) && <p className="mt-0.5 text-xs leading-snug text-black/55 [overflow-wrap:anywhere]">{[prefs, area].filter(Boolean).join(" · ")}</p>}
-          <QuickSignals row={live} people={people} />
+          {bookedText && <p className="mt-2 text-sm text-black">{bookedText}</p>}
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
             {people.length > 0 && (
               <span className="flex items-center gap-1">
@@ -406,7 +408,7 @@ export function QuickCard({ row, onJoin, onOpen }) {
               <span className="text-xs text-black/55">{openSeats === 1 ? "1 available seat" : `${openSeats} available seats`}</span>
             )}
             {closed && <span className="text-[10px] font-semibold tracking-[0.14em] text-black/45">CLOSED</span>}
-            <LikeMark row={live} />
+            <SocialBar target={live} people={people} tone="light" />
             {seat.canJoin && (
               <button type="button" className="ml-auto rounded-full border border-black px-3 py-1 text-[11px] font-semibold text-black" onClick={(event) => { stopControl(event); onJoin?.(); }}>JOIN</button>
             )}

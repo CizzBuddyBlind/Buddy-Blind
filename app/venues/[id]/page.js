@@ -12,6 +12,7 @@ import { say } from "@/lib/say";
 import { prettyDate, tablePrefs } from "@/lib/bible";
 import { normalVenueTables } from "@/lib/venueEvents";
 import { canOfferJoin } from "@/lib/joinOffer";
+import { SocialBar } from "@/components/SocialMarks";
 
 export default function VenuePage() {
   const { id } = useParams();
@@ -170,6 +171,11 @@ export default function VenuePage() {
                             <JoinerStack people={people} host={table.hostHandle} cap={6} />
                           </p>
                           {hold.status === "walk-in" && <p className="mt-1 text-xs text-ember">{hold.reason}</p>}
+                          {!table.auto && !table.quick && (
+                            <div className="mt-2">
+                              <SocialBar target={{ source: "table", venueId: venue.id, tableId: table.id }} people={people} tone="dark" />
+                            </div>
+                          )}
                         </div>
                         <button
                           type="button"

@@ -15,7 +15,7 @@ import { APP_BREAKPOINT } from "@/lib/layoutMode";
 import { effectiveAccess, isInternalRole } from "@/lib/entitlement";
 import { joinOwnQuick, ownQuickDecision } from "@/lib/quickFeed";
 import { canOfferJoin, viewerSeat } from "@/lib/joinOffer";
-import { applySignal, placeBooking, syncBookingNotes, toggleLike } from "@/lib/quickSocial";
+import { applySignal, locateSocial, placeBooking, syncBookingNotes, toggleLike } from "@/lib/quickSocial";
 
 const Ctx = createContext(null);
 
@@ -144,15 +144,7 @@ function clone(value) {
 }
 
 function locateQuick(base, row) {
-  if (!base || !row) return null;
-  if (row.source === "partner") {
-    const venue = (base.venues || []).find((item) => item?.id === row.venueId);
-    return (venue?.tables || []).find((item) => item?.id === row.tableId && item.quick && !item.auto) || null;
-  }
-  if (row.source === "own") {
-    return (base.events || []).find((event) => event?.id === row.id && event.kind === "quick" && event.source === "own") || null;
-  }
-  return null;
+  return locateSocial(base, row);
 }
 function read(key, fallback) {
   if (typeof window === "undefined") return fallback;

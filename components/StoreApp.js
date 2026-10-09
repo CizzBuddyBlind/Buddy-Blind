@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { Photo } from "./Bits";
 import { HostBadge, PayDialog } from "./Flows";
 import { QuickCard, QuickDetail, QuickStart } from "./QuickStart";
+import { SocialBar } from "./SocialMarks";
 import { BookingDetails } from "./BookingNote";
 import { useBB, peopleYouCanRate } from "./Providers";
 import { badgePaint, bookingHold, discountPercent, eventPhotos, eventPoster, iso, prettyDate, queryHits, soonestTable, tablePrefs, tableStart } from "@/lib/bible";
@@ -467,8 +468,10 @@ function Venues({ onOpen }) {
       <div className="mt-4 grid grid-cols-2 items-stretch gap-x-3 gap-y-5">
         {venues.map((venue) => {
           const next = joinableVenueTables(venue)[0];
+          const socialTable = next && !next.table.auto && !next.table.quick ? next.table : null;
           return (
-            <button key={venue.id} type="button" onClick={() => onOpen(venue.id)} className="flex h-full flex-col text-left">
+            <div key={venue.id} className="flex h-full flex-col">
+            <button type="button" onClick={() => onOpen(venue.id)} className="flex h-full flex-col text-left">
               <div className="relative w-full overflow-hidden rounded-2xl bg-black" style={{ paddingBottom: "133%" }}>
                 <div className="absolute inset-0">
                   <Photo src={venue.imageUrl} alt="" />
@@ -501,6 +504,12 @@ function Venues({ onOpen }) {
                 </p>
               </div>
             </button>
+            {socialTable && (
+              <div className="pt-2">
+                <SocialBar target={{ source: "table", venueId: venue.id, tableId: socialTable.id }} people={socialTable.participants} tone="dark" />
+              </div>
+            )}
+            </div>
           );
         })}
       </div>
@@ -540,6 +549,11 @@ function VenueDetail({ id, onBack }) {
               <p className="text-sm">{prettyDate(table.dateISO, bb.lang)} · {table.time}</p>
               <p className="mt-1 text-xs text-white/60">{saidPrefs(bb.lang, table)} · {hold.status === "walk-in" ? say(bb.lang, "Walk-in · no table held") : `${hold.places} ${say(bb.lang, "left")}`}</p>
               {hold.status === "walk-in" && <p className="mt-1 text-xs text-ember">{say(bb.lang, hold.reason)}</p>}
+              {!table.auto && !table.quick && (
+                <div className="mt-2">
+                  <SocialBar target={{ source: "table", venueId: venue.id, tableId: table.id }} people={table.participants} tone="dark" />
+                </div>
+              )}
             </div>
             <button type="button" disabled={!offer.canJoin} className="shrink-0 rounded-full border border-ember px-3 py-1.5 text-xs font-semibold text-ember disabled:opacity-40" onClick={() => offer.canJoin && bb.setFlow({ type: "join", venueId: venue.id, tableId: table.id })}>{offer.canJoin ? translate(bb.lang, "btn.join") : offer.reason === "full" || offer.reason === "expired" ? "Full" : "You're in"}</button>
           </div>
@@ -739,7 +753,8 @@ function Private({ onOpen }) {
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3">
         {nights.map((night) => (
-          <button key={night.id} type="button" onClick={() => onOpen(night.id)} className="overflow-hidden rounded-2xl bg-white text-left shadow-sm">
+          <div key={night.id} className="overflow-hidden rounded-2xl bg-white text-left shadow-sm">
+          <button type="button" onClick={() => onOpen(night.id)} className="block w-full text-left">
             <div className="relative aspect-[4/5] bg-neutral-200">
               <Photo src={eventPhotos(night)[0] || ""} fallback={eventPoster(night)} alt="" />
             </div>
@@ -757,6 +772,10 @@ function Private({ onOpen }) {
               </span>
             </div>
           </button>
+          <div className="px-3 pb-3">
+            <SocialBar target={{ ...night, source: "private" }} people={night.participants} tone="light" />
+          </div>
+          </div>
         ))}
       </div>
     </section>
@@ -785,6 +804,7 @@ function PrivateDetail({ id, onBack }) {
       <p className="mt-3 text-sm leading-relaxed text-black/70">{say(bb.lang, event.description || "")}</p>
       {event.aboutHost && <p className="mt-3 text-sm leading-relaxed text-black/70">{say(bb.lang, event.aboutHost)}</p>}
       <p className="mt-4 flex items-center gap-2 text-sm"><HostBadge handle={event.hostName || ""} userId={event.hostUserId || ""} tier={event.hostTier || "bronze"} /> {personRecord(event.hostUserId, { session: bb.session, users: bb.users })?.handle || event.hostName}</p>
+      <div className="mt-3"><SocialBar target={{ ...event, source: "private" }} people={event.participants} tone="light" /></div>
       {offer.canJoin && <button type="button" className="mt-5 w-full rounded-full bg-black py-3 text-sm font-semibold text-white" onClick={() => { if (!bb.session) { bb.notify("Log in first."); return; } setPay(true); }}>{translate(bb.lang, "btn.join")}</button>}
       {!offer.canJoin && <p className="mt-5 text-sm text-black/55">{offer.reason === "full" || offer.reason === "expired" ? "Full" : "You're in"}</p>}
       {premium && <button type="button" className="mt-2 w-full rounded-full border border-black/15 py-3 text-sm" onClick={() => bb.setFlow({ type: "private-create", venueId: event.venueId || "" })}>{translate(bb.lang, "btn.host")}</button>}

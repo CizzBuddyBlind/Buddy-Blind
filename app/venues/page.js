@@ -14,6 +14,7 @@ import { say } from "@/lib/say";
 import { CUISINES, iso, queryHits, tablePrefs } from "@/lib/bible";
 import { joinableVenueTables } from "@/lib/venueEvents";
 import { canOfferJoin } from "@/lib/joinOffer";
+import { SocialBar } from "@/components/SocialMarks";
 
 const FILTERS = [
   { id: "all", key: "filter.all" },
@@ -215,9 +216,14 @@ function Home() {
                   </div>
                 </div>
               </Link>
-              <div className="mt-auto flex gap-2.5 px-4 pb-[18px] pt-2">
+              <div className="mt-auto flex flex-col gap-2.5 px-4 pb-[18px] pt-2">
+                {preview && !preview.table.auto && !preview.table.quick && (
+                  <SocialBar target={{ source: "table", venueId: venue.id, tableId: preview.table.id }} people={preview.table.participants} tone="dark" />
+                )}
+                <div className="flex gap-2.5">
                 <button type="button" className="flex-1 rounded-full border border-white/15 py-2.5 text-[0.8rem] font-semibold" onClick={(e) => { e.stopPropagation(); setFlow({ type: "invite", venueId: venue.id }); }}>{t("btn.invite")}</button>
                 {canJoinVenue && <button type="button" className="flex-1 rounded-full bg-fg py-2.5 text-[0.8rem] font-semibold text-ink" onClick={(e) => { e.stopPropagation(); setFlow({ type: "join", venueId: venue.id }); }}>{t("btn.join")}</button>}
+                </div>
               </div>
             </article>
           );
