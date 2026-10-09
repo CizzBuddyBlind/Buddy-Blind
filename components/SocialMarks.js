@@ -23,6 +23,23 @@ function resolveSocial(row, content) {
   return row;
 }
 
+function contextCopy(record) {
+  if (!record) return "";
+  if (record.source === "private") return String(record.description || "").trim();
+  if (record.source === "table") return String(record.inviteText || "").trim();
+  return String(record.post || "").trim();
+}
+
+function contextPerson(record, people) {
+  const list = (Array.isArray(people) && people.length ? people : record?.participants) || [];
+  const host = list.find((person) => person?.role === "host" || (record?.hostUserId && person?.userId === record.hostUserId));
+  if (host) return host;
+  return {
+    userId: record?.hostUserId || "",
+    handle: record?.hostHandle || record?.hostName || "",
+  };
+}
+
 export function SocialBar({ target, people, tone = "light" }) {
   const bb = useBB();
   const [open, setOpen] = useState(false);
@@ -57,26 +74,51 @@ export function SocialBar({ target, people, tone = "light" }) {
 
 function PresetDialog({ record, people, onClose }) {
   const bb = useBB();
+  const [selected, setSelected] = useState("");
   const [error, setError] = useState("");
   if (!record || typeof document === "undefined") return null;
   const live = resolveSocial(record, bb.content) || record;
   const role = viewerSeat(live, bb.session);
   const lines = signalRows(live, people).filter((item) => !item.system);
-  const active = role === "host"
-    ? live.hostSignal?.code
-    : (live.signals || []).find((item) => item.userId && item.userId === bb.session?.userId)?.code;
+  const posted = role === "host"
+    ? live.hostSignal?.code || ""
+    : (live.signals || []).find((item) => item.userId && item.userId === bb.session?.userId)?.code || "";
   const choices = role === "host" ? HOST_LINES : role === "member" ? JOINER_LINES : [];
-  async function pick(code) {
-    const res = await bb.setQuickSignal?.(live, code);
+  const story = contextCopy(live);
+  const author = contextPerson(live, people);
+  async function publish() {
+    if (!selected) return;
+    const res = await bb.setQuickSignal?.(live, selected);
     if (res?.needLogin) {
       window.location.href = "/login";
       return;
     }
     if (res?.error) setError(res.error);
-    else setError("");
+    else {
+      setError("");
+      setSelected("");
+    }
+  }
+  async function remove() {
+    const res = await bb.clearQuickSignal?.(live);
+    if (res?.needLogin) {
+      window.location.href = "/login";
+      return;
+    }
+    if (res?.error) setError(res.error);
+    else {
+      setError("");
+      setSelected("");
+    }
   }
   return createPortal(
     <WizardDialog onClose={onClose} backdropClose>
+      {story && (author.userId || author.handle) && (
+        <div className="mb-4 flex items-start gap-2">
+          <HostBadge handle={author.handle} userId={author.userId || ""} />
+          <p className="text-sm leading-snug text-white/80 [overflow-wrap:anywhere]">{story}</p>
+        </div>
+      )}
       <div className="max-h-[50vh] space-y-2 overflow-y-auto">
         {lines.map((item) => (
           <div key={item.key} className="flex items-start gap-2">
@@ -92,15 +134,22 @@ function PresetDialog({ record, people, onClose }) {
             <button
               key={line.code}
               type="button"
-              className={`rounded-2xl px-3 py-2 text-left text-sm ${active === line.code ? "bg-fg text-ink" : "border border-white/20 text-fg"}`}
-              onClick={() => pick(line.code)}
+              aria-pressed={selected === line.code}
+              className={`rounded-2xl px-3 py-2 text-left text-sm ${selected === line.code ? "bg-fg text-ink" : "border border-white/20 text-fg"}`}
+              onClick={() => setSelected(line.code)}
             >
               {line.text}
             </button>
           ))}
         </div>
       )}
-      {role === "none" && <p className="mt-4 text-sm text-white/45">Join to leave a line.</p>}
+      {selected && (
+        <button type="button" className="mt-4 rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={publish}>POST</button>
+      )}
+      {posted && (
+        <button type="button" className="mt-3 block text-xs text-white/45" aria-label="Remove my currently posted comment" onClick={remove}>Remove</button>
+      )}
+      {role === "none" && <p className="mt-4 text-sm text-white/45">Join to leave a comment.</p>}
       {error && <p className="mt-3 text-sm text-ember">{error}</p>}
     </WizardDialog>,
     document.body,

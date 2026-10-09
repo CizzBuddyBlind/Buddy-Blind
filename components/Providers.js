@@ -15,7 +15,7 @@ import { APP_BREAKPOINT } from "@/lib/layoutMode";
 import { effectiveAccess, isInternalRole } from "@/lib/entitlement";
 import { joinOwnQuick, ownQuickDecision } from "@/lib/quickFeed";
 import { canOfferJoin, viewerSeat } from "@/lib/joinOffer";
-import { applySignal, locateSocial, placeBooking, syncBookingNotes, toggleLike } from "@/lib/quickSocial";
+import { clearSignal, locateSocial, placeBooking, postSignal, syncBookingNotes, toggleLike } from "@/lib/quickSocial";
 
 const Ctx = createContext(null);
 
@@ -1638,10 +1638,17 @@ export function BuddyProvider({ children }) {
   }), [mutateQuick, session]);
 
   const setQuickSignal = useCallback((row, code) => mutateQuick(row, (target) => {
-    const result = applySignal(target, session, code);
+    const result = postSignal(target, session, code);
     if (!result.ok) return result;
-    target.signals = result.record.signals;
-    target.hostSignal = result.record.hostSignal ?? null;
+    if (result.record.signals !== undefined) target.signals = result.record.signals;
+    if (result.record.hostSignal !== undefined) target.hostSignal = result.record.hostSignal;
+  }), [mutateQuick, session]);
+
+  const clearQuickSignal = useCallback((row) => mutateQuick(row, (target) => {
+    const result = clearSignal(target, session);
+    if (!result.ok) return result;
+    if (result.record.signals !== undefined) target.signals = result.record.signals;
+    if ("hostSignal" in result.record) target.hostSignal = result.record.hostSignal;
   }), [mutateQuick, session]);
 
   const confirmOwnQuickBooking = useCallback((id, input) => mutateQuick({ source: "own", id }, (target) => {
@@ -1732,6 +1739,7 @@ export function BuddyProvider({ children }) {
       decideOwnQuick,
       likeQuick,
       setQuickSignal,
+      clearQuickSignal,
       confirmOwnQuickBooking,
     }),
     [
@@ -1742,7 +1750,7 @@ export function BuddyProvider({ children }) {
       toggleHide, resetDraft, confirm, lang, setLang, market, trial, plan, planMeta, premium, entitlement, refreshBilling, setPlan, acceptTrial, cancelTrial,
       updateProfile, changePhone, social, toggleNotes, markNotesRead, requestBuddy, respondBuddy, inviteBuddies,
       addReview, flow, openTable, joinTable, createPrivate, updatePrivate, joinPrivate, sendPing, replyPing, decideOwnQuick,
-      likeQuick, setQuickSignal, confirmOwnQuickBooking,
+      likeQuick, setQuickSignal, clearQuickSignal, confirmOwnQuickBooking,
     ],
   );
 

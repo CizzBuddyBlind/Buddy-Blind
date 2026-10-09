@@ -10,7 +10,7 @@ import { useBB } from "./Providers";
 import { AGE_RANGES, bookingHold, iso, queryHits, tableStart } from "@/lib/bible";
 import { viewerSeat } from "@/lib/joinOffer";
 import { quickJoinState, resolveQuick } from "@/lib/quickFeed";
-import { HOST_LINES, JOINER_LINES, signalRows, suggestedTableSize } from "@/lib/quickSocial";
+import { signalRows, suggestedTableSize } from "@/lib/quickSocial";
 import { SocialBar } from "./SocialMarks";
 import { say } from "@/lib/say";
 
@@ -442,9 +442,6 @@ export function QuickDetail({ row, onClose, onJoin }) {
   const [tableSize, setTableSize] = useState("");
   const [reserveName, setReserveName] = useState("");
   if (!row || typeof document === "undefined") return null;
-  const activeCode = role === "host"
-    ? live.hostSignal?.code
-    : (live.signals || []).find((item) => item.userId && item.userId === bb.session?.userId)?.code;
   async function saveWalk() {
     if (contactBlocked(meetingNote)) {
       setError("Keep contact details off the meeting note. You'll meet in person.");
@@ -486,15 +483,6 @@ export function QuickDetail({ row, onClose, onJoin }) {
       setShowBook(false);
     }
   }
-  async function pickLine(code) {
-    const res = await bb.setQuickSignal?.(live, code);
-    if (res?.needLogin) {
-      window.location.href = "/login";
-      return;
-    }
-    if (res?.error) setError(res.error);
-    else setError("");
-  }
   return createPortal(
     <WizardDialog onClose={onClose} backdropClose>
         {photo && <img src={photo} alt="" className="h-36 w-full rounded-2xl object-cover" />}
@@ -513,7 +501,7 @@ export function QuickDetail({ row, onClose, onJoin }) {
         </div>
         {!closed && openSeats > 0 && <p className="mt-2 text-xs text-white/55">{openSeats === 1 ? "1 available seat" : `${openSeats} available seats`}</p>}
         {closed && <p className="mt-2 text-[10px] font-semibold tracking-[0.14em] text-white/55">CLOSED</p>}
-        <div className="mt-3"><LikeMark row={live} tone="detail" /></div>
+        <div className="mt-3"><SocialBar target={live} people={people} tone="dark" /></div>
         <QuickSignals row={live} people={people} tone="detail" />
         {live.source === "own" && !live.booking?.booked && <p className="mt-3 text-sm text-white/70">You arrange the restaurant yourself. Buddy Blind does not book this table.</p>}
         {joined && ownLine && !live.booking?.booked && (
@@ -562,8 +550,6 @@ export function QuickDetail({ row, onClose, onJoin }) {
           </div>
         ) : (
           <>
-            {role === "member" && <LinePicker lines={JOINER_LINES} active={activeCode} onPick={pickLine} />}
-            {role === "host" && <LinePicker lines={HOST_LINES} active={activeCode} onPick={pickLine} />}
             {role === "host" && live.source === "own" && (
               <button type="button" className="mt-4 rounded-full bg-fg px-4 py-2 text-xs font-semibold text-ink" onClick={openBook}>Table booked</button>
             )}
@@ -593,33 +579,6 @@ function socialQuick(row) {
   return row?.source === "partner" || row?.source === "own";
 }
 
-function LikeMark({ row, tone = "card" }) {
-  const bb = useBB();
-  if (!socialQuick(row)) return null;
-  const likes = Array.isArray(row.likes) ? row.likes : [];
-  const mine = !!(bb.session?.userId && likes.includes(bb.session.userId));
-  const dark = tone === "detail";
-  return (
-    <button
-      type="button"
-      aria-pressed={mine}
-      aria-label={mine ? "Unlike" : "Like"}
-      className={`text-sm ${mine ? (dark ? "text-fg" : "text-black") : (dark ? "text-white/70" : "text-black/55")}`}
-      onClick={async (event) => {
-        stopControl(event);
-        const res = await bb.likeQuick?.(row);
-        if (res?.needLogin) {
-          window.location.href = "/login";
-          return;
-        }
-        if (res?.error) bb.notify?.(res.error);
-      }}
-    >
-      {mine ? "♥" : "♡"} {likes.length}
-    </button>
-  );
-}
-
 function QuickSignals({ row, people, tone = "card" }) {
   if (!socialQuick(row)) return null;
   const lines = signalRows(row, people);
@@ -636,23 +595,6 @@ function QuickSignals({ row, people, tone = "card" }) {
           </span>
           <p className={`text-sm leading-snug [overflow-wrap:anywhere] ${dark ? "text-white/80" : "text-black/75"}`}>{item.text}</p>
         </div>
-      ))}
-    </div>
-  );
-}
-
-function LinePicker({ lines, active, onPick }) {
-  return (
-    <div className="mt-4 flex flex-col gap-2">
-      {lines.map((line) => (
-        <button
-          key={line.code}
-          type="button"
-          className={`rounded-2xl px-3 py-2 text-left text-sm ${active === line.code ? "bg-fg text-ink" : "border border-white/20 text-fg"}`}
-          onClick={() => onPick(line.code)}
-        >
-          {line.text}
-        </button>
       ))}
     </div>
   );
