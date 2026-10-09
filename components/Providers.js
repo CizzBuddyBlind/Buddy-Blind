@@ -1644,8 +1644,8 @@ export function BuddyProvider({ children }) {
     if (result.record.hostSignal !== undefined) target.hostSignal = result.record.hostSignal;
   }), [mutateQuick, session]);
 
-  const clearQuickSignal = useCallback((row) => mutateQuick(row, (target) => {
-    const result = clearSignal(target, session);
+  const clearQuickSignal = useCallback((row, commentId) => mutateQuick(row, (target) => {
+    const result = clearSignal(target, session, commentId);
     if (!result.ok) return result;
     if (result.record.signals !== undefined) target.signals = result.record.signals;
     if ("hostSignal" in result.record) target.hostSignal = result.record.hostSignal;
